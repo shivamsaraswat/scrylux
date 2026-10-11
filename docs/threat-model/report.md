@@ -2,8 +2,8 @@
 
 - **Project:** Specter
 - **Methodology:** STRIDE
-- **Threat model status:** In review
-- **Exported:** 2026-10-11 18:17 UTC
+- **Threat model status:** Approved
+- **Exported:** 2026-10-11 19:10 UTC
 - **Contents:** 41 elements, 255 threats, 188 mitigations
 
 ## Risk summary

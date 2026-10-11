@@ -10,7 +10,7 @@ every repository setting that isn't a file in this repo.
 | --- | --- | --- | --- |
 | `typecheck` | `pnpm typecheck` (`tsc --noEmit` in every package and in `scripts/`) | `pnpm typecheck` | 10 min |
 | `lint` | `pnpm lint` (ESLint in every package and in `scripts/`, then the [license check](#license-check)), then the [lockfile-format guard](#lockfile-format) | `pnpm lint` | 10 min |
-| `test` | `pnpm test` (Vitest in every package and in `scripts/`; a `globalSetup` migrates the database and seeds the admin user) against a real `postgres:16-alpine` service container, then `pnpm build`, the built-output check (`pnpm --filter @specter/web verify:build`: no inline script or style, no `data:` URIs), and the Playwright browser tests against the built app (`pnpm test:e2e`, Chromium) | `docker compose up -d db && pnpm test && pnpm build && pnpm --filter @specter/web verify:build && pnpm test:e2e` (once: `pnpm --filter @specter/web exec playwright install chromium`) | 25 min |
+| `test` | `pnpm test` (Vitest in every package and in `scripts/`; a `globalSetup` migrates the database and seeds the admin user) against a real `postgres:16-alpine` service container, then the `Threat model warnings` step (one test, run alone so its annotation attaches, [below](#specters-own-threat-model)), then `pnpm build`, the built-output check (`pnpm --filter @specter/web verify:build`: no inline script or style, no `data:` URIs), and the Playwright browser tests against the built app (`pnpm test:e2e`, Chromium) | `docker compose up -d db && pnpm test && pnpm build && pnpm --filter @specter/web verify:build && pnpm test:e2e` (once: `pnpm --filter @specter/web exec playwright install chromium`) | 25 min |
 | `docker-build` | `docker build --pull .` (never pushed anywhere) | `docker build .` | 15 min |
 
 All four run on every pull request to `main`, on every push to `main`, and on demand
@@ -39,8 +39,13 @@ or a secret.
   credential, or "Generate threats" flags a threat of the model as **stale** (a rule was retired or
   changed). The report must be the one Specter builds for the file.
 - **They only warn** when "Generate threats" would **add** threats because a rule was added: the warning
-  is a `::warning` annotation on the pull request (Vitest's `github-actions` reporter, which it turns on
-  by itself under `GITHUB_ACTIONS`), and the check passes.
+  is a `::warning` annotation on the test file (Vitest's `github-actions` reporter, which it turns on by
+  itself under `GITHUB_ACTIONS`), and the check passes. It comes from a step of its own, **Threat model
+  warnings**, which runs only `apps/api/test/dogfood/threat-model.test.ts`. `pnpm test` runs five packages
+  at once, and pnpm then puts the package name in front of every line of their output; GitHub reads a
+  `::warning` command only at the start of a line, so a warning raised there is printed in the log and
+  never becomes an annotation. Run alone, as one project, the test's output is not prefixed. The step runs
+  even when `pnpm test` failed, so a failure is annotated on the file too.
 - To reproduce a failure locally: `pnpm --filter @specter/api exec vitest run test/dogfood`. The message
   names the file, the check and the fix; [the folder's README](../docs/threat-model/README.md) has the
   procedure.

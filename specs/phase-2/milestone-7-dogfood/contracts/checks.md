@@ -112,8 +112,14 @@ quoted, so a failing pull request cannot echo something it should not.
 
 Raised with the test context's `annotate(message, 'warning')` inside a test that passes, one per
 threat, collapsed to the first 10 and a count when there are more. On GitHub Actions Vitest's own
-reporter turns it into a `::warning file=…,line=…::message` on the pull request. **Verified** (the milestone's first task, 2026-10-11; research #4): under this repository's Vitest configuration the annotation reaches the reporter and is printed as `::warning file=…,line=…::message`. The fallback is in research #4 and is not needed. Either way the contract is the same: the message
-above, no failure.
+reporter turns it into a `::warning file=…,line=…::message`. **Verified locally** (the milestone's first task, 2026-10-11; research #4): under this repository's Vitest configuration the annotation reaches the reporter.
+
+**Verified in CI, with a correction (T047, 2026-10-12):** raised inside `pnpm test` it does **not** become an
+annotation, because pnpm prefixes every line of a five-package run with the package name, and GitHub reads a
+`::warning` command only at the start of a line. A CI step that runs `test/dogfood/threat-model.test.ts` alone
+(`Threat model warnings`, `.github/workflows/ci.yml`) is not prefixed, and there GitHub records the warning as
+an annotation on `apps/api/test/dogfood/threat-model.test.ts` with the full message. The contract is the same:
+the message above, no failure.
 
 ## Tests of the checks themselves (`checks.test.ts`)
 

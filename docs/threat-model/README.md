@@ -64,7 +64,7 @@ They live in [`apps/api/test/dogfood/`](../../apps/api/test/dogfood/) and run in
 - "Generate threats" on the imported model flags a threat of the model as **stale**, which happens when a rule is retired or changed so that a threat no longer matches it;
 - the report is not the one Specter builds for the Specter file.
 
-**They only warn** when "Generate threats" would **add** threats: a rule was added, or widened, and the model does not have its threats yet. The warning is an annotation on the pull request naming the rule and the element; the build still passes. Update the model in that change or a later one.
+**They only warn** when "Generate threats" would **add** threats: a rule was added, or widened, and the model does not have its threats yet. The warning is an annotation on the test file, raised by a CI step of its own (*Threat model warnings*), naming the rule and the element; the build still passes. Update the model in that change or a later one.
 
 ## How to decide a status
 

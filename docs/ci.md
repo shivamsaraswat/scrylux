@@ -25,6 +25,26 @@ Two other workflows run but are **not required checks**:
 | CodeQL (`analyze`) | PR, push to `main`, weekly, on demand | No — see [CodeQL](#codeql) |
 | Audit (`audit`) | Daily, on demand | No — see [Audit](#audit) |
 
+## Specter's own threat model
+
+Part of the `test` check holds [Specter's own threat model](../docs/threat-model/) to account
+(Phase 2 / Milestone 7, `specs/phase-2/milestone-7-dogfood/`). The tests are in `apps/api/test/dogfood/`
+and run with the rest of the API's tests, against the same database. They load the two committed files
+through the real import, export, generate and report operations, and nothing about them needs a new job
+or a secret.
+
+- **They fail the build** when a committed file is not what Specter writes, the model does not import
+  and export back to the same content, two records could only be ordered by their ids, a STRIDE category
+  or a status reason is missing, the folder holds another file, a file holds something that looks like a
+  credential, or "Generate threats" flags a threat of the model as **stale** (a rule was retired or
+  changed). The report must be the one Specter builds for the file.
+- **They only warn** when "Generate threats" would **add** threats because a rule was added: the warning
+  is a `::warning` annotation on the pull request (Vitest's `github-actions` reporter, which it turns on
+  by itself under `GITHUB_ACTIONS`), and the check passes.
+- To reproduce a failure locally: `pnpm --filter @specter/api exec vitest run test/dogfood`. The message
+  names the file, the check and the fix; [the folder's README](../docs/threat-model/README.md) has the
+  procedure.
+
 ## Running checks locally
 
 ```sh

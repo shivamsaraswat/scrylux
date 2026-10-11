@@ -97,8 +97,28 @@ Two rules are enforced in review, because the checks cannot see a rule's earlier
   produces.
 - **Nothing is removed from `rules/ids.yaml`.** It lists every id ever issued.
 
+A retired or changed rule shows up as a **stale** threat in [Specter's own threat model](docs/threat-model/),
+and that fails the required check, so a retirement updates the model in the same pull request. A rule that
+is only added makes the check **warn** that the model is behind, and does not fail it.
+
 Write rule text yourself. Don't copy from other tools' templates or catalogs unless their license
 allows it under Apache-2.0. Citing CWE and CAPEC numbers is fine.
+
+## Specter's own threat model
+
+Specter keeps a threat model of itself, built in Specter, in [`docs/threat-model/`](docs/threat-model/):
+a Specter file and a Markdown report. The **Threat Model (STRIDE)** section of the
+[constitution](.specify/memory/constitution.md) governs; the model is its structured counterpart.
+
+- A change that adds an entry point, an asset or a trust boundary updates the constitution's section
+  **and** the model **in the same change**.
+- A change that retires or changes a threat-library rule updates the model in the same change, because
+  the checks fail until it does. A change that only adds a rule gets a warning, and the model can follow.
+- You change the model **in Specter**, never in the files: import the committed file, make the change,
+  export both files again. [`docs/threat-model/README.md`](docs/threat-model/README.md) has the steps,
+  the table for deciding a threat's status, and what the checks do. Every id in the Specter file changes
+  on every update, so review the report's diff.
+- If you find a vulnerability while modelling, follow [SECURITY.md](SECURITY.md) first.
 
 ## Commit messages
 

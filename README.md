@@ -189,6 +189,8 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first, and no
 
 To report a vulnerability, follow [SECURITY.md](SECURITY.md). Report it privately, never in a public issue.
 
+Specter's own threat model, built in Specter, is in [`docs/threat-model/`](docs/threat-model/); [start with the report](docs/threat-model/report.md).
+
 ## License
 
 Specter is licensed under the [Apache License 2.0](LICENSE). In short, you may use, modify and distribute it, including commercially. In return you keep the license and copyright notices and state your changes, and the license includes an express patent grant from contributors.

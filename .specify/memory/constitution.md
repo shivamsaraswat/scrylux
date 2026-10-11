@@ -1,55 +1,31 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.10.0 → 1.11.0
-Rationale: Phase 2 Milestone 6 (import and export, specs/phase-2/milestone-6-import-export/) lets a signed-in user take a
-  whole threat model out of the app as a data file (the Specter file or OTM) and bring files in (a Specter file, OTM, or
-  an OWASP Threat Dragon version 2 model). It adds three operations to `/api/v1` behind the existing authentication
-  (`GET /api/v1/threat-models/{id}/export`, `POST /api/v1/projects/{id}/imports/check`, `POST /api/v1/projects/{id}/imports`)
-  and no table, column, migration or runtime dependency. It is the first operation that reads a large body of untrusted
-  content into the database: up to 64 MiB, from a file written by another tool or by hand. It is also the one place a
-  threat other than a manual one can be created outside generation, so the Threat Model section must say how that body is
-  bounded and checked, how provenance is kept, and what the process costs. Principle V requires the section to be kept
-  current for a new entry point. This is a MINOR: it adds to the Threat Model section's mitigations and records accepted
-  risks, as earlier milestones did, and adds or changes no principle.
-Modified principles: none (Principles I and IV are applied, not changed; see "How two principles are applied")
+Version change: 1.11.0 → 1.12.0
+Rationale: Phase 2 Milestone 7 (dogfood, specs/phase-2/milestone-7-dogfood/) commits Specter's own threat model, built in
+  Specter, to the repository as a Specter file and a Markdown report (`docs/threat-model/`), and holds it to the
+  shipped code with checks in the required `test` check (`apps/api/test/dogfood/`). Plan.md's guiding principle 8 ("Specter
+  keeps its own threat model, built in Specter") is now a committed artefact, and the Threat Model section below has a
+  structured counterpart that can drift from it. This is a MINOR: Principle V gains the rule of which document governs
+  and the duty to keep the model current, which is materially expanded guidance. It adds no principle, no endpoint, no
+  table and no dependency.
+Modified principles: V (applied, text extended: the Threat Model section governs, the committed model is corrected to
+  agree with it, and a change that updates the section updates the model in the same change; a change that only adds a
+  threat-library rule may follow, because the checks then only warn). No other principle changes.
 Added sections: none (existing section set retained: Core Principles, Threat Model (STRIDE),
   Development Workflow & Quality Gates, Governance)
 Removed sections: none
-How two principles are applied (neither principle's text changes):
-  - Principle I ("reject unknown shapes"): Specter's own formats stay strict: the request body, the Specter file and every
-    `attributes.specter` object refuse any unknown key. The OTM and Threat Dragon schemas accept members Specter does not
-    read, because every real file from those tools carries some. They are accepted only after `checkBounds` has limited
-    the file's depth and size, and are never walked, stored, logged or echoed. What carries information is listed in the
-    import's summary (FR-016); presentation data is ignored by a listed rule.
-  - Principle IV (detection heuristics as versioned data): the vocabularies an import matches against (OTM component-type
-    keywords, threat and mitigation state words, Threat Dragon's tables, the constants an export writes) are kept as data
-    in `packages/core/src/exchange/mappings.ts`, a module with no logic, and `docs/formats/` prints each table; a test
-    keeps the two equal.
-Threat Model changes:
-  - Trust boundaries: three operations join the notable `/api/v1` endpoints. `/api/v1` now authenticates a request before
-    it reads its body, and each operation sets its own body limit (100 KiB; 64 MiB for the two import operations).
-  - Spoofing (provenance): Accepted risk (Phase 2 Milestone 6): a Specter file, or an OTM file carrying Specter's mark, can
-    claim a threat is rule-generated, with any rule reference. Specter cannot check it; generation then treats that threat
-    as its own. A file with an AI-drafted threat is refused (Principle VI), and every threat from another tool's file is
-    manual. The API's create and update operations still refuse every origin but manual.
-  - Tampering: Mitigated (Phase 2 Milestone 6): a file is bounded (size, nesting depth, value count, by a walk with no
-    recursion), parsed by shared schemas, checked by rules across records that name the place in the file, and written
-    all or nothing. Imported text is stored and shown as text.
-  - Repudiation: Partially mitigated (Phase 2 Milestone 6): one import log line with ids and counts, never content.
-  - Information Disclosure: Accepted risk (Phase 2 Milestone 6): an export carries the whole threat model out of the app by
-    design, as a report does. It holds no account name, account id or credential, is `no-store` and sandboxed, and is
-    never logged.
-  - Denial of Service: Accepted risk (Phase 2 Milestone 6): an import of up to 64 MiB, and an export of the largest threat
-    model, are built in the API process, by a signed-in account, and measured (quickstart §5). The largest threat model
-    Milestone 3 allows imports in about 1.4 seconds and exports in under 0.7; the process's memory peaks at about 470 to 760
-    MB for either, from 108 MB at rest, which one such operation fits on a 1 GiB host and two or more at once may not, so
-    the documentation names 2 GiB as the minimum host for large threat models (README, Deployment).
-  - Elevation of Privilege: no widening. Any authenticated account could already create threat models and read all of
-    them.
+Threat Model changes: no entry point, asset or trust boundary is added, and the model discloses nothing the section does
+  not already publish. Two statements were corrected, because building the model checked them against the repository
+  (spec findings F3 and F5):
+  - Tampering: Dependabot's cooldown is 3 days (`.github/dependabot.yml`, `docs/ci.md`), not 2.
+  - Elevation of Privilege: with `ADMIN_USERNAME`/`ADMIN_PASSWORD` unset no account is seeded, so a new install cannot be
+    signed in to; an install that already holds an account stays usable.
+Development Workflow: a pull request that updates the Threat Model section also updates `docs/threat-model/`.
 Deferred / TODO items: none
 Templates requiring follow-up: none checked in this run (scope of this change is the constitution
-  file only; dependent templates read it at runtime per the scope guard)
+  file only; dependent templates read it at runtime per the scope guard). The pull request template was
+  extended in the same milestone.
 -->
 
 # Specter Constitution
@@ -162,6 +138,11 @@ available; a broader grant is permitted only when explicitly justified in the PR
 The app currently has no role separation, and that gap is a known, tracked risk scheduled to
 close with RBAC/SSO/audit logging in Phase 6 (see Threat Model) — until then, broadening what an
 authenticated user can do MUST still be called out explicitly, not treated as free.
+Specter's own threat model is committed in `docs/threat-model/` (a Specter file and its Markdown report, built
+in Specter and checked on every pull request). The Threat Model section below governs: where the two
+disagree, the model is corrected. A change that updates the section MUST update the model in the same
+change; a change that only adds a rule to the threat library may follow with the update, because the
+checks then only warn, while retiring or changing a rule makes them fail.
 **Rationale**: A threat-tracking app is a natural target and a credibility risk if it is itself
 insecure (plan.md guiding principle: "secure by default, and dogfooded — Specter keeps its own
 threat model, built in Specter"); treating the threat model as a living document keeps security
@@ -196,6 +177,8 @@ PostgreSQL, optional AWS Secrets Manager) and MUST be kept current per
 Principle V as each phase in plan.md lands. Phase boundaries that will change this section are
 called out inline below; they are not yet implemented and MUST NOT be treated as mitigated until
 they ship.
+`docs/threat-model/` holds the same threat model as a Specter file and a report, kept in step with this
+section; this section governs.
 
 **Assets (current)**: user credentials (`users.password_hash`); the JWT signing secret; database
 credentials; issued JWTs (bearer tokens) held by clients; the CI/CD pipeline's own integrity — the
@@ -283,7 +266,7 @@ webhooks.
   *Mitigated (Phase 1 Milestone 2)*: every third-party GitHub
   Actions step is pinned to a full commit SHA, not a movable tag; the Docker base image and the
   CI database's service-container image are pinned by digest; Dependabot's npm updates carry a
-  2-day cooldown on top of pnpm's own `minimumReleaseAge`; and a required `lint`-check step fails
+  3-day cooldown on top of pnpm's own `minimumReleaseAge`; and a required `lint`-check step fails
   the build if `pnpm-lock.yaml` ever reverts to the multi-document format described below.
   *Accepted risk*: `pnpm-workspace.yaml` sets `pmOnFail: ignore` so the lockfile stays a single
   YAML document — required because GitHub's dependency graph misreads pnpm's two-document format
@@ -437,7 +420,7 @@ webhooks.
   widening was called out in Milestone 5's spec and PR, and is accepted until Phase 6. The browser UI's
   access token does not widen it: it is limited to `/api/v1` (`requireV1Token`), so a script injected
   into the page cannot create accounts through `/api/users` (`requireApiToken`). If `ADMIN_USERNAME`/`ADMIN_PASSWORD` are unset, no user is
-  seeded and the app is unusable (fails closed, not open). *Planned*: plan.md Phase 6 introduces
+  seeded, so on a new install nobody can sign in (fails closed, not open). *Planned*: plan.md Phase 6 introduces
   RBAC (viewer/contributor/reviewer/admin) and OIDC/SAML SSO to close this gap; until Phase 6
   ships, any change that widens what a plain authenticated user can do MUST be justified per
   Principle V, not treated as free because "there's no RBAC yet anyway." *Mitigated (Phase 1
@@ -472,7 +455,7 @@ Dependabot and CodeQL enabled alongside them (informational, not merge-blocking,
 milestone). A PR that touches authentication, configuration/secrets handling, any
 route's authorization/validation logic, or (from Phase 3) prompt construction, LLM provider
 adapters, or document-ingestion code MUST call out the security implication explicitly in its
-description and MUST update the Threat Model section if it changes an entry point, asset, or
+description and MUST update the Threat Model section, and `docs/threat-model/`, if it changes an entry point, asset, or
 trust boundary. From Phase 3 onward, a PR that changes a prompt, provider adapter, or the
 extraction/threat-generation pipeline MUST include the eval harness results against the
 committed thresholds. Reviewers MUST reject PRs that reintroduce a mitigated risk from the
@@ -498,4 +481,4 @@ rather than silently merged. This file is the source of truth for "why" a rule e
 implementation-level how-to guidance belongs in `README.md`, `API.md`, `CONTRIBUTING.md`, `SECURITY.md`, `plan.md`, and code
 comments, not here.
 
-**Version**: 1.11.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-10
+**Version**: 1.12.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-11

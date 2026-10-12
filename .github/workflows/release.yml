@@ -1,0 +1,313 @@
+name: Release
+
+# Publishes a version: a tested two-platform image on GHCR and a GitHub release, started only by the push of a version tag.
+# The contract is specs/phase-2/milestone-8-release-v0-1/contracts/release-pipeline.md; docs/releasing.md says how to use it
+# and docs/ci.md how it is configured. scripts/workflows.test.ts holds this file to the rules below.
+#
+# Rules this file obeys (each is a test):
+#   - Nothing holds a permission by default. Only `publish-image` (packages: write) and `release` (contents: write) hold a
+#     write permission, and neither runs repository code or installs a dependency: they use docker, skopeo and gh.
+#   - The tag name is text the pusher chose. It, the commit and every other event value reach a script only through `env:`,
+#     never inside a `${{ }}` in a `run:` block, and `gate` refuses anything that is not a version tag first.
+#   - Every third-party action is pinned to a commit. This file uses only first-party actions and the local setup-workspace.
+#   - The image is built from this checkout and nothing else, without BuildKit's default attestations (v0.1 ships none).
+
+on:
+  push:
+    tags: ['v*']
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/shivamsaraswat/specter
+
+jobs:
+  gate:
+    name: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: read
+      packages: read
+    outputs:
+      version: ${{ steps.gate.outputs.version }}
+      prerelease: ${{ steps.gate.outputs.prerelease }}
+      is_latest: ${{ steps.gate.outputs.is_latest }}
+      image_published: ${{ steps.gate.outputs.image_published }}
+      image_digest: ${{ steps.gate.outputs.image_digest }}
+      labels: ${{ steps.gate.outputs.labels }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-workspace
+      - name: Decide whether this tag is released
+        id: gate
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+        run: pnpm exec tsx scripts/release/gate.ts
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gate
+          path: gate.json
+          retention-days: 7
+
+  build:
+    name: build
+    needs: gate
+    if: needs.gate.outputs.image_published != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # BuildKit is pinned by digest. Nothing refreshes it but a person: docs/ci.md says when and how.
+      - name: Create the builder
+        run: |
+          docker buildx create --name release --driver docker-container \
+            --driver-opt image=moby/buildkit:v0.34.0@sha256:b059f8d7226d0b326bc871af489a5dddf65e36af4d20d14251b072974d9ee87c
+      # The Dockerfile's builder stage runs on the build machine and its last stage has no RUN, so both platforms come out of
+      # one build with nothing emulated. The six labels come from scripts/release/versions.ts, through the gate.
+      - name: Build both platforms
+        env:
+          LABELS: ${{ needs.gate.outputs.labels }}
+        run: |
+          set -euo pipefail
+          args=()
+          while IFS= read -r line; do
+            if [ -n "$line" ]; then args+=(--label "$line"); fi
+          done <<< "$LABELS"
+          docker buildx build --builder release --platform linux/amd64,linux/arm64 "${args[@]}" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/shivamsaraswat/specter" \
+            --provenance=false --sbom=false \
+            --output type=oci,dest=image.tar .
+      - name: Check that the archive holds exactly the two platforms
+        run: |
+          skopeo inspect --raw oci-archive:image.tar \
+            | jq -e '[.manifests[] | "\(.platform.os)/\(.platform.architecture)"] | sort == ["linux/amd64","linux/arm64"]'
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: image-oci
+          path: image.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  smoke:
+    name: smoke (${{ matrix.arch }})
+    needs: [gate, build]
+    if: needs.gate.outputs.image_published != 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-24.04-arm
+    env:
+      VERSION: ${{ needs.gate.outputs.version }}
+      SPECTER_VERSION: ${{ needs.gate.outputs.version }}
+      ARCH: ${{ matrix.arch }}
+      COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-workspace
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-oci
+      # `docker load` cannot read the archive on the runners' image store; skopeo can, and keeps the labels.
+      - name: Load this platform's image under the name the compose file uses
+        run: skopeo --override-arch "$ARCH" copy oci-archive:image.tar "docker-daemon:${IMAGE}:${VERSION}"
+      - name: Start the release compose file
+        run: docker compose -f docker-compose.release.yml up -d
+      - name: Smoke
+        run: pnpm exec tsx scripts/release/smoke.ts http://127.0.0.1:3000 docs/demo/notes-app.specter.json "$VERSION" "$COMMIT" "${IMAGE}:${VERSION}"
+      - name: Logs of a failed run
+        if: failure()
+        run: docker compose -f docker-compose.release.yml logs --no-color --tail 200
+      - name: Stop
+        if: always()
+        run: docker compose -f docker-compose.release.yml down -v
+
+  publish-image:
+    name: publish-image
+    needs: [gate, build, smoke]
+    if: needs.gate.outputs.image_published != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      packages: write
+      contents: read
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-oci
+      # Pushes the archive that was tested, byte for byte: `skopeo copy --all` keeps every digest.
+      - name: Push the tested archive
+        id: push
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+          IS_LATEST: ${{ needs.gate.outputs.is_latest }}
+          REGISTRY_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          creds="${REGISTRY_USER}:${GITHUB_TOKEN}"
+          # The version's tag cannot have appeared since the gate ran. A registry that says "denied" for a package that does
+          # not exist yet is read as "not there" (scripts/release/gate.ts says why that cannot overwrite anything).
+          if answer="$(skopeo inspect --raw --creds "$creds" "docker://${IMAGE}:${VERSION}" 2>&1)"; then
+            echo "::error::${IMAGE}:${VERSION} exists now; a published version is never replaced"
+            exit 1
+          fi
+          if ! grep -Eiq 'manifest unknown|name unknown|not found|\b404\b|denied|unauthorized|requested access|\b403\b' <<< "$answer"; then
+            echo "::error::could not tell whether ${IMAGE}:${VERSION} exists"
+            exit 1
+          fi
+          skopeo copy --all --dest-creds "$creds" "oci-archive:image.tar" "docker://${IMAGE}:${VERSION}"
+          local_digest="sha256:$(skopeo inspect --raw oci-archive:image.tar | sha256sum | cut -d' ' -f1)"
+          remote_digest="sha256:$(skopeo inspect --raw --creds "$creds" "docker://${IMAGE}:${VERSION}" | sha256sum | cut -d' ' -f1)"
+          if [ "$local_digest" != "$remote_digest" ]; then
+            echo "::error::the pushed image's digest ${remote_digest} is not the tested archive's ${local_digest}"
+            exit 1
+          fi
+          if [ "$IS_LATEST" = "true" ]; then
+            skopeo copy --all --src-creds "$creds" --dest-creds "$creds" "docker://${IMAGE}:${VERSION}" "docker://${IMAGE}:latest"
+          fi
+          echo "digest=${remote_digest}" >> "$GITHUB_OUTPUT"
+          echo "Published ${IMAGE}:${VERSION} as ${remote_digest}" >> "$GITHUB_STEP_SUMMARY"
+
+  verify-public:
+    name: verify-public (${{ matrix.arch }})
+    needs: [gate, publish-image]
+    # It runs when the image was just published, or was already published. A `publish-image` that was skipped because `smoke` failed is
+    # neither: nothing is published then, and this job must not run on an empty digest and blame a private package.
+    if: ${{ always() && needs.gate.result == 'success' && (needs.publish-image.result == 'success' || needs.gate.outputs.image_published == 'true') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-24.04-arm
+    env:
+      VERSION: ${{ needs.gate.outputs.version }}
+      SPECTER_VERSION: ${{ needs.gate.outputs.version }}
+      DIGEST: ${{ needs.publish-image.outputs.digest || needs.gate.outputs.image_digest }}
+      COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-workspace
+      # No registry login at all: an empty Docker configuration, so only what anyone can do.
+      - name: Pull the image with no credentials
+        run: |
+          set -euo pipefail
+          export DOCKER_CONFIG="$(mktemp -d)"
+          if ! docker pull "${IMAGE}@${DIGEST}"; then
+            echo "::error::the image cannot be pulled without credentials. The package is probably still private: set it public once (docs/releasing.md), then re-run the failed jobs"
+            exit 1
+          fi
+          docker pull "${IMAGE}:${VERSION}"
+          by_digest="$(docker image inspect "${IMAGE}@${DIGEST}" --format '{{.Id}}')"
+          by_tag="$(docker image inspect "${IMAGE}:${VERSION}" --format '{{.Id}}')"
+          if [ "$by_digest" != "$by_tag" ]; then
+            echo "::error::the tag ${VERSION} and the digest ${DIGEST} are not the same image on this platform"
+            exit 1
+          fi
+      - name: Start the release compose file with the pulled image
+        run: docker compose -f docker-compose.release.yml up -d --pull never
+      - name: Run the smoke checks against it
+        run: pnpm exec tsx scripts/release/smoke.ts http://127.0.0.1:3000 docs/demo/notes-app.specter.json "$VERSION" "$COMMIT" "${IMAGE}:${VERSION}"
+      - name: Logs of a failed run
+        if: failure()
+        run: docker compose -f docker-compose.release.yml logs --no-color --tail 200
+      - name: Stop
+        if: always()
+        run: docker compose -f docker-compose.release.yml down -v
+
+  # Everything that takes the workspace's dependencies to make: the release notes and the compose file a release attaches. It
+  # holds a read scope only, so that the job that holds the write scope runs nothing of ours.
+  notes:
+    name: notes
+    needs: [gate, publish-image, verify-public]
+    if: ${{ always() && needs.gate.result == 'success' && needs.verify-public.result == 'success' && (needs.publish-image.result == 'success' || needs.publish-image.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-workspace
+      - name: Write the notes and the compose copy
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+          PRERELEASE: ${{ needs.gate.outputs.prerelease }}
+          DIGEST: ${{ needs.publish-image.outputs.digest || needs.gate.outputs.image_digest }}
+        run: pnpm exec tsx scripts/release/notes.ts CHANGELOG.md docker-compose.release.yml "$VERSION" "$DIGEST" "$PRERELEASE" release-files
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-files
+          path: release-files
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: release
+    needs: [gate, notes]
+    if: ${{ always() && needs.gate.result == 'success' && needs.notes.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-files
+          path: release-files
+      # Creates the release, or completes the one that exists. Nothing is installed and no script of ours runs here.
+      - name: Create or complete the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.gate.outputs.prerelease }}
+          IS_LATEST: ${{ needs.gate.outputs.is_latest }}
+        run: |
+          set -euo pipefail
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          if [ "$IS_LATEST" = "true" ]; then flags+=(--latest=true); else flags+=(--latest=false); fi
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --title "$TAG" --notes-file release-files/notes.md "${flags[@]}"
+          fi
+          gh release upload "$TAG" release-files/docker-compose.yml docs/demo/notes-app.specter.json --clobber

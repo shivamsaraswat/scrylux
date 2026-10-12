@@ -125,7 +125,7 @@ counterpart; the statuses agree by the mapping of research #10; all six STRIDE c
 
 ## 10. Before merging
 
-- [ ] Checks green on CI, with the warning count at 0.
+- [x] Checks green on CI, with the warning count at 0. (PR #30's `pnpm test` step: 1,081 API tests, 0 warnings. The annotation path itself is covered by the `Threat model warnings` step, T047.)
 - [x] `git diff main --stat` touches only `docs/`, `apps/api/test/dogfood/`, the four documents,
   `.github/pull_request_template.md` and the constitution: **no product code** (FR-022).
 - [x] The pull request carries the traceability list, the findings, and the statement "the model's ids

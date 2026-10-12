@@ -120,6 +120,19 @@ a Specter file and a Markdown report. The **Threat Model (STRIDE)** section of t
   on every update, so review the report's diff.
 - If you find a vulnerability while modelling, follow [SECURITY.md](SECURITY.md) first.
 
+## Changelog and releases
+
+- **A change a user or an operator can see adds to [`CHANGELOG.md`](CHANGELOG.md) in the same pull
+  request**: what they can now do, what they cannot, or what to know when upgrading. Group it by what
+  a person does, not by commit. A required check fails if the changelog has no dated entry for the
+  version the packages carry, or if its entry strays from the three headings.
+- **A release is made by pushing one version tag**, and nothing else publishes anything. To prepare one,
+  open a pull request that sets the version of every `package.json` and the default of
+  `SPECTER_VERSION` in `docker-compose.release.yml` to the new version, and adds the dated changelog
+  entry. Then follow [`docs/releasing.md`](docs/releasing.md). A check keeps the versions together.
+- **The demo threat model** ([`docs/demo/`](docs/demo/)) is held like Specter's own: a retired or changed
+  rule that leaves one of its threats stale fails the build, and a rule that would add a threat only warns.
+
 ## Commit messages
 
 Use a short conventional prefix and say what changed. This project's history looks like:

@@ -3,26 +3,26 @@
 - **Project:** Specter
 - **Methodology:** STRIDE
 - **Threat model status:** In review
-- **Exported:** 2026-10-11 18:17 UTC
-- **Contents:** 41 elements, 255 threats, 188 mitigations
+- **Exported:** 2026-10-12 07:14 UTC
+- **Contents:** 41 elements, 264 threats, 203 mitigations
 
 ## Risk summary
 
 | Status | Threats |
 |---|---:|
-| Open | 32 |
-| Mitigated | 63 |
-| Accepted | 92 |
+| Open | 35 |
+| Mitigated | 67 |
+| Accepted | 94 |
 | Not applicable | 68 |
-| **Total** | **255** |
+| **Total** | **264** |
 
 | Risk (open threats) | Threats |
 |---|---:|
 | Critical | 6 |
-| High | 10 |
-| Medium | 15 |
+| High | 11 |
+| Medium | 17 |
 | Low | 1 |
-| **Total** | **32** |
+| **Total** | **35** |
 
 ## Diagram
 
@@ -4050,6 +4050,78 @@ No mitigations.
 
 ## Threats not linked to an element
 
+##### A look\-alike image or registry is mistaken for the project\'s — High
+
+- **Category:** Spoofing
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Every release\'s notes name the exact image and its digest\, and a user can be told no more than that without a signature\. Accepted until Phase 6 \(Verifiable release images\, plan\.md\)\.
+- **Origin:** Manual
+
+> Someone could publish an image with a similar name\, or a user could pull from the wrong registry\.
+
+**Mitigations**
+
+No mitigations.
+
+##### An install is left running on the documented default credentials — High
+
+- **Category:** Elevation of Privilege
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Open
+- **Origin:** Manual
+
+> The quickstart\'s compose file starts with admin \/ admin\, a development signing secret and a default database password\. Someone who exposes it without changing them gives anyone the keys\.
+
+**Mitigations**
+
+1. **Implemented** — The compose file\'s header\, and with the release the README\'s Quickstart\, say the defaults are for local use only\, name each value to set and say the app has no TLS of its own \(docker\-compose\.release\.yml\, README\.md\)\.
+2. **Verified** — The quickstart\'s compose file publishes only the app\, on the loopback address\, and never the database\; every release\'s smoke run proves it on the real image \(scripts\/release\/smoke\.test\.ts\, step 6\)\.
+
+##### A version tag is forged by someone who is not a maintainer — Medium
+
+- **Category:** Spoofing
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> The release pipeline starts on the push of a v\* tag\. A tag made by anyone else\, or on the wrong commit\, would try to publish a release\.
+
+**Mitigations**
+
+1. **Verified** — The gate refuses a tag that is not a version tag\, is not on main\, or whose package versions\, changelog entry or required checks disagree \(scripts\/release\/gate\.test\.ts\, gates G1 to G5\)\.
+2. **Implemented** — Two tag rulesets let only the repository owner create or delete a v\* tag and let nobody move one \(\.github\/rulesets\/release\-tags\.json and release\-tags\-immutable\.json\, docs\/ci\.md\, docs\/releasing\.md\)\.
+
+##### A build or release step is replaced with a malicious one — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> The release pipeline builds and publishes the image users run\. A changed action\, a changed BuildKit image or a changed step would put code into it\.
+
+**Mitigations**
+
+1. **Implemented** — BuildKit is pinned by digest and refreshed by hand \(docs\/ci\.md\, docs\/releasing\.md\)\; Dependabot waits three days before it proposes an action update \(\.github\/dependabot\.yml\)\.
+2. **Verified** — Every third\-party action of every workflow is pinned to a commit SHA\, and the release workflow uses only first\-party actions \(scripts\/workflows\.test\.ts\)\.
+
+##### A published image is replaced after publication — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Open
+- **Origin:** Manual
+
+> The registry does not enforce immutable tags\, so whoever has write access to the package could push a different image under a published version\.
+
+**Mitigations**
+
+1. **Proposed** — Sign every release image\, attach a build attestation and an SBOM \(plan\.md\, Phase 6\, Verifiable release images\)\.
+2. **Verified** — The pipeline never overwrites a version\: it refuses when the version\'s image was built from another commit and completes a half\-done release from the image already there \(scripts\/release\/gate\.test\.ts\, gate G6 and the resume cases\)\.
+3. **Implemented** — The release notes print the image\'s digest\, so that a user can pin it \(scripts\/release\/notes\.test\.ts\)\.
+
 ##### Tampering with third\-party actions and images in the pipeline — Medium
 
 - **Category:** Tampering
@@ -4061,8 +4133,22 @@ No mitigations.
 
 **Mitigations**
 
-1. **Implemented** — Every third\-party action is pinned to a full commit SHA\, the base image and the CI database image by digest\, Dependabot waits 3 days for a new release \(cooldown\.default\-days\: 3\)\, and a required step fails the build if pnpm\-lock\.yaml reverts to the multi\-document format \(\.github\/workflows\/ci\.yml\, \.github\/dependabot\.yml\, Dockerfile\, docs\/ci\.md\)\. No automated test covers the pins\: they are held by review
+1. **Implemented** — Every third\-party action is pinned to a full commit SHA\, which scripts\/workflows\.test\.ts holds for every workflow\. The base image and the CI database image are pinned by digest\, Dependabot waits 3 days for a new release \(cooldown\.default\-days\: 3\)\, and a required step fails the build if pnpm\-lock\.yaml reverts to the multi\-document format\; those are held by review \(\.github\/workflows\/ci\.yml\, \.github\/dependabot\.yml\, Dockerfile\, docs\/ci\.md\)\.
 2. **Implemented** — Nobody can merge or push around a failing or missing required check\: the ruleset on main has no bypass actors \(\.github\/rulesets\/main\.json\)
+
+##### A user cannot tell who built an image or from which commit — Medium
+
+- **Category:** Repudiation
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Manual
+
+> Without a signature or an attestation\, a user can compare an image\'s digest and read its labels\, but cannot prove who produced it\.
+
+**Mitigations**
+
+1. **Proposed** — Sign every release image\, attach a build attestation and an SBOM \(plan\.md\, Phase 6\, Verifiable release images\)\.
+2. **Verified** — The image labels carry the source repository and the commit it was built from\, which the smoke run checks on both platforms before publishing and again after \(scripts\/release\/smoke\.test\.ts\, step 7\)\.
 
 ##### A pipeline job leaks a repository secret\, for instance to a fork — Medium
 
@@ -4077,6 +4163,35 @@ No mitigations.
 
 1. **Implemented** — No job references a repository secret \(the test job\'s database credentials are throwaway defaults defined in the workflow\)\, every job runs on pull\_request and never pull\_request\_target\, and every checkout sets persist\-credentials\: false \(\.github\/workflows\/\, docs\/ci\.md\)\. No automated test covers it\: it is held by review
 
+##### A secret reaches the image\, a release asset or the pipeline\'s log — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> An image\, an attached file or a log line that held a credential would publish it with the release\.
+
+**Mitigations**
+
+1. **Verified** — The demo and the release\'s text files are scanned for credential\, email address\, IP address and cloud\-account patterns on every pull request \(apps\/api\/test\/demo\/\)\, and the workflow references no secret but the per\-run token \(scripts\/workflows\.test\.ts\)\.
+2. **Implemented** — The image is built by the pipeline from a clean checkout filtered by \.dockerignore\, never from a person\'s machine \(docs\/releasing\.md\)\.
+
+##### A tag push runs the release workflow as defined at the tagged commit — Medium
+
+- **Category:** Elevation of Privilege
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Whoever can create a version tag can already change the workflow and the rulesets\, so the tag adds no power the repository owner lacks\, and the owner is the only one who can create it\. Accepted until Phase 6 gives the project roles and organisation\-level required workflows\.
+- **Origin:** Manual
+
+> Whatever the release workflow says at the commit that is tagged is what runs with the write permissions\, so the gate cannot guard against a commit whose gate was edited\.
+
+**Mitigations**
+
+No mitigations.
+
 ##### An over\-privileged pipeline token\, or an admin who can bypass the checks — Medium
 
 - **Category:** Elevation of Privilege
@@ -4088,7 +4203,21 @@ No mitigations.
 
 **Mitigations**
 
-1. **Implemented** — The default GITHUB\_TOKEN permission is read\-only \(contents\: read\)\, only the CodeQL job has security\-events\: write\, and the ruleset on main has no bypass actors\, so no one\, repository admins included\, can merge or push around a failing or missing required check \(\.github\/workflows\/\, \.github\/rulesets\/main\.json\, docs\/ci\.md\)\. No automated test covers it\: it is held by review
+1. **Implemented** — The default GITHUB\_TOKEN permission is read\-only \(contents\: read\)\. The only jobs that hold a write permission are CodeQL\'s \(security\-events\: write\) and the release workflow\'s two publishing jobs \(see the release pipeline threats\)\, and scripts\/workflows\.test\.ts fails the build if any other does\. The ruleset on main has no bypass actors\, so no one\, repository admins included\, can merge or push around a failing or missing required check\; the ruleset is a repository setting\, held by review \(\.github\/workflows\/\, \.github\/rulesets\/main\.json\, scripts\/workflows\.test\.ts\, docs\/ci\.md\)\.
+
+##### The publishing credential is stolen or broader than needed — Medium
+
+- **Category:** Elevation of Privilege
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> The release pipeline holds a token that can write packages and releases\. If it leaked\, or were broader than needed\, an attacker could publish as the project\.
+
+**Mitigations**
+
+1. **Verified** — A write permission is held only by the two jobs that publish\; neither runs repository code or installs a dependency\; no secret but the per\-run token is referenced\; and the workflow\'s default permission is none \(scripts\/workflows\.test\.ts\)\.
+2. **Implemented** — The token ends with the job\, and the repository\'s default token permission stays read\-only \(docs\/ci\.md\)\.
 
 ##### The test job downloads browser binaries and system packages from outside the repository — Low
 

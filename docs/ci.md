@@ -10,7 +10,7 @@ every repository setting that isn't a file in this repo.
 | --- | --- | --- | --- |
 | `typecheck` | `pnpm typecheck` (`tsc --noEmit` in every package and in `scripts/`) | `pnpm typecheck` | 10 min |
 | `lint` | `pnpm lint` (ESLint in every package and in `scripts/`, then the [license check](#license-check)), then the [lockfile-format guard](#lockfile-format) | `pnpm lint` | 10 min |
-| `test` | `pnpm test` (Vitest in every package and in `scripts/`; a `globalSetup` migrates the database and seeds the admin user) against a real `postgres:16-alpine` service container, then `pnpm build`, the built-output check (`pnpm --filter @specter/web verify:build`: no inline script or style, no `data:` URIs), and the Playwright browser tests against the built app (`pnpm test:e2e`, Chromium) | `docker compose up -d db && pnpm test && pnpm build && pnpm --filter @specter/web verify:build && pnpm test:e2e` (once: `pnpm --filter @specter/web exec playwright install chromium`) | 25 min |
+| `test` | `pnpm test` (Vitest in every package and in `scripts/`; a `globalSetup` migrates the database and seeds the admin user) against a real `postgres:16-alpine` service container, then the `Threat model warnings` step (two test files, Specter's own threat model and the demo's, run alone as one project so that their annotations attach, [below](#specters-own-threat-model)), then `pnpm build`, the built-output check (`pnpm --filter @specter/web verify:build`: no inline script or style, no `data:` URIs), and the Playwright browser tests against the built app (`pnpm test:e2e`, Chromium) | `docker compose up -d db && pnpm test && pnpm build && pnpm --filter @specter/web verify:build && pnpm test:e2e` (once: `pnpm --filter @specter/web exec playwright install chromium`) | 25 min |
 | `docker-build` | `docker build --pull .` (never pushed anywhere) | `docker build .` | 15 min |
 
 All four run on every pull request to `main`, on every push to `main`, and on demand
@@ -18,12 +18,13 @@ All four run on every pull request to `main`, on every push to `main`, and on de
 shared across `typecheck`, `lint`, `test` and the `audit` job live in
 `.github/actions/setup-workspace`.
 
-Two other workflows run but are **not required checks**:
+Two other workflows run but are **not required checks**, and a third publishes a release and is started by nothing else than a version tag:
 
 | Workflow (job) | Trigger | Blocks merging? |
 | --- | --- | --- |
 | CodeQL (`analyze`) | PR, push to `main`, weekly, on demand | No — see [CodeQL](#codeql) |
 | Audit (`audit`) | Daily, on demand | No — see [Audit](#audit) |
+| Release (`gate` … `release`) | The push of a `v*` tag, and nothing else | Not a check: it publishes — see [Release pipeline](#release-pipeline) |
 
 ## Specter's own threat model
 
@@ -39,11 +40,54 @@ or a secret.
   credential, or "Generate threats" flags a threat of the model as **stale** (a rule was retired or
   changed). The report must be the one Specter builds for the file.
 - **They only warn** when "Generate threats" would **add** threats because a rule was added: the warning
-  is a `::warning` annotation on the pull request (Vitest's `github-actions` reporter, which it turns on
-  by itself under `GITHUB_ACTIONS`), and the check passes.
+  is a `::warning` annotation on the test file (Vitest's `github-actions` reporter, which it turns on by
+  itself under `GITHUB_ACTIONS`), and the check passes. It comes from a step of its own, **Threat model
+  warnings**, which runs only `apps/api/test/dogfood/threat-model.test.ts` and `apps/api/test/demo/demo.test.ts`. `pnpm test` runs five packages
+  at once, and pnpm then puts the package name in front of every line of their output; GitHub reads a
+  `::warning` command only at the start of a line, so a warning raised there is printed in the log and
+  never becomes an annotation. Run alone, as one project, the test's output is not prefixed. The step runs
+  even when `pnpm test` failed, so a failure is annotated on the file too.
 - To reproduce a failure locally: `pnpm --filter @specter/api exec vitest run test/dogfood`. The message
   names the file, the check and the fix; [the folder's README](../docs/threat-model/README.md) has the
   procedure.
+- **The demo model** ([`docs/demo/`](demo/), Phase 2 / Milestone 8) is held the same way by `apps/api/test/demo/`:
+  valid, imports with nothing left out, no stale threat, and the shape the spec lists. A stale threat fails the build; a threat
+  a new rule would add is a warning. The *Threat model warnings* step runs **both** test files, each as one project, so that
+  both files' `::warning` lines become annotations.
+
+## Release pipeline
+
+Phase 2 / Milestone 8 (`specs/phase-2/milestone-8-release-v0-1/`). The workflow is
+[`.github/workflows/release.yml`](../.github/workflows/release.yml); [`releasing.md`](releasing.md) is the procedure a maintainer follows.
+It is started by **the push of a tag matching `v*` and by nothing else**: not a branch, a pull request, a schedule or a manual start.
+
+| Job | Permissions | Does |
+| --- | --- | --- |
+| `gate` | `contents: read`, `checks: read`, `packages: read` | Refuses what it should (below), and says what is already published |
+| `build` | `contents: read` | Builds both platforms from the tagged commit into one OCI archive, with no BuildKit attestations |
+| `smoke` ×2 | `contents: read` | On `amd64` and `arm64` natively: loads the archive's platform, starts `docker-compose.release.yml`, runs seven checks (health, web app, sign-in, demo import, generate, database port, labels) |
+| `publish-image` | `packages: write`, `contents: read` | Pushes **the archive that was tested**, with the same digests; moves `latest` only for the highest final version. Runs only `docker` and `skopeo` |
+| `verify-public` ×2 | `contents: read` | Pulls the image with **no credentials** by digest and by tag and runs the smoke checks against it |
+| `notes` | `contents: read` | Makes the release notes and the compose file a release attaches (needs the workspace's dependencies, which is why it is not `release`) |
+| `release` | `contents: write` | Creates the GitHub release, or completes it. Runs only `gh` |
+
+The only secret is the per-run `GITHUB_TOKEN`. The default permission of the workflow is none. A policy test,
+`scripts/workflows.test.ts`, fails the build if a job other than the two that publish holds a write permission, if one of those two
+installs a dependency or runs a script of ours, if any action outside the repository is not pinned to a commit, if a `run:` block
+contains an expression from the event (the tag name is text a pusher chose), or if the build leaves BuildKit's attestations on.
+
+**The gate** refuses, naming the condition and what to do, in this order: **G1** the tag is not a version tag; **G2** the commit is
+not on `main`; **G3** a package version or the compose default differs from the tag's version (a release candidate is compared by the
+version it is a candidate for); **G4** `CHANGELOG.md` has no dated entry for it; **G5** a required check of `main` is not green on the
+commit; **G6** the version's image exists and was built from another commit. A published version is never replaced: a re-run completes
+only what is missing.
+
+- **Reproduce the pure parts locally**: `pnpm exec vitest run --root scripts` (the gate, the notes, the smoke script against a fake server,
+  the version rules and the workflow policy). The container itself: `SPEC/quickstart.md` §4.
+- **BuildKit** is pinned by digest in the *Create the builder* step and **refreshed by hand**; [`releasing.md`](releasing.md#refreshing-the-pins)
+  says how. So is the PostgreSQL digest in `docker-compose.release.yml`, unless Dependabot's `docker-compose` entry proposes it.
+- **Verified on the runners** (2026-10-12): `skopeo` 1.13.3 is installed on `ubuntu-latest` and `ubuntu-24.04-arm`; `docker load` cannot read the
+  OCI archive there (the pipeline uses `skopeo … docker-daemon:` instead); a `checks: read` token lists another workflow's check runs.
 
 ## Running checks locally
 
@@ -119,6 +163,9 @@ command below both documents and recreates the setting.
 | CodeQL default setup | Disabled (the advanced-setup `codeql.yml` runs instead) | `gh api -X PATCH repos/shivamsaraswat/specter/code-scanning/default-setup -f state=not-configured` |
 | Default `GITHUB_TOKEN` permissions | Read-only; cannot approve PRs | `gh api -X PUT repos/shivamsaraswat/specter/actions/permissions/workflow -f default_workflow_permissions=read -F can_approve_pull_request_reviews=false` |
 | Fork PR workflow approval | `first_time_contributors` (GitHub's default) | left as-is; verify with `gh api repos/shivamsaraswat/specter/actions/permissions/fork-pr-contributor-approval` |
+| Release tags: create and delete | Ruleset `release-tags`, id `24911587`, target `refs/tags/v*`; owner only | `gh api -X POST repos/shivamsaraswat/specter/rulesets --input .github/rulesets/release-tags.json` |
+| Release tags: never moved | Ruleset `release-tags-immutable`, id `24911595`, no bypass actor | `gh api -X POST repos/shivamsaraswat/specter/rulesets --input .github/rulesets/release-tags-immutable.json` |
+| Package `ghcr.io/shivamsaraswat/specter` | **Public**, linked to the repository; set once in the package's settings after the first publication | verify: `DOCKER_CONFIG="$(mktemp -d)" docker pull ghcr.io/shivamsaraswat/specter:<version>`; see [`releasing.md`](releasing.md#the-package-is-public-after-the-first-publication-once) |
 
 **Scheduled workflows note**: GitHub disables scheduled workflows on public repositories after
 60 days with no repository activity. If the weekly CodeQL run or the daily audit run stops firing,
@@ -189,6 +236,10 @@ cooldown on new releases (`cooldown.default-days: 3`):
   propose digest refreshes (patch releases, security rebuilds of the same tag). Node major-version
   bumps are ignored deliberately — moving to a new Node major is a human decision, and CI follows
   it automatically once the Dockerfile changes.
+- **docker-compose** (`/`) — keeps the PostgreSQL digest of `docker-compose.release.yml` (and the tag in the contributor's `docker-compose.yml`) current. PostgreSQL major-version
+  bumps are ignored deliberately: moving a database to a new major is a human decision with a data migration. Whether this ecosystem reads a file named
+  `docker-compose.release.yml` is not yet confirmed; check after the first Monday and refresh the digest by hand if it did not
+  ([`releasing.md`](releasing.md#refreshing-the-pins)).
 - **github-actions** (`/` and `/.github/actions/*`) — keeps the pinned commit SHAs (and their
   `# vX.Y.Z` comments) in `ci.yml`, `codeql.yml`, `audit.yml` and the composite action current.
 

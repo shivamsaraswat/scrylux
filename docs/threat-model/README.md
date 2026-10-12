@@ -1,6 +1,6 @@
 # Specter's own threat model
 
-Specter is a threat modeling tool, so it keeps a threat model of itself, built in Specter and kept here as two files. It covers the system as it is implemented, through Phase 2 Milestone 6: the API, the web app, the database, the optional secrets manager and the optional proxy or load balancer. Nothing planned and not shipped is drawn as if it existed. Phase 3's last milestone (AI security hardening) updates it for document uploads and LLM providers, and Phases 4 and 5 do the same for theirs ([`plan.md`](../../plan.md)).
+Specter is a threat modeling tool, so it keeps a threat model of itself, built in Specter and kept here as two files. It covers the system as it is implemented, through Phase 2 Milestone 8: the API, the web app, the database, the optional secrets manager and the optional proxy or load balancer, and the release pipeline that publishes the image (its risks are threats of the model as a whole, because a pipeline cannot be drawn with the five element types). Nothing planned and not shipped is drawn as if it existed. Phase 3's last milestone (AI security hardening) updates it for document uploads and LLM providers, and Phases 4 and 5 do the same for theirs ([`plan.md`](../../plan.md)).
 
 **Start with [the report](report.md).**
 
@@ -25,7 +25,7 @@ The diagram describes the reference deployment the repository documents: one app
 - A risk that is **partially mitigated** is an `open` threat that carries the controls already in place, with what is missing as a `proposed` mitigation. Specter has no status in between.
 - A mitigation is **`verified`** only where an automated test covers the control, and its text names the test. It is **`implemented`** where the control exists with no such test. It is **`proposed`** where it is a remedy that `plan.md`, a phase or a guide schedules and that is not in place yet.
 - Every threat has a likelihood and an impact (Low, Medium or High), and **every one was reviewed against this system**, not left at the rule library's default. The rating is the threat's **inherent** one, before the control that decided it: a mitigated threat keeps it; an accepted threat is rated for what its reason says (traffic inside the operator's private network is Low likelihood, for instance); and a threat that is not applicable is rated **Low likelihood**, because it cannot happen here, with the library's impact kept to show what would be at stake. The report's risk summary counts the **open** threats by that rating. The six *Critical* ones are the plain-HTTP threats of the baseline deployment, kept at High likelihood and High impact because the AWS guide itself says passwords and the token cross the internet in cleartext; the flooding threats on Threat model API and Accounts API are Medium likelihood, because those routes refuse a request without a valid token before reading its body.
-- The model is committed as **in review**. It is marked approved only after the maintainers have read the traceability of its threats against the constitution.
+- The model is marked **in review**: Phase 2 Milestone 8 added the release pipeline's nine threats and corrected two mitigations (the write permissions and the action pins, which a test now holds), and a maintainer has not yet read the traceability of those against the constitution's Threat Model section. It becomes **approved** again when one has (the procedure below, with the status set in Specter). It was approved on 2026-10-11 for everything before that. Approved never means the system has no open risk: the open threats are listed in the report's summary.
 
 ## Loading it into Specter
 
@@ -64,7 +64,7 @@ They live in [`apps/api/test/dogfood/`](../../apps/api/test/dogfood/) and run in
 - "Generate threats" on the imported model flags a threat of the model as **stale**, which happens when a rule is retired or changed so that a threat no longer matches it;
 - the report is not the one Specter builds for the Specter file.
 
-**They only warn** when "Generate threats" would **add** threats: a rule was added, or widened, and the model does not have its threats yet. The warning is an annotation on the pull request naming the rule and the element; the build still passes. Update the model in that change or a later one.
+**They only warn** when "Generate threats" would **add** threats: a rule was added, or widened, and the model does not have its threats yet. The warning is an annotation on the test file, raised by a CI step of its own (*Threat model warnings*), naming the rule and the element; the build still passes. Update the model in that change or a later one.
 
 ## How to decide a status
 

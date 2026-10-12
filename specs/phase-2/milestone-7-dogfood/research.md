@@ -113,6 +113,18 @@ under this repository's configuration (`projects`, a `globalSetup`), printed
 `::warning file=<path of the test>,line=4,column=9::<message>` and the test still passed. The annotation
 carries a location, so the reporter emits it. The spike file was deleted.
 
+**Verified in CI on 2026-10-12, with a correction (T047): the annotation does not attach when raised inside
+`pnpm test`.** A throwaway branch with one generated threat removed from the committed file, run by hand,
+showed the line `apps/api test: ::warning file=/home/runner/…/threat-model.test.ts,line=133,column=64::…` in
+the log and no such annotation on the job. The path was not the cause. `pnpm -r run test` over five packages
+(more than its default concurrency of four) prefixes every line with the package name, and GitHub reads a
+workflow command only at the start of a line. Probing pnpm showed no prefix for two or three packages, and
+`--stream` as the only option that adds one, so no flag removes it from the five-package run. **The remedy
+is a CI step that runs the one test as a single project**, which pnpm leaves unprefixed; the same throwaway
+branch with that step got a warning annotation on `apps/api/test/dogfood/threat-model.test.ts:133` naming the
+rule and the element, and the failing report check annotated on the file too. The step is
+`Threat model warnings` in `.github/workflows/ci.yml`.
+
 **Fallback (not needed; kept in case a later Vitest changes this)**: write the same workflow command, `::warning title=…,file=…::…` on a line of
 its own, straight to the real standard output (`process.stdout.write`, not `console.warn`, which Vitest
 intercepts and prefixes). A second fallback is a warning in the test's own name and a note in the job

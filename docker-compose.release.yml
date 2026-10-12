@@ -1,0 +1,47 @@
+# Specter, the released image and its database. This is the file a release attaches as `docker-compose.yml`
+# (`docker compose up -d`). It is not the contributor's file: `docker-compose.yml` builds from source and publishes the
+# database port for tests.
+#
+# The defaults below are for LOCAL USE ONLY. Before this is reachable from anywhere but your own machine:
+#   - set DB_PASSWORD, JWT_SECRET, ADMIN_USERNAME and ADMIN_PASSWORD (export them, or put them in a `.env` file next to
+#     this file); the sign-in below is `admin` / `admin`, and anyone who knows JWT_SECRET can forge a login token;
+#   - the app is published on 127.0.0.1 only, and it does not terminate TLS: put a proxy that does in front of it, and set
+#     TRUST_PROXY (see the README);
+#   - the database publishes no port, and must keep publishing none.
+# The README's quickstart says the same. SPECTER_VERSION chooses the image's version; this file's default is the version of
+# the release it is attached to.
+services:
+  db:
+    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+    environment:
+      POSTGRES_DB: threats
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-devpassword}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d threats"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  app:
+    image: ghcr.io/shivamsaraswat/specter:${SPECTER_VERSION:-0.1.0}
+    ports:
+      - "127.0.0.1:${PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: threats
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-devpassword}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

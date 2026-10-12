@@ -6,6 +6,34 @@ The goal: give Specter the context of a project (design docs, a repository, Jira
 
 > **Current status: Phase 2 in progress; the data-flow diagram editor has landed.** Today Specter is an API and a web app for STRIDE threat models: sign in, manage projects and threat models, draw the system as a data-flow diagram (processes, data stores, external entities, data flows and trust boundaries, with undo and redo, saved as you go), and create, edit and delete threats and their mitigations (Node.js + Express, React, PostgreSQL), already deployable to AWS. Rule-generated threats, reports and import/export are the rest of Phase 2. Roadmap phases not marked ✅ are planned, not built. The run instructions, environment variables and API documented here describe the app as it exists now.
 
+## Screenshots
+
+The fictional demo threat model ([`docs/demo/`](docs/demo/)), a small note-taking app, in Specter.
+
+![The diagram editor: a fictional notes app with two nested trust boundaries, its data flows, and the number of open threats on every element](docs/images/diagram-editor.png)
+
+![One element selected, the Notes API: its properties on the right, and under the diagram the threats of that element with their status, risk and source](docs/images/threats-for-element.png)
+
+![The report: a risk summary and the data-flow diagram, ready to print or save as PDF](docs/images/report.png)
+
+![Importing a threat model: the preview says what the file holds and that everything in it will be imported](docs/images/import-export.png)
+
+<details>
+<summary>Retaking the screenshots</summary>
+
+They are pictures of the demo, taken by hand, and nothing checks that they are current: retake them when the interface changes.
+
+1. Start Specter from a clone ([CONTRIBUTING.md](CONTRIBUTING.md) has the setup), sign in, create a project named `Specter demo (fictional)` and import [`docs/demo/notes-app.specter.json`](docs/demo/notes-app.specter.json) into it.
+2. Use a browser window of **1400 × 900**. Crop each picture to the application area: no browser chrome, **no address bar, no account name** (crop below the page header), and nothing else on screen.
+3. Take the four views and save them as PNG under `docs/images/` with these names:
+   - `diagram-editor.png`: the threat model's **Diagram** tab after **Fit to view**, from the title down to the bottom of the canvas;
+   - `threats-for-element.png`: select **Process: Notes API** in the elements list, then take from the top of the elements list down through the first few rows of the threat table;
+   - `report.png`: download the HTML report, open the file, and take its top, through the diagram;
+   - `import-export.png`: on the project's page, **Import threat model**, choose the demo file, and take the preview that says "Everything in this file will be imported."
+4. Keep each file under **600 KB** and the folder under **3 MB** (optimise a PNG if you must); a check fails the build otherwise, and for a missing image or an empty description.
+
+</details>
+
 ## Roadmap
 
 Built one phase at a time; each phase ends with something usable.
@@ -20,6 +48,18 @@ Built one phase at a time; each phase ends with something usable.
 | 5 | Integrations: Jira/Confluence context, threats pushed as tickets, automatic design reviews on PRs and tickets, MCP server, CLI | v0.4 |
 | 6 | Enterprise readiness: RBAC, SSO (OIDC/SAML), audit log, versioning and approvals, Helm chart | v1.0 |
 | 7 | More methodologies and frameworks: LINDDUN, MAESTRO (agentic AI), attack trees, ATT&CK/CAPEC/CWE mapping, compliance mapping | v1.x |
+
+## Limits
+
+What v0.1 does not do, so that you can decide before you rely on it:
+
+- **No roles.** Every account can read, change and delete every project and everything in it. Roles and single sign-on are planned for Phase 6.
+- **No AI features.** Nothing reads documents or calls a language model yet; that is Phase 3.
+- **One container with its database, and no TLS of its own.** Put a proxy that terminates TLS in front of it before anyone else can reach it.
+- **The image is not signed**, and carries no build attestation or SBOM in this release; pin it by the digest on the release page. Verifiable release images are planned for Phase 6.
+- **Open risks exist.** Specter keeps its own threat model, built in Specter, with what covers each risk and what is still open: [`docs/threat-model/`](docs/threat-model/).
+
+More: the [changelog](CHANGELOG.md), the [releases](https://github.com/shivamsaraswat/specter/releases), the [demo threat model](docs/demo/), [Specter's own threat model](docs/threat-model/), the [contribution guide](CONTRIBUTING.md) and the [security policy](SECURITY.md).
 
 ## Run locally with Docker
 

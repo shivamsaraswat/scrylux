@@ -1,0 +1,3253 @@
+{
+  "format": "specter",
+  "format_version": 1,
+  "exported_at": "2026-10-12T07:08:40.396Z",
+  "project": {
+    "name": "Specter demo (fictional)"
+  },
+  "threat_model": {
+    "name": "Notes app (fictional demo)",
+    "methodology": "STRIDE",
+    "status": "in_review"
+  },
+  "elements": [
+    {
+      "id": "ce6a3901-19e3-43ea-abdc-a20b85471253",
+      "type": "trust_boundary",
+      "name": "Cloud account",
+      "properties": {},
+      "layout": {
+        "x": 20,
+        "y": 140,
+        "width": 480,
+        "height": 440
+      },
+      "parent_boundary_id": null,
+      "source_element_id": null,
+      "target_element_id": null
+    },
+    {
+      "id": "3ae2f4de-1a44-4000-989a-fd53224dd2ac",
+      "type": "trust_boundary",
+      "name": "Private subnet",
+      "properties": {},
+      "layout": {
+        "x": 235,
+        "y": 50,
+        "width": 220,
+        "height": 360
+      },
+      "parent_boundary_id": "ce6a3901-19e3-43ea-abdc-a20b85471253",
+      "source_element_id": null,
+      "target_element_id": null
+    },
+    {
+      "id": "a72be176-15dd-4c09-8ba8-4183ea1efb1d",
+      "type": "external_entity",
+      "name": "Email provider",
+      "properties": {
+        "flags": {
+          "authenticated": true,
+          "internet_facing": true
+        }
+      },
+      "layout": {
+        "x": 190,
+        "y": 640
+      },
+      "parent_boundary_id": null,
+      "source_element_id": null,
+      "target_element_id": null
+    },
+    {
+      "id": "6915725d-46fc-477a-a566-094eaa0116e9",
+      "type": "external_entity",
+      "name": "Note taker",
+      "properties": {
+        "flags": {
+          "authenticated": true,
+          "internet_facing": true
+        }
+      },
+      "layout": {
+        "x": 40,
+        "y": 20
+      },
+      "parent_boundary_id": null,
+      "source_element_id": null,
+      "target_element_id": null
+    },
+    {
+      "id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "type": "process",
+      "name": "Notes API",
+      "properties": {
+        "tags": [
+          "Node.js",
+          "REST"
+        ],
+        "flags": {
+          "handles_sensitive_data": true,
+          "internet_facing": true,
+          "requires_authentication": true,
+          "runs_privileged": false
+        }
+      },
+      "layout": {
+        "x": 30,
+        "y": 70
+      },
+      "parent_boundary_id": "ce6a3901-19e3-43ea-abdc-a20b85471253",
+      "source_element_id": null,
+      "target_element_id": null
+    },
+    {
+      "id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "type": "process",
+      "name": "Reminder worker",
+      "properties": {
+        "tags": [
+          "Node.js"
+        ],
+        "flags": {
+          "handles_sensitive_data": true,
+          "requires_authentication": true,
+          "runs_privileged": false
+        }
+      },
+      "layout": {
+        "x": 30,
+        "y": 300
+      },
+      "parent_boundary_id": "ce6a3901-19e3-43ea-abdc-a20b85471253",
+      "source_element_id": null,
+      "target_element_id": null
+    },
+    {
+      "id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "type": "process",
+      "name": "Web app",
+      "properties": {
+        "tags": [
+          "React"
+        ],
+        "flags": {
+          "handles_sensitive_data": true,
+          "internet_facing": true,
+          "requires_authentication": true
+        }
+      },
+      "layout": {
+        "x": 280,
+        "y": 20
+      },
+      "parent_boundary_id": null,
+      "source_element_id": null,
+      "target_element_id": null
+    },
+    {
+      "id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "type": "data_store",
+      "name": "Attachment bucket",
+      "properties": {
+        "tags": [
+          "Object storage"
+        ],
+        "flags": {
+          "encrypted_at_rest": false,
+          "internet_facing": false,
+          "stores_sensitive_data": true
+        }
+      },
+      "layout": {
+        "x": 40,
+        "y": 240
+      },
+      "parent_boundary_id": "3ae2f4de-1a44-4000-989a-fd53224dd2ac",
+      "source_element_id": null,
+      "target_element_id": null
+    },
+    {
+      "id": "0951fe5f-928f-49b2-be7c-9fef510873ff",
+      "type": "data_store",
+      "name": "Notes database",
+      "properties": {
+        "tags": [
+          "PostgreSQL"
+        ],
+        "flags": {
+          "encrypted_at_rest": true,
+          "internet_facing": false,
+          "stores_sensitive_data": true
+        }
+      },
+      "layout": {
+        "x": 40,
+        "y": 70
+      },
+      "parent_boundary_id": "3ae2f4de-1a44-4000-989a-fd53224dd2ac",
+      "source_element_id": null,
+      "target_element_id": null
+    },
+    {
+      "id": "25c37d29-08c7-44dd-9cb6-d2044727c9e5",
+      "type": "data_flow",
+      "name": "Attachment upload and download",
+      "properties": {
+        "tags": [
+          "HTTPS"
+        ],
+        "flags": {
+          "authenticated": true,
+          "carries_sensitive_data": true,
+          "encrypted_in_transit": true
+        }
+      },
+      "layout": null,
+      "parent_boundary_id": null,
+      "source_element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "target_element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe"
+    },
+    {
+      "id": "ec486d5f-a529-4755-8ac8-d2b17cd01913",
+      "type": "data_flow",
+      "name": "Queries and updates",
+      "properties": {
+        "tags": [
+          "SQL"
+        ],
+        "flags": {
+          "authenticated": true,
+          "carries_sensitive_data": true,
+          "encrypted_in_transit": true
+        }
+      },
+      "layout": null,
+      "parent_boundary_id": null,
+      "source_element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "target_element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff"
+    },
+    {
+      "id": "41b71ee9-5fcf-44fe-9b82-4e7635b185d6",
+      "type": "data_flow",
+      "name": "Reads due reminders",
+      "properties": {
+        "tags": [
+          "SQL"
+        ],
+        "flags": {
+          "authenticated": true,
+          "carries_sensitive_data": true,
+          "encrypted_in_transit": false
+        }
+      },
+      "layout": null,
+      "parent_boundary_id": null,
+      "source_element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "target_element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff"
+    },
+    {
+      "id": "daca71e8-b91e-4a52-bd81-a1875a0983a4",
+      "type": "data_flow",
+      "name": "Schedules reminders",
+      "properties": {
+        "flags": {
+          "authenticated": true
+        }
+      },
+      "layout": null,
+      "parent_boundary_id": null,
+      "source_element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "target_element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67"
+    },
+    {
+      "id": "e2ba9fcc-3adb-47d9-9cba-445d794cbcd3",
+      "type": "data_flow",
+      "name": "Sends reminder emails",
+      "properties": {
+        "tags": [
+          "SMTP"
+        ],
+        "flags": {
+          "authenticated": true,
+          "carries_sensitive_data": false,
+          "encrypted_in_transit": true
+        }
+      },
+      "layout": null,
+      "parent_boundary_id": null,
+      "source_element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "target_element_id": "a72be176-15dd-4c09-8ba8-4183ea1efb1d"
+    },
+    {
+      "id": "c07ef76d-439e-4f0a-ba33-d57a4b33d242",
+      "type": "data_flow",
+      "name": "Sign-in and note requests",
+      "properties": {
+        "tags": [
+          "HTTPS"
+        ],
+        "flags": {
+          "authenticated": true,
+          "carries_sensitive_data": true,
+          "encrypted_in_transit": true
+        }
+      },
+      "layout": null,
+      "parent_boundary_id": null,
+      "source_element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "target_element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055"
+    },
+    {
+      "id": "f1d18047-16e0-4f6b-8ec0-2a873a052ca9",
+      "type": "data_flow",
+      "name": "Writes and reads notes",
+      "properties": {
+        "flags": {
+          "authenticated": true
+        }
+      },
+      "layout": null,
+      "parent_boundary_id": null,
+      "source_element_id": "6915725d-46fc-477a-a566-094eaa0116e9",
+      "target_element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700"
+    }
+  ],
+  "threats": [
+    {
+      "id": "2a33f9c2-20db-48fd-8cc9-49dfe21dd19c",
+      "element_id": "a72be176-15dd-4c09-8ba8-4183ea1efb1d",
+      "category": "Spoofing",
+      "title": "Reused passwords let attackers sign in as Email provider",
+      "description": "Email provider authenticates over the public internet. Attackers try passwords leaked from other services against it, and anyone who reuses a password is exposed even though nothing in this system was breached.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "not_applicable",
+      "status_reason": "The Reminder worker signs in to the provider with an API key issued per deployment, never with a password a person types, so there is no password to reuse.",
+      "origin": "rule",
+      "library_ref": "ee-spoofing-credential-stuffing",
+      "stale": null
+    },
+    {
+      "id": "d868ae72-480f-40e4-881f-9f79024d5927",
+      "element_id": "a72be176-15dd-4c09-8ba8-4183ea1efb1d",
+      "category": "Spoofing",
+      "title": "Stolen credentials let an attacker act as Email provider",
+      "description": "Email provider proves who it is with a credential such as a password, key or token. If that credential is stolen, leaked or guessed, the attacker is indistinguishable from the real entity until someone notices.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ee-spoofing-stolen-credentials",
+      "stale": null
+    },
+    {
+      "id": "55980c68-c29b-44b0-ad40-f2ca5838ec17",
+      "element_id": "a72be176-15dd-4c09-8ba8-4183ea1efb1d",
+      "category": "Repudiation",
+      "title": "Email provider can deny having done something",
+      "description": "If the system keeps no trustworthy record of what Email provider asked for, the entity can later claim it never did, and the system cannot show otherwise. That matters most for orders, approvals, deletions and payments.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ee-repudiation-denies-actions",
+      "stale": null
+    },
+    {
+      "id": "da47e00c-d1e2-40db-ac0b-31cf9b244c19",
+      "element_id": "6915725d-46fc-477a-a566-094eaa0116e9",
+      "category": "Spoofing",
+      "title": "Reused passwords let attackers sign in as Note taker",
+      "description": "Note taker authenticates over the public internet. Attackers try passwords leaked from other services against it, and anyone who reuses a password is exposed even though nothing in this system was breached.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ee-spoofing-credential-stuffing",
+      "stale": null
+    },
+    {
+      "id": "88015f12-0a38-4b1e-b889-4d8d85c62518",
+      "element_id": "6915725d-46fc-477a-a566-094eaa0116e9",
+      "category": "Spoofing",
+      "title": "Stolen credentials let an attacker act as Note taker",
+      "description": "Note taker proves who it is with a credential such as a password, key or token. If that credential is stolen, leaked or guessed, the attacker is indistinguishable from the real entity until someone notices.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ee-spoofing-stolen-credentials",
+      "stale": null
+    },
+    {
+      "id": "2923021a-32de-4257-8ca0-c64e6c78cce0",
+      "element_id": "6915725d-46fc-477a-a566-094eaa0116e9",
+      "category": "Repudiation",
+      "title": "Note taker can deny having done something",
+      "description": "If the system keeps no trustworthy record of what Note taker asked for, the entity can later claim it never did, and the system cannot show otherwise. That matters most for orders, approvals, deletions and payments.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ee-repudiation-denies-actions",
+      "stale": null
+    },
+    {
+      "id": "9abb7db9-a4b4-45db-9613-2683a0f03256",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Spoofing",
+      "title": "A stolen session lets an attacker act as a signed-in user of Notes API",
+      "description": "Once a user has signed in, Notes API recognises them by a session credential. Anyone who obtains that credential, for example through a script injected into a page, a leaked log line or a stolen device, can act as the user until the session ends.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "mitigated",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-spoofing-session-hijacking",
+      "stale": null
+    },
+    {
+      "id": "71f4c048-1e5c-4964-bc9f-1d1203ba89c9",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Spoofing",
+      "title": "Another program can pose as Notes API to the components that call it",
+      "description": "Components that call Notes API need to be sure they are talking to the real one. If an attacker can take over its name or address, or sit on the path to it, they can answer in its place and collect what callers send.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-spoofing-process-impersonation",
+      "stale": null
+    },
+    {
+      "id": "6c64a735-77d5-49c1-9abc-58985ead5603",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Tampering",
+      "title": "Crafted input from the internet can change what Notes API does",
+      "description": "Notes API takes input from the public internet. Anyone can send it data shaped to be misread: an oversized value, a wrong type, or text that looks like a command or query. If the process trusts that input, the attacker decides what it does.",
+      "likelihood": "High",
+      "impact": "High",
+      "status": "mitigated",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-tampering-untrusted-input-internet",
+      "stale": null
+    },
+    {
+      "id": "22fce287-b509-47df-a59b-52db1a2a9b25",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Tampering",
+      "title": "The code, dependencies or configuration of Notes API can be altered",
+      "description": "An attacker who can change what Notes API runs gets everything the process can do. The route can be a poisoned dependency, a tampered build or image, or a changed configuration or environment variable.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-tampering-code-or-configuration",
+      "stale": null
+    },
+    {
+      "id": "0d32a9e3-581b-4703-ad19-3d14ab7846b3",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Repudiation",
+      "title": "Access to sensitive data through Notes API leaves no trail",
+      "description": "Notes API handles sensitive data. If reads, exports and changes of that data are not recorded with who did them, a leak or a misuse cannot be traced, and a person who misused their access can deny it.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-repudiation-sensitive-access-unlogged",
+      "stale": null
+    },
+    {
+      "id": "e02fd3e1-a157-43b9-a05e-3a9a4c8ea3d0",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Repudiation",
+      "title": "Actions taken through Notes API cannot be reconstructed later",
+      "description": "Without a record of security-relevant events, nobody can say afterwards who signed in, who changed what or what an attacker did. Notes API may do the right thing and still be unable to prove it.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-repudiation-no-audit-log",
+      "stale": null
+    },
+    {
+      "id": "705728e7-fc8c-49a1-b851-58deb15f7516",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Information Disclosure",
+      "title": "A signed-in user may read someone else's data through Notes API",
+      "description": "Notes API knows who the caller is, but knowing who someone is does not say which records they may see. If it hands back whatever record is asked for, a signed-in user can read other people's data by changing an identifier in a request.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "mitigated",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-disclosure-broken-object-authorization",
+      "stale": null
+    },
+    {
+      "id": "fe5b3a78-8c70-4828-a162-46a7ceceaf03",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Information Disclosure",
+      "title": "Notes API may reveal its internals in error messages",
+      "description": "Detailed errors help developers and attackers alike. Stack traces, query text, file paths and version numbers in a response show an attacker how Notes API is built and where to push.",
+      "likelihood": "Medium",
+      "impact": "Low",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-disclosure-error-details",
+      "stale": null
+    },
+    {
+      "id": "28713211-f81f-4649-bf91-d9d7412d1ff5",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Information Disclosure",
+      "title": "Notes API may write sensitive data into logs, metrics or traces",
+      "description": "Logs are copied, indexed, shipped and read by many people and tools. If Notes API writes sensitive values into them, such as passwords, tokens, personal data or request bodies, the data ends up in places with much weaker protection than the system it came from.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-disclosure-sensitive-data-in-logs",
+      "stale": null
+    },
+    {
+      "id": "213def51-6c2d-4137-b742-4bf7dd2b63ef",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Information Disclosure",
+      "title": "Shared note link can be guessed",
+      "description": "A note can be shared by link. If the link is short or predictable, someone who was never given it can open the note.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "manual",
+      "library_ref": null,
+      "stale": null
+    },
+    {
+      "id": "20a35011-8e08-4b46-8604-10e85dbd0cc1",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Denial of Service",
+      "title": "Anyone on the internet can overwhelm Notes API",
+      "description": "Notes API accepts work from the public internet. Without limits, a flood of requests, a few very expensive ones or a slow connection held open on purpose can use up its CPU, memory or connections and shut out real users.",
+      "likelihood": "High",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-dos-resource-exhaustion-internet",
+      "stale": null
+    },
+    {
+      "id": "47b3a51d-815a-4d49-94dc-dd07748e8be8",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Denial of Service",
+      "title": "Notes API stops working when something it depends on fails",
+      "description": "Notes API relies on other components such as databases, queues and other services. If one of them is slow or down and the process waits for it without a limit, requests pile up and the failure spreads.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-dos-dependency-failure",
+      "stale": null
+    },
+    {
+      "id": "396ac4bf-1498-466b-a264-aed16e701601",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Elevation of Privilege",
+      "title": "A signed-in user can reach functions in Notes API that are meant for others",
+      "description": "Notes API requires callers to sign in, but being signed in is not the same as being allowed. If it does not check permissions for each function, an ordinary user may reach administrative or other users' functions by calling them directly.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-elevation-missing-authorization",
+      "stale": null
+    },
+    {
+      "id": "cad46da6-5a27-4141-9b0a-68784fd090c4",
+      "element_id": "83ddd98c-63fc-4d91-9bd2-732a7e4c0055",
+      "category": "Elevation of Privilege",
+      "title": "Input from the internet could make Notes API run an attacker's code",
+      "description": "Notes API is reachable from the internet. If it evaluates input as code, deserializes untrusted data, handles uploaded files unsafely or uses a vulnerable dependency, an attacker can make it run their code and gain whatever the process itself can do.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-elevation-remote-code-execution",
+      "stale": null
+    },
+    {
+      "id": "10f9742c-3eb7-4baf-a28d-a8ad058b8b69",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Spoofing",
+      "title": "A stolen session lets an attacker act as a signed-in user of Reminder worker",
+      "description": "Once a user has signed in, Reminder worker recognises them by a session credential. Anyone who obtains that credential, for example through a script injected into a page, a leaked log line or a stolen device, can act as the user until the session ends.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-spoofing-session-hijacking",
+      "stale": null
+    },
+    {
+      "id": "c9076b8a-b636-4daa-b1be-cdedabb3ee8b",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Spoofing",
+      "title": "Another program can pose as Reminder worker to the components that call it",
+      "description": "Components that call Reminder worker need to be sure they are talking to the real one. If an attacker can take over its name or address, or sit on the path to it, they can answer in its place and collect what callers send.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-spoofing-process-impersonation",
+      "stale": null
+    },
+    {
+      "id": "59949817-78a2-472c-8264-55148f4e19d8",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Tampering",
+      "title": "Crafted input from inside the network can change what Reminder worker does",
+      "description": "Reminder worker is not reachable from the internet, but it still takes input from other components. A bug or compromise in any of them can send it malformed or hostile data, and an internal caller is no more trustworthy than an outside one once it is compromised.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-tampering-untrusted-input-internal",
+      "stale": null
+    },
+    {
+      "id": "7c7ac40c-4643-4fbe-8294-b626664310f8",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Tampering",
+      "title": "The code, dependencies or configuration of Reminder worker can be altered",
+      "description": "An attacker who can change what Reminder worker runs gets everything the process can do. The route can be a poisoned dependency, a tampered build or image, or a changed configuration or environment variable.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-tampering-code-or-configuration",
+      "stale": null
+    },
+    {
+      "id": "b0ceecc4-8393-4feb-af77-2724123c6c69",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Repudiation",
+      "title": "Access to sensitive data through Reminder worker leaves no trail",
+      "description": "Reminder worker handles sensitive data. If reads, exports and changes of that data are not recorded with who did them, a leak or a misuse cannot be traced, and a person who misused their access can deny it.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-repudiation-sensitive-access-unlogged",
+      "stale": null
+    },
+    {
+      "id": "664c3691-60df-419c-979a-e7c0fdbdfabe",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Repudiation",
+      "title": "Actions taken through Reminder worker cannot be reconstructed later",
+      "description": "Without a record of security-relevant events, nobody can say afterwards who signed in, who changed what or what an attacker did. Reminder worker may do the right thing and still be unable to prove it.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-repudiation-no-audit-log",
+      "stale": null
+    },
+    {
+      "id": "87187aea-219c-4475-9f46-dcc3a4d68f8c",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Information Disclosure",
+      "title": "A signed-in user may read someone else's data through Reminder worker",
+      "description": "Reminder worker knows who the caller is, but knowing who someone is does not say which records they may see. If it hands back whatever record is asked for, a signed-in user can read other people's data by changing an identifier in a request.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-disclosure-broken-object-authorization",
+      "stale": null
+    },
+    {
+      "id": "a68391f0-cdc9-47ad-9850-17c04cd69705",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Information Disclosure",
+      "title": "Reminder worker may reveal its internals in error messages",
+      "description": "Detailed errors help developers and attackers alike. Stack traces, query text, file paths and version numbers in a response show an attacker how Reminder worker is built and where to push.",
+      "likelihood": "Medium",
+      "impact": "Low",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-disclosure-error-details",
+      "stale": null
+    },
+    {
+      "id": "a0dcbe6b-3d3f-469a-9d0f-508b24737ffd",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Information Disclosure",
+      "title": "Reminder worker may write sensitive data into logs, metrics or traces",
+      "description": "Logs are copied, indexed, shipped and read by many people and tools. If Reminder worker writes sensitive values into them, such as passwords, tokens, personal data or request bodies, the data ends up in places with much weaker protection than the system it came from.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-disclosure-sensitive-data-in-logs",
+      "stale": null
+    },
+    {
+      "id": "0ff171f1-351b-46e5-8a57-f90997c2d147",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Denial of Service",
+      "title": "A faulty or hostile internal client can overwhelm Reminder worker",
+      "description": "Reminder worker is not reachable from the internet, but the components that call it can still misbehave: a retry loop, a bug or a compromised service can send more than it can handle.",
+      "likelihood": "Low",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-dos-resource-exhaustion-internal",
+      "stale": null
+    },
+    {
+      "id": "dbad1f90-e0d9-4a43-9e53-640e8088b66e",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Denial of Service",
+      "title": "Reminder worker stops working when something it depends on fails",
+      "description": "Reminder worker relies on other components such as databases, queues and other services. If one of them is slow or down and the process waits for it without a limit, requests pile up and the failure spreads.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-dos-dependency-failure",
+      "stale": null
+    },
+    {
+      "id": "f20660dc-4a46-4d1a-9104-0764d0bc0679",
+      "element_id": "9e87ff4d-56f8-478d-acf1-c0eacc97ef67",
+      "category": "Elevation of Privilege",
+      "title": "A signed-in user can reach functions in Reminder worker that are meant for others",
+      "description": "Reminder worker requires callers to sign in, but being signed in is not the same as being allowed. If it does not check permissions for each function, an ordinary user may reach administrative or other users' functions by calling them directly.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-elevation-missing-authorization",
+      "stale": null
+    },
+    {
+      "id": "c9c03235-eedf-4389-8e01-6ed813bfbdb2",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Spoofing",
+      "title": "A stolen session lets an attacker act as a signed-in user of Web app",
+      "description": "Once a user has signed in, Web app recognises them by a session credential. Anyone who obtains that credential, for example through a script injected into a page, a leaked log line or a stolen device, can act as the user until the session ends.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-spoofing-session-hijacking",
+      "stale": null
+    },
+    {
+      "id": "9d0fe35c-39e7-4fb1-8d37-79f83116ef69",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Spoofing",
+      "title": "Another program can pose as Web app to the components that call it",
+      "description": "Components that call Web app need to be sure they are talking to the real one. If an attacker can take over its name or address, or sit on the path to it, they can answer in its place and collect what callers send.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "not_applicable",
+      "status_reason": "Nothing calls the Web app: it runs in the note taker’s browser and only makes outgoing requests.",
+      "origin": "rule",
+      "library_ref": "p-spoofing-process-impersonation",
+      "stale": null
+    },
+    {
+      "id": "bd8b01d5-a42a-47d6-b030-fe22c184c5ad",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Tampering",
+      "title": "Crafted input from the internet can change what Web app does",
+      "description": "Web app takes input from the public internet. Anyone can send it data shaped to be misread: an oversized value, a wrong type, or text that looks like a command or query. If the process trusts that input, the attacker decides what it does.",
+      "likelihood": "High",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-tampering-untrusted-input-internet",
+      "stale": null
+    },
+    {
+      "id": "6be18143-de79-417c-8192-234f2a97cf9e",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Tampering",
+      "title": "The code, dependencies or configuration of Web app can be altered",
+      "description": "An attacker who can change what Web app runs gets everything the process can do. The route can be a poisoned dependency, a tampered build or image, or a changed configuration or environment variable.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-tampering-code-or-configuration",
+      "stale": null
+    },
+    {
+      "id": "9780b833-5b6e-4720-9bc6-8431c5e7b843",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Repudiation",
+      "title": "Access to sensitive data through Web app leaves no trail",
+      "description": "Web app handles sensitive data. If reads, exports and changes of that data are not recorded with who did them, a leak or a misuse cannot be traced, and a person who misused their access can deny it.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-repudiation-sensitive-access-unlogged",
+      "stale": null
+    },
+    {
+      "id": "13b1f7c6-cff6-4b6f-b853-9e36a6646db2",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Repudiation",
+      "title": "Actions taken through Web app cannot be reconstructed later",
+      "description": "Without a record of security-relevant events, nobody can say afterwards who signed in, who changed what or what an attacker did. Web app may do the right thing and still be unable to prove it.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-repudiation-no-audit-log",
+      "stale": null
+    },
+    {
+      "id": "77abfc02-7f76-44c4-8465-7ca746469867",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Information Disclosure",
+      "title": "A signed-in user may read someone else's data through Web app",
+      "description": "Web app knows who the caller is, but knowing who someone is does not say which records they may see. If it hands back whatever record is asked for, a signed-in user can read other people's data by changing an identifier in a request.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-disclosure-broken-object-authorization",
+      "stale": null
+    },
+    {
+      "id": "3c5eda80-2361-4ce0-83dc-c050b8bb5a25",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Information Disclosure",
+      "title": "Web app may reveal its internals in error messages",
+      "description": "Detailed errors help developers and attackers alike. Stack traces, query text, file paths and version numbers in a response show an attacker how Web app is built and where to push.",
+      "likelihood": "Medium",
+      "impact": "Low",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-disclosure-error-details",
+      "stale": null
+    },
+    {
+      "id": "be4e7394-361a-4409-9a25-57a79e5200f9",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Information Disclosure",
+      "title": "Web app may write sensitive data into logs, metrics or traces",
+      "description": "Logs are copied, indexed, shipped and read by many people and tools. If Web app writes sensitive values into them, such as passwords, tokens, personal data or request bodies, the data ends up in places with much weaker protection than the system it came from.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-disclosure-sensitive-data-in-logs",
+      "stale": null
+    },
+    {
+      "id": "5e6765f5-e6a9-498b-a4e3-48b34ce8a1f6",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Denial of Service",
+      "title": "Anyone on the internet can overwhelm Web app",
+      "description": "Web app accepts work from the public internet. Without limits, a flood of requests, a few very expensive ones or a slow connection held open on purpose can use up its CPU, memory or connections and shut out real users.",
+      "likelihood": "High",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-dos-resource-exhaustion-internet",
+      "stale": null
+    },
+    {
+      "id": "6b96c8dc-703d-4e11-8c04-706e3008e72a",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Denial of Service",
+      "title": "Web app stops working when something it depends on fails",
+      "description": "Web app relies on other components such as databases, queues and other services. If one of them is slow or down and the process waits for it without a limit, requests pile up and the failure spreads.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-dos-dependency-failure",
+      "stale": null
+    },
+    {
+      "id": "d87621fa-dd9a-4ccc-afc4-29300d2d75fb",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Elevation of Privilege",
+      "title": "A signed-in user can reach functions in Web app that are meant for others",
+      "description": "Web app requires callers to sign in, but being signed in is not the same as being allowed. If it does not check permissions for each function, an ordinary user may reach administrative or other users' functions by calling them directly.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-elevation-missing-authorization",
+      "stale": null
+    },
+    {
+      "id": "8ecef9d7-4e3c-4dfc-88e5-c4c1e73910bd",
+      "element_id": "82b6d6c3-c0a0-4bef-b6a1-73b1514fb700",
+      "category": "Elevation of Privilege",
+      "title": "Input from the internet could make Web app run an attacker's code",
+      "description": "Web app is reachable from the internet. If it evaluates input as code, deserializes untrusted data, handles uploaded files unsafely or uses a vulnerable dependency, an attacker can make it run their code and gain whatever the process itself can do.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "p-elevation-remote-code-execution",
+      "stale": null
+    },
+    {
+      "id": "d8c43cb0-dd6d-4e3f-acac-07e402c7e6dd",
+      "element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "category": "Tampering",
+      "title": "A user or service on the network could change data in Attachment bucket without permission",
+      "description": "Attachment bucket is not exposed to the internet, but every account and service that can reach it is a way to change what it holds. Shared administrative credentials and wide write permissions turn any single mistake or compromise into corrupted data.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-tampering-unauthorized-write-internal",
+      "stale": null
+    },
+    {
+      "id": "20233f98-6ce9-4051-87a5-e3465eb434a9",
+      "element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "category": "Tampering",
+      "title": "Backups of Attachment bucket can be altered, so a restore brings back bad data",
+      "description": "A backup is only useful if it holds what was really there. If someone can change or replace the copies of Attachment bucket, a restore after an incident reinstates the attacker's version, or fails when it is needed most.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-tampering-backup-integrity",
+      "stale": null
+    },
+    {
+      "id": "2540ff1e-87a1-4f7e-95d5-ba82ab180661",
+      "element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "category": "Repudiation",
+      "title": "Changes to Attachment bucket cannot be traced to whoever made them",
+      "description": "If Attachment bucket keeps only its current contents, nobody can tell afterwards who changed a record, when, or what it said before. A wrong or malicious change cannot be attributed and cannot easily be undone.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-repudiation-no-change-history",
+      "stale": null
+    },
+    {
+      "id": "b67d67d5-951a-45b8-8b62-7c4c05a46bf3",
+      "element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "category": "Repudiation",
+      "title": "Reads of sensitive data in Attachment bucket leave no record",
+      "description": "Attachment bucket stores sensitive data. If reads are not logged, a leak cannot be traced to an account or a time, and anyone with access can look without being accountable.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-repudiation-sensitive-reads-unlogged",
+      "stale": null
+    },
+    {
+      "id": "36a4ca24-d2dd-44f1-bdff-04550dc5f2f0",
+      "element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "category": "Information Disclosure",
+      "title": "Copies of Attachment bucket, such as backups and exports, may be less protected than the original",
+      "description": "Sensitive data in Attachment bucket does not stay in one place: it is copied into backups, exports, replicas and test environments. Each copy is often guarded less well than the store itself, and any one of them can leak the lot.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-disclosure-backup-exposure",
+      "stale": null
+    },
+    {
+      "id": "61947213-6773-4ea8-b58b-355628b83e12",
+      "element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "category": "Information Disclosure",
+      "title": "Sensitive data in Attachment bucket can be read from disks, snapshots or stolen media",
+      "description": "Attachment bucket stores sensitive data without encryption at rest. Anyone who gets hold of the underlying disk, a snapshot, a backup file or a decommissioned drive can read it directly, bypassing every access control in the application.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-disclosure-unencrypted-at-rest",
+      "stale": null
+    },
+    {
+      "id": "8eaf0977-90f2-4280-8156-57b4c2fa14f9",
+      "element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "category": "Information Disclosure",
+      "title": "Too many people or services can read sensitive data in Attachment bucket",
+      "description": "Over time, more accounts and services are granted access to Attachment bucket than need it. Each extra reader widens the chance of a leak by mistake, by compromise or by someone looking at what they should not.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-disclosure-excessive-access",
+      "stale": null
+    },
+    {
+      "id": "d12855e0-1dd2-4d36-9dd5-4d1d27e1eacb",
+      "element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "category": "Denial of Service",
+      "title": "Attachment bucket can run out of space or capacity",
+      "description": "If nothing limits how much can be written to Attachment bucket, one runaway job, one noisy customer or one attacker can fill it. When it is full, writes fail and everything that depends on it stops.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-dos-storage-exhaustion",
+      "stale": null
+    },
+    {
+      "id": "4787dabe-3930-4aa7-821f-dfbe57b8ec47",
+      "element_id": "c898a546-cdd9-4653-9be3-f9de22f0aebe",
+      "category": "Denial of Service",
+      "title": "Data in Attachment bucket can be deleted or corrupted, taking the system down with it",
+      "description": "A mistaken command, a bad release or an attacker with write access can delete or overwrite the data in Attachment bucket. The system is then unusable until the data is back, if it can be.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-dos-data-destruction",
+      "stale": null
+    },
+    {
+      "id": "81f3b55f-872f-4577-9780-39ec6a0d8b3c",
+      "element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff",
+      "category": "Tampering",
+      "title": "A user or service on the network could change data in Notes database without permission",
+      "description": "Notes database is not exposed to the internet, but every account and service that can reach it is a way to change what it holds. Shared administrative credentials and wide write permissions turn any single mistake or compromise into corrupted data.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-tampering-unauthorized-write-internal",
+      "stale": null
+    },
+    {
+      "id": "3e27624e-5958-45bc-b4db-b52fe542af67",
+      "element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff",
+      "category": "Tampering",
+      "title": "Backups of Notes database can be altered, so a restore brings back bad data",
+      "description": "A backup is only useful if it holds what was really there. If someone can change or replace the copies of Notes database, a restore after an incident reinstates the attacker's version, or fails when it is needed most.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "accepted",
+      "status_reason": "The cloud provider keeps versioned backups that the team’s own accounts cannot overwrite. Accepted until the quarterly restore test is automated, planned for next quarter.",
+      "origin": "rule",
+      "library_ref": "ds-tampering-backup-integrity",
+      "stale": null
+    },
+    {
+      "id": "0c6fc1de-635d-4c2b-9e96-36d232dd417b",
+      "element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff",
+      "category": "Repudiation",
+      "title": "Changes to Notes database cannot be traced to whoever made them",
+      "description": "If Notes database keeps only its current contents, nobody can tell afterwards who changed a record, when, or what it said before. A wrong or malicious change cannot be attributed and cannot easily be undone.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "accepted",
+      "status_reason": "Notes are personal and not shared, so who changed a row is rarely in doubt. Accepted until the audit log planned for version 2 is built.",
+      "origin": "rule",
+      "library_ref": "ds-repudiation-no-change-history",
+      "stale": null
+    },
+    {
+      "id": "e138d10f-c7b1-42c3-adfd-525bf40d05a8",
+      "element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff",
+      "category": "Repudiation",
+      "title": "Reads of sensitive data in Notes database leave no record",
+      "description": "Notes database stores sensitive data. If reads are not logged, a leak cannot be traced to an account or a time, and anyone with access can look without being accountable.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-repudiation-sensitive-reads-unlogged",
+      "stale": null
+    },
+    {
+      "id": "1a06af3a-9a66-4544-989d-350539438149",
+      "element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff",
+      "category": "Information Disclosure",
+      "title": "Copies of Notes database, such as backups and exports, may be less protected than the original",
+      "description": "Sensitive data in Notes database does not stay in one place: it is copied into backups, exports, replicas and test environments. Each copy is often guarded less well than the store itself, and any one of them can leak the lot.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-disclosure-backup-exposure",
+      "stale": null
+    },
+    {
+      "id": "856024c6-ef50-42ef-9f34-80c98b6b04c9",
+      "element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff",
+      "category": "Information Disclosure",
+      "title": "Too many people or services can read sensitive data in Notes database",
+      "description": "Over time, more accounts and services are granted access to Notes database than need it. Each extra reader widens the chance of a leak by mistake, by compromise or by someone looking at what they should not.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-disclosure-excessive-access",
+      "stale": null
+    },
+    {
+      "id": "b7b5cd48-2e77-42c6-a9a8-6fc2f08e6833",
+      "element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff",
+      "category": "Denial of Service",
+      "title": "Data in Notes database can be deleted or corrupted, taking the system down with it",
+      "description": "A mistaken command, a bad release or an attacker with write access can delete or overwrite the data in Notes database. The system is then unusable until the data is back, if it can be.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-dos-data-destruction",
+      "stale": null
+    },
+    {
+      "id": "df91d816-d1e0-477b-80f6-3a1b3fb4e40f",
+      "element_id": "0951fe5f-928f-49b2-be7c-9fef510873ff",
+      "category": "Denial of Service",
+      "title": "Notes database can run out of space or capacity",
+      "description": "If nothing limits how much can be written to Notes database, one runaway job, one noisy customer or one attacker can fill it. When it is full, writes fail and everything that depends on it stops.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "ds-dos-storage-exhaustion",
+      "stale": null
+    },
+    {
+      "id": "544e3d3c-c5ff-4ba4-b083-858d79ea44fe",
+      "element_id": "25c37d29-08c7-44dd-9cb6-d2044727c9e5",
+      "category": "Tampering",
+      "title": "A captured message from Notes API to Attachment bucket can be sent again",
+      "description": "Attachment upload and download is authenticated, but authentication proves who sent a message, not that it is fresh. Someone who captures a valid message, for example a payment or a command, can send it again and Attachment bucket will accept it a second time.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-replay",
+      "stale": null
+    },
+    {
+      "id": "730419dd-e68a-4060-a68b-119c41aec264",
+      "element_id": "25c37d29-08c7-44dd-9cb6-d2044727c9e5",
+      "category": "Tampering",
+      "title": "Data crossing a trust boundary into Attachment bucket may carry content that corrupts it",
+      "description": "Attachment upload and download brings data from outside a trust boundary straight toward Attachment bucket, a data store. Content that is malformed or crafted to be misread, such as injected query fragments, oversized values or unexpected structure, can corrupt what is stored.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-untrusted-data-into-store",
+      "stale": null
+    },
+    {
+      "id": "ae6c4082-f517-4ff6-b21e-90f63ceb6624",
+      "element_id": "25c37d29-08c7-44dd-9cb6-d2044727c9e5",
+      "category": "Denial of Service",
+      "title": "Notes API can flood Attachment bucket with messages across a trust boundary",
+      "description": "Attachment upload and download crosses a trust boundary. The sending side is less trusted than the receiving side, so it can send more than Attachment bucket can handle, by mistake or on purpose, and crowd out other work.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-dos-flooding-crossing",
+      "stale": null
+    },
+    {
+      "id": "e3a29703-c21e-46d5-a6dd-e4bf36488a65",
+      "element_id": "ec486d5f-a529-4755-8ac8-d2b17cd01913",
+      "category": "Tampering",
+      "title": "A captured message from Notes API to Notes database can be sent again",
+      "description": "Queries and updates is authenticated, but authentication proves who sent a message, not that it is fresh. Someone who captures a valid message, for example a payment or a command, can send it again and Notes database will accept it a second time.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-replay",
+      "stale": null
+    },
+    {
+      "id": "4e688016-3980-4a7b-8924-edfe4b2dba3f",
+      "element_id": "ec486d5f-a529-4755-8ac8-d2b17cd01913",
+      "category": "Tampering",
+      "title": "Data crossing a trust boundary into Notes database may carry content that corrupts it",
+      "description": "Queries and updates brings data from outside a trust boundary straight toward Notes database, a data store. Content that is malformed or crafted to be misread, such as injected query fragments, oversized values or unexpected structure, can corrupt what is stored.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "mitigated",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-untrusted-data-into-store",
+      "stale": null
+    },
+    {
+      "id": "d7886d30-cd73-462a-b7c3-8266c370e0e8",
+      "element_id": "ec486d5f-a529-4755-8ac8-d2b17cd01913",
+      "category": "Denial of Service",
+      "title": "Notes API can flood Notes database with messages across a trust boundary",
+      "description": "Queries and updates crosses a trust boundary. The sending side is less trusted than the receiving side, so it can send more than Notes database can handle, by mistake or on purpose, and crowd out other work.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-dos-flooding-crossing",
+      "stale": null
+    },
+    {
+      "id": "0fd710b2-a7bc-4be4-bd06-827a392d8077",
+      "element_id": "41b71ee9-5fcf-44fe-9b82-4e7635b185d6",
+      "category": "Tampering",
+      "title": "A captured message from Reminder worker to Notes database can be sent again",
+      "description": "Reads due reminders is authenticated, but authentication proves who sent a message, not that it is fresh. Someone who captures a valid message, for example a payment or a command, can send it again and Notes database will accept it a second time.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-replay",
+      "stale": null
+    },
+    {
+      "id": "46f99d56-8907-46f8-8590-088188ce49ca",
+      "element_id": "41b71ee9-5fcf-44fe-9b82-4e7635b185d6",
+      "category": "Tampering",
+      "title": "Data crossing a trust boundary into Notes database may carry content that corrupts it",
+      "description": "Reads due reminders brings data from outside a trust boundary straight toward Notes database, a data store. Content that is malformed or crafted to be misread, such as injected query fragments, oversized values or unexpected structure, can corrupt what is stored.",
+      "likelihood": "Medium",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-untrusted-data-into-store",
+      "stale": null
+    },
+    {
+      "id": "fa453210-635e-4749-ac9f-c2e45bf30461",
+      "element_id": "41b71ee9-5fcf-44fe-9b82-4e7635b185d6",
+      "category": "Tampering",
+      "title": "Data from Reminder worker to Notes database can be changed in transit across a trust boundary",
+      "description": "Reads due reminders carries data from Reminder worker to Notes database without encryption, and the connection leaves one trust zone for another. Anyone on the path between the zones can modify the data before it arrives, and neither end can tell.",
+      "likelihood": "High",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-plaintext-crossing",
+      "stale": null
+    },
+    {
+      "id": "0aa52897-3559-4c95-816e-b13ea5d712b6",
+      "element_id": "41b71ee9-5fcf-44fe-9b82-4e7635b185d6",
+      "category": "Information Disclosure",
+      "title": "Data from Reminder worker to Notes database readable in transit across a trust boundary",
+      "description": "Reads due reminders carries data from Reminder worker to Notes database without encryption, and the connection leaves one trust zone for another. Anyone on the network path between the zones can read it.",
+      "likelihood": "High",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-disclosure-plaintext-crossing",
+      "stale": null
+    },
+    {
+      "id": "56ef466a-7e00-43f7-b9b1-cd18454d8ba6",
+      "element_id": "41b71ee9-5fcf-44fe-9b82-4e7635b185d6",
+      "category": "Denial of Service",
+      "title": "Reminder worker can flood Notes database with messages across a trust boundary",
+      "description": "Reads due reminders crosses a trust boundary. The sending side is less trusted than the receiving side, so it can send more than Notes database can handle, by mistake or on purpose, and crowd out other work.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-dos-flooding-crossing",
+      "stale": null
+    },
+    {
+      "id": "dc162bca-1687-4adc-bf99-e27e81c8ce1e",
+      "element_id": "daca71e8-b91e-4a52-bd81-a1875a0983a4",
+      "category": "Tampering",
+      "title": "A captured message from Notes API to Reminder worker can be sent again",
+      "description": "Schedules reminders is authenticated, but authentication proves who sent a message, not that it is fresh. Someone who captures a valid message, for example a payment or a command, can send it again and Reminder worker will accept it a second time.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-replay",
+      "stale": null
+    },
+    {
+      "id": "6f241365-57e2-49ac-9583-85b6adcddeba",
+      "element_id": "daca71e8-b91e-4a52-bd81-a1875a0983a4",
+      "category": "Tampering",
+      "title": "Data from Notes API to Reminder worker can be changed in transit inside one trust zone",
+      "description": "Schedules reminders carries data from Notes API to Reminder worker without encryption. Both ends sit in the same trust zone, but a compromised machine or device on that network can still alter the data on its way.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-plaintext-internal",
+      "stale": null
+    },
+    {
+      "id": "2cd29280-82f2-48bf-ac75-0ecca82b8a3f",
+      "element_id": "daca71e8-b91e-4a52-bd81-a1875a0983a4",
+      "category": "Information Disclosure",
+      "title": "Data from Notes API to Reminder worker can be read by anyone on the same network",
+      "description": "Schedules reminders carries data from Notes API to Reminder worker without encryption. Both ends are in the same trust zone, but anyone or anything that can see that network's traffic, such as a compromised machine or a misplaced tap, can read what passes.",
+      "likelihood": "Low",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-disclosure-plaintext-internal",
+      "stale": null
+    },
+    {
+      "id": "0278d800-304a-4608-838d-089d1f77a213",
+      "element_id": "daca71e8-b91e-4a52-bd81-a1875a0983a4",
+      "category": "Denial of Service",
+      "title": "A fault in Notes API can flood Reminder worker with messages",
+      "description": "Schedules reminders stays inside one trust zone, but a bug, a retry storm or a compromised sender can still send more than Reminder worker can handle.",
+      "likelihood": "Low",
+      "impact": "Low",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-dos-flooding-internal",
+      "stale": null
+    },
+    {
+      "id": "999e4d34-b2ea-46c4-b550-cf009808e3d2",
+      "element_id": "e2ba9fcc-3adb-47d9-9cba-445d794cbcd3",
+      "category": "Tampering",
+      "title": "A captured message from Reminder worker to Email provider can be sent again",
+      "description": "Sends reminder emails is authenticated, but authentication proves who sent a message, not that it is fresh. Someone who captures a valid message, for example a payment or a command, can send it again and Email provider will accept it a second time.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-replay",
+      "stale": null
+    },
+    {
+      "id": "f5427959-5280-4d71-b4dc-815775b2171c",
+      "element_id": "e2ba9fcc-3adb-47d9-9cba-445d794cbcd3",
+      "category": "Denial of Service",
+      "title": "Reminder worker can flood Email provider with messages across a trust boundary",
+      "description": "Sends reminder emails crosses a trust boundary. The sending side is less trusted than the receiving side, so it can send more than Email provider can handle, by mistake or on purpose, and crowd out other work.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-dos-flooding-crossing",
+      "stale": null
+    },
+    {
+      "id": "0e3fe0d2-2fb6-4880-a7dc-bf3fafc1e002",
+      "element_id": "e2ba9fcc-3adb-47d9-9cba-445d794cbcd3",
+      "category": "Denial of Service",
+      "title": "Reminder worker stops working when the outside party Email provider is slow or down",
+      "description": "Sends reminder emails sends work to Email provider, which is outside the system. You do not run it and cannot make it available, so when it is slow or down Reminder worker can be left waiting, and the failure spreads to whoever depends on Reminder worker.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-dos-external-dependency-unavailable",
+      "stale": null
+    },
+    {
+      "id": "8e6e435c-2321-4e41-aed2-489cc3879072",
+      "element_id": "c07ef76d-439e-4f0a-ba33-d57a4b33d242",
+      "category": "Tampering",
+      "title": "A captured message from Web app to Notes API can be sent again",
+      "description": "Sign-in and note requests is authenticated, but authentication proves who sent a message, not that it is fresh. Someone who captures a valid message, for example a payment or a command, can send it again and Notes API will accept it a second time.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-replay",
+      "stale": null
+    },
+    {
+      "id": "e93d6a4b-18a0-4d34-a8c1-cc6cfde7d384",
+      "element_id": "c07ef76d-439e-4f0a-ba33-d57a4b33d242",
+      "category": "Denial of Service",
+      "title": "Web app can flood Notes API with messages across a trust boundary",
+      "description": "Sign-in and note requests crosses a trust boundary. The sending side is less trusted than the receiving side, so it can send more than Notes API can handle, by mistake or on purpose, and crowd out other work.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-dos-flooding-crossing",
+      "stale": null
+    },
+    {
+      "id": "81f65bd4-df40-4232-804e-7162c0230765",
+      "element_id": "f1d18047-16e0-4f6b-8ec0-2a873a052ca9",
+      "category": "Tampering",
+      "title": "A captured message from Note taker to Web app can be sent again",
+      "description": "Writes and reads notes is authenticated, but authentication proves who sent a message, not that it is fresh. Someone who captures a valid message, for example a payment or a command, can send it again and Web app will accept it a second time.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-replay",
+      "stale": null
+    },
+    {
+      "id": "787cd26e-124b-4eeb-8855-ad67a9abbfc0",
+      "element_id": "f1d18047-16e0-4f6b-8ec0-2a873a052ca9",
+      "category": "Tampering",
+      "title": "Data from Note taker to Web app can be changed in transit inside one trust zone",
+      "description": "Writes and reads notes carries data from Note taker to Web app without encryption. Both ends sit in the same trust zone, but a compromised machine or device on that network can still alter the data on its way.",
+      "likelihood": "Low",
+      "impact": "High",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-tampering-plaintext-internal",
+      "stale": null
+    },
+    {
+      "id": "b3bb8d8f-f127-45e6-a250-382da2aed0b6",
+      "element_id": "f1d18047-16e0-4f6b-8ec0-2a873a052ca9",
+      "category": "Information Disclosure",
+      "title": "Data from Note taker to Web app can be read by anyone on the same network",
+      "description": "Writes and reads notes carries data from Note taker to Web app without encryption. Both ends are in the same trust zone, but anyone or anything that can see that network's traffic, such as a compromised machine or a misplaced tap, can read what passes.",
+      "likelihood": "Low",
+      "impact": "Medium",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-disclosure-plaintext-internal",
+      "stale": null
+    },
+    {
+      "id": "c4f93047-e350-4dc4-be3b-46ba43219342",
+      "element_id": "f1d18047-16e0-4f6b-8ec0-2a873a052ca9",
+      "category": "Denial of Service",
+      "title": "A fault in Note taker can flood Web app with messages",
+      "description": "Writes and reads notes stays inside one trust zone, but a bug, a retry storm or a compromised sender can still send more than Web app can handle.",
+      "likelihood": "Low",
+      "impact": "Low",
+      "status": "open",
+      "status_reason": null,
+      "origin": "rule",
+      "library_ref": "df-dos-flooding-internal",
+      "stale": null
+    }
+  ],
+  "mitigations": [
+    {
+      "id": "2e426a75-933e-4db2-8178-faa3097a0426",
+      "threat_id": "d868ae72-480f-40e4-881f-9f79024d5927",
+      "description": "Alert on sign-ins from unusual places, times or volumes.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "136ab459-335b-45cd-8613-3c0666c92381",
+      "threat_id": "d868ae72-480f-40e4-881f-9f79024d5927",
+      "description": "Prefer credentials that are hard to steal and easy to revoke, such as short-lived tokens or hardware-backed keys, over long-lived shared secrets.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ec474907-b701-42c8-b5dc-b22e35be6b78",
+      "threat_id": "d868ae72-480f-40e4-881f-9f79024d5927",
+      "description": "Rotate credentials on a schedule and immediately after a suspected leak, and make revocation quick.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "43568f0b-e09f-46d7-9ad9-8d5530acb1d4",
+      "threat_id": "d868ae72-480f-40e4-881f-9f79024d5927",
+      "description": "Store credentials in a secrets manager and keep them out of source code, logs and chat.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "fcc3cb3d-65fa-4c1a-ac2a-0de3041deccc",
+      "threat_id": "55980c68-c29b-44b0-ad40-f2ca5838ec17",
+      "description": "For actions that matter, keep evidence the party cannot dispute, such as a signed request or a confirmation they received.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "f326ff9f-3822-4179-92a4-4b3d1d5f53f9",
+      "threat_id": "55980c68-c29b-44b0-ad40-f2ca5838ec17",
+      "description": "Keep a tamper-resistant record of what each external party did: who, what, when and from where.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "59492f3e-bb89-4f4e-9700-f12d402b8874",
+      "threat_id": "55980c68-c29b-44b0-ad40-f2ca5838ec17",
+      "description": "Keep these records for as long as disputes can arise.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ed7503a8-d00a-4d46-90db-277d51644620",
+      "threat_id": "da47e00c-d1e2-40db-ac0b-31cf9b244c19",
+      "description": "Alert the owner on sign-ins from new places or devices.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "7fe52571-ef1e-4519-814b-fd3403f80a9c",
+      "threat_id": "da47e00c-d1e2-40db-ac0b-31cf9b244c19",
+      "description": "Offer or require a second factor.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "bad1467e-ed6a-4457-a1fc-79c746ded422",
+      "threat_id": "da47e00c-d1e2-40db-ac0b-31cf9b244c19",
+      "description": "Reject passwords that appear in known breach lists when they are set.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ef6c2007-724c-4796-b287-c2bd6b14d036",
+      "threat_id": "da47e00c-d1e2-40db-ac0b-31cf9b244c19",
+      "description": "Throttle failed sign-ins per account and per source address, without locking the real owner out.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "c61767c6-2a4c-4b02-b261-14b03c596950",
+      "threat_id": "88015f12-0a38-4b1e-b889-4d8d85c62518",
+      "description": "Alert on sign-ins from unusual places, times or volumes.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "bfb81c42-a2f4-406c-bace-f5059f553a90",
+      "threat_id": "88015f12-0a38-4b1e-b889-4d8d85c62518",
+      "description": "Prefer credentials that are hard to steal and easy to revoke, such as short-lived tokens or hardware-backed keys, over long-lived shared secrets.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "1185073e-b4e9-4d71-9578-3a4446514053",
+      "threat_id": "88015f12-0a38-4b1e-b889-4d8d85c62518",
+      "description": "Rotate credentials on a schedule and immediately after a suspected leak, and make revocation quick.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6d0c4c6c-aff0-42ca-bc85-3c2ec0f7878e",
+      "threat_id": "88015f12-0a38-4b1e-b889-4d8d85c62518",
+      "description": "Store credentials in a secrets manager and keep them out of source code, logs and chat.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "8c164700-0eff-4460-ac43-793d14c7209c",
+      "threat_id": "2923021a-32de-4257-8ca0-c64e6c78cce0",
+      "description": "For actions that matter, keep evidence the party cannot dispute, such as a signed request or a confirmation they received.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "19482811-1434-43da-ab66-bda81440872c",
+      "threat_id": "2923021a-32de-4257-8ca0-c64e6c78cce0",
+      "description": "Keep a tamper-resistant record of what each external party did: who, what, when and from where.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ce6c7bc4-bdb4-47dd-8489-87824686c45a",
+      "threat_id": "2923021a-32de-4257-8ca0-c64e6c78cce0",
+      "description": "Keep these records for as long as disputes can arise.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "8b95f6ee-de97-41d6-bdb0-2f364ac5162c",
+      "threat_id": "9abb7db9-a4b4-45db-9613-2683a0f03256",
+      "description": "Sessions expire after eight hours and end at sign out; an automated test covers the sign-out path.",
+      "status": "verified",
+      "external_ref": null
+    },
+    {
+      "id": "b166e629-54d1-40a0-b613-76f334ad11e9",
+      "threat_id": "9abb7db9-a4b4-45db-9613-2683a0f03256",
+      "description": "The session token is kept in the browser tab’s memory only, never in storage.",
+      "status": "implemented",
+      "external_ref": null
+    },
+    {
+      "id": "32d273a0-149e-4b3f-b524-a0e01adcb88b",
+      "threat_id": "71f4c048-1e5c-4964-bc9f-1d1203ba89c9",
+      "description": "Do not let clients disable certificate checks, even in test setups that could be copied to production.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "0994c85d-4334-4767-a934-77625591f041",
+      "threat_id": "71f4c048-1e5c-4964-bc9f-1d1203ba89c9",
+      "description": "Have the process prove its identity to callers, for example with TLS certificates that clients verify against a trusted authority, or mutual TLS between services.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "60b82e11-9741-4948-a9c1-59be99d29c75",
+      "threat_id": "71f4c048-1e5c-4964-bc9f-1d1203ba89c9",
+      "description": "Protect service discovery and name resolution against tampering.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "27e98073-67d9-4db8-9c66-68f2b143a166",
+      "threat_id": "6c64a735-77d5-49c1-9abc-58985ead5603",
+      "description": "Every request body is checked against a schema before it is used; contract tests send malformed bodies.",
+      "status": "verified",
+      "external_ref": null
+    },
+    {
+      "id": "34128269-6b19-4747-be8d-aa339b82fbc9",
+      "threat_id": "22fce287-b509-47df-a59b-52db1a2a9b25",
+      "description": "Build from pinned dependencies with a lockfile, review dependency updates, and keep the build pipeline under the same access controls as production.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "1cbd6bd8-c616-4a75-bbc2-948511c4ae93",
+      "threat_id": "22fce287-b509-47df-a59b-52db1a2a9b25",
+      "description": "Keep configuration read-only for the running process.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "1da616f5-41dc-4116-90a4-184e409a5223",
+      "threat_id": "22fce287-b509-47df-a59b-52db1a2a9b25",
+      "description": "Limit who can change deployment settings and configuration, and keep a record of every change.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "42fd2afb-5dc5-49e2-94d9-e7e4edc46fe4",
+      "threat_id": "22fce287-b509-47df-a59b-52db1a2a9b25",
+      "description": "Sign build artefacts and images, and verify the signature before running them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "e76727a5-2aea-4347-ba2f-524ead6146bc",
+      "threat_id": "0d32a9e3-581b-4703-ad19-3d14ab7846b3",
+      "description": "Alert on unusual access, such as bulk reads or access outside normal hours.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "7555edf9-dbe1-4907-8905-1a71715ce634",
+      "threat_id": "0d32a9e3-581b-4703-ad19-3d14ab7846b3",
+      "description": "Protect the records from the people they describe.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b547f9ce-46d2-4895-9fd6-e740852e1db3",
+      "threat_id": "0d32a9e3-581b-4703-ad19-3d14ab7846b3",
+      "description": "Record every read, export and change of sensitive records with the acting identity, the time and the purpose where it is known.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "db17be29-c5c1-4de9-99c6-7f7fb23580a3",
+      "threat_id": "e02fd3e1-a157-43b9-a05e-3a9a4c8ea3d0",
+      "description": "Keep logs for as long as incidents and disputes can surface, and review them or alert on them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4542416c-d5c5-4db2-9b3d-209b211f897e",
+      "threat_id": "e02fd3e1-a157-43b9-a05e-3a9a4c8ea3d0",
+      "description": "Log security-relevant events with who, what, when and the outcome: sign-ins and failures, permission changes, data changes and administrative actions.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "d4b06b19-5c22-4290-a417-c257099c274e",
+      "threat_id": "e02fd3e1-a157-43b9-a05e-3a9a4c8ea3d0",
+      "description": "Send logs off the machine to storage that the process cannot rewrite.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "1855c898-9b95-4448-b3ae-a2baad7f77d2",
+      "threat_id": "705728e7-fc8c-49a1-b851-58deb15f7516",
+      "description": "Every query is scoped to the signed-in user, and a test signs in as two users and checks neither sees the other.",
+      "status": "verified",
+      "external_ref": null
+    },
+    {
+      "id": "d6006c99-33a5-4af0-bed7-bd46f78d5431",
+      "threat_id": "fe5b3a78-8c70-4828-a162-46a7ceceaf03",
+      "description": "Make responses to missing and forbidden things look the same where the difference would help an attacker.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b28cd25b-4143-42ae-9c80-5fbd62a2a0bc",
+      "threat_id": "fe5b3a78-8c70-4828-a162-46a7ceceaf03",
+      "description": "Return a short generic message to the caller and write the details to the log, with an identifier that links the two.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b4f9a215-ddfd-4230-8546-1e2b180fd2c7",
+      "threat_id": "fe5b3a78-8c70-4828-a162-46a7ceceaf03",
+      "description": "Turn off debug output and stack traces in production.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "0ca4aabe-9563-4bc0-8cfb-a097c886579c",
+      "threat_id": "28713211-f81f-4649-bf91-d9d7412d1ff5",
+      "description": "Decide which fields are sensitive and keep them out of logs, error reports and traces; mask or drop them before they are written.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "9ebe22f6-cb6f-482e-b0d3-98a9c6d39294",
+      "threat_id": "28713211-f81f-4649-bf91-d9d7412d1ff5",
+      "description": "Limit who can read logs and how long they are kept.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "a5db8cfd-f0b0-4397-a35f-096b089f4bc6",
+      "threat_id": "28713211-f81f-4649-bf91-d9d7412d1ff5",
+      "description": "Review logging statements, and add tests that check for leaks of known sensitive values.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "5ace42b5-bf9a-410c-bcd6-8014c736872e",
+      "threat_id": "213def51-6c2d-4137-b742-4bf7dd2b63ef",
+      "description": "Make share links long, random and expiring, and let the owner revoke them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "85676071-b01d-4ce5-8a37-9ae6a8faefc2",
+      "threat_id": "20a35011-8e08-4b46-8604-10e85dbd0cc1",
+      "description": "Bound expensive operations such as searches, exports and uploads.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "eb6e71cb-2df4-45bf-9df5-eeb66bae21aa",
+      "threat_id": "20a35011-8e08-4b46-8604-10e85dbd0cc1",
+      "description": "Limit request rates per client, and cap request size, concurrency and processing time.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "1fb48770-a02c-49fc-8bc3-61c5a34a2583",
+      "threat_id": "20a35011-8e08-4b46-8604-10e85dbd0cc1",
+      "description": "Put a gateway, content delivery network or load balancer in front that can absorb and shed load.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "50bdeff3-b31e-414b-9c89-523d45d2b04f",
+      "threat_id": "20a35011-8e08-4b46-8604-10e85dbd0cc1",
+      "description": "Set a cost ceiling on any automatic scaling.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "faf7efc5-9108-4738-a4fa-cac82167ef9e",
+      "threat_id": "47b3a51d-815a-4d49-94dc-dd07748e8be8",
+      "description": "Decide in advance what the process does without each dependency, and keep the critical path free of single points of failure.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "8529b145-33b6-40bc-aa87-3041bc449fa7",
+      "threat_id": "47b3a51d-815a-4d49-94dc-dd07748e8be8",
+      "description": "Set timeouts on every call to another component, and retry with backoff and a limit.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "d7b80215-43c7-49e1-8449-80b37517583c",
+      "threat_id": "47b3a51d-815a-4d49-94dc-dd07748e8be8",
+      "description": "Use circuit breakers or similar so a failing dependency is skipped quickly instead of waited for.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b3fc143a-2048-4e23-a070-bf914403231e",
+      "threat_id": "396ac4bf-1498-466b-a264-aed16e701601",
+      "description": "Enforce authorization on the server for every function, with deny as the default, and not only by hiding controls in the interface.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "de2b332a-eaa1-477a-916a-e8ad1df9d099",
+      "threat_id": "396ac4bf-1498-466b-a264-aed16e701601",
+      "description": "Keep the authorization rules in one place that every entry point uses.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "91ae9861-47a4-4f57-8179-5f61e08bfbce",
+      "threat_id": "396ac4bf-1498-466b-a264-aed16e701601",
+      "description": "Test every role against every function, including with direct calls.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "5ab40c0d-88bd-40a4-bd1c-e3b22e2adf76",
+      "threat_id": "cad46da6-5a27-4141-9b0a-68784fd090c4",
+      "description": "Keep the runtime and the dependencies patched, and watch for new advisories.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b3788809-02fd-4481-bd97-e6d56d93d0fa",
+      "threat_id": "cad46da6-5a27-4141-9b0a-68784fd090c4",
+      "description": "Limit the damage if it happens: least privilege, a sandbox or container boundary, and restricted outbound connections.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ac8b05b8-cfb7-455b-a012-303fa0710476",
+      "threat_id": "cad46da6-5a27-4141-9b0a-68784fd090c4",
+      "description": "Never evaluate input as code, and do not deserialize untrusted data into objects; use plain data formats and strict schemas.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "c7df8dcb-94b6-47d4-9538-9cd8da5bd771",
+      "threat_id": "10f9742c-3eb7-4baf-a28d-a8ad058b8b69",
+      "description": "Detect the reuse of a replaced credential and end the session when it happens.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "200c13f3-0e69-4075-a9e2-9ed3e4c383b7",
+      "threat_id": "10f9742c-3eb7-4baf-a28d-a8ad058b8b69",
+      "description": "Keep session credentials out of reach of scripts, for example in HttpOnly cookies, and never put them in URLs or logs.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "7b4dc6d6-58d3-44e3-9b74-45d38e5036d8",
+      "threat_id": "10f9742c-3eb7-4baf-a28d-a8ad058b8b69",
+      "description": "Make sessions short-lived, rotate credentials on every renewal and end the session on sign-out and on a password change.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "1072cfc4-2ba7-4783-80a3-812f35ec37af",
+      "threat_id": "10f9742c-3eb7-4baf-a28d-a8ad058b8b69",
+      "description": "Offer a way to end all of a user's sessions at once.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "d807f0bd-0a37-4223-a952-cf3b5e98eef9",
+      "threat_id": "c9076b8a-b636-4daa-b1be-cdedabb3ee8b",
+      "description": "Do not let clients disable certificate checks, even in test setups that could be copied to production.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "acfa0e4b-a4d5-460e-8109-5f7a3b5ef167",
+      "threat_id": "c9076b8a-b636-4daa-b1be-cdedabb3ee8b",
+      "description": "Have the process prove its identity to callers, for example with TLS certificates that clients verify against a trusted authority, or mutual TLS between services.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "f373f4f7-22a3-41b8-9ea4-96e28a183b29",
+      "threat_id": "c9076b8a-b636-4daa-b1be-cdedabb3ee8b",
+      "description": "Protect service discovery and name resolution against tampering.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "39508317-db85-4d9c-b365-687efd0cea9c",
+      "threat_id": "59949817-78a2-472c-8264-55148f4e19d8",
+      "description": "Treat data that has passed through other systems, such as queues and files, as input too.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "22375239-f9f8-4bef-b26a-40a15b1f165f",
+      "threat_id": "59949817-78a2-472c-8264-55148f4e19d8",
+      "description": "Use parameterized or structured APIs for databases and interpreters.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4fe9385c-eb96-4c49-82d9-c507f96e0688",
+      "threat_id": "59949817-78a2-472c-8264-55148f4e19d8",
+      "description": "Validate input from other components the same way as input from users: strict schema, limits, rejection of anything unexpected.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "0e9c09f7-d7a9-4584-9bc5-8047ce525b0a",
+      "threat_id": "7c7ac40c-4643-4fbe-8294-b626664310f8",
+      "description": "Build from pinned dependencies with a lockfile, review dependency updates, and keep the build pipeline under the same access controls as production.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "37e61c9a-7040-4a01-86ec-7701105dd3d1",
+      "threat_id": "7c7ac40c-4643-4fbe-8294-b626664310f8",
+      "description": "Keep configuration read-only for the running process.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "41d942f4-3ffa-4ea2-b39e-80318a609de5",
+      "threat_id": "7c7ac40c-4643-4fbe-8294-b626664310f8",
+      "description": "Limit who can change deployment settings and configuration, and keep a record of every change.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "eb9aab92-835f-4b33-8a98-edd7d404baa3",
+      "threat_id": "7c7ac40c-4643-4fbe-8294-b626664310f8",
+      "description": "Sign build artefacts and images, and verify the signature before running them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ad0d64da-5786-4ec2-8af5-5a7c4674156c",
+      "threat_id": "b0ceecc4-8393-4feb-af77-2724123c6c69",
+      "description": "Alert on unusual access, such as bulk reads or access outside normal hours.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "668e01d8-3a4e-461e-814b-3f79acd40b21",
+      "threat_id": "b0ceecc4-8393-4feb-af77-2724123c6c69",
+      "description": "Protect the records from the people they describe.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "43b81588-27e7-4d86-bf46-4ef657663868",
+      "threat_id": "b0ceecc4-8393-4feb-af77-2724123c6c69",
+      "description": "Record every read, export and change of sensitive records with the acting identity, the time and the purpose where it is known.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6cd8f00b-eefa-4a3b-917b-e3bbce04949b",
+      "threat_id": "664c3691-60df-419c-979a-e7c0fdbdfabe",
+      "description": "Keep logs for as long as incidents and disputes can surface, and review them or alert on them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "9e786837-56d9-48c4-979f-fefc456576f5",
+      "threat_id": "664c3691-60df-419c-979a-e7c0fdbdfabe",
+      "description": "Log security-relevant events with who, what, when and the outcome: sign-ins and failures, permission changes, data changes and administrative actions.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "a0016b8a-dff8-4176-8943-779a7352186b",
+      "threat_id": "664c3691-60df-419c-979a-e7c0fdbdfabe",
+      "description": "Send logs off the machine to storage that the process cannot rewrite.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "3b84e14a-a507-48ee-8feb-502648f74084",
+      "threat_id": "87187aea-219c-4475-9f46-dcc3a4d68f8c",
+      "description": "Check on the server, for every request, that this caller may access this record. Sign-in alone is not enough.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "1bfa5c04-752b-447a-ae35-c5da888a89d2",
+      "threat_id": "87187aea-219c-4475-9f46-dcc3a4d68f8c",
+      "description": "Do not treat hard-to-guess identifiers as access control; they only slow guessing down.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "1adabb7b-917c-4922-9535-6fb2061ca147",
+      "threat_id": "87187aea-219c-4475-9f46-dcc3a4d68f8c",
+      "description": "Test with two accounts, trying each one's records from the other.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "26c9f4e3-a1d1-4a54-9687-5d4184b6a454",
+      "threat_id": "a68391f0-cdc9-47ad-9850-17c04cd69705",
+      "description": "Make responses to missing and forbidden things look the same where the difference would help an attacker.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "087a347f-2fff-405d-a3c7-af4deb2c52ad",
+      "threat_id": "a68391f0-cdc9-47ad-9850-17c04cd69705",
+      "description": "Return a short generic message to the caller and write the details to the log, with an identifier that links the two.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ea6ac88b-7c95-40c9-8ab3-202bdc3ea1b5",
+      "threat_id": "a68391f0-cdc9-47ad-9850-17c04cd69705",
+      "description": "Turn off debug output and stack traces in production.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b4a3c90d-fc5a-4de4-ab46-e1fa24f8ebdb",
+      "threat_id": "a0dcbe6b-3d3f-469a-9d0f-508b24737ffd",
+      "description": "Decide which fields are sensitive and keep them out of logs, error reports and traces; mask or drop them before they are written.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "32d26c9b-818c-4cde-b9a0-402713ad0e84",
+      "threat_id": "a0dcbe6b-3d3f-469a-9d0f-508b24737ffd",
+      "description": "Limit who can read logs and how long they are kept.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "51a6ea37-3882-4186-bc56-01733914bb22",
+      "threat_id": "a0dcbe6b-3d3f-469a-9d0f-508b24737ffd",
+      "description": "Review logging statements, and add tests that check for leaks of known sensitive values.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "820b4ff5-3cf8-4dd8-8d12-19b8f563fafd",
+      "threat_id": "0ff171f1-351b-46e5-8a57-f90997c2d147",
+      "description": "Apply limits to internal callers too: request rates, sizes, concurrency and timeouts.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "62470d90-55a9-4fb5-8bd5-6d59fdd2c845",
+      "threat_id": "0ff171f1-351b-46e5-8a57-f90997c2d147",
+      "description": "Isolate the resources that critical callers depend on from those of bulk or batch callers.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "8252bb9a-9354-477f-be94-9163acced2ff",
+      "threat_id": "0ff171f1-351b-46e5-8a57-f90997c2d147",
+      "description": "Make clients back off when the process is slow, instead of retrying at once.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4d76693d-8cfe-4981-ae00-26c0180fc84e",
+      "threat_id": "dbad1f90-e0d9-4a43-9e53-640e8088b66e",
+      "description": "Decide in advance what the process does without each dependency, and keep the critical path free of single points of failure.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "97aba42c-295b-4868-902f-518d8fcaaf2f",
+      "threat_id": "dbad1f90-e0d9-4a43-9e53-640e8088b66e",
+      "description": "Set timeouts on every call to another component, and retry with backoff and a limit.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "2197c837-5e89-49c4-ba57-d473a865c370",
+      "threat_id": "dbad1f90-e0d9-4a43-9e53-640e8088b66e",
+      "description": "Use circuit breakers or similar so a failing dependency is skipped quickly instead of waited for.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "028708df-c391-4c8e-a067-1fed904f4f94",
+      "threat_id": "f20660dc-4a46-4d1a-9104-0764d0bc0679",
+      "description": "Enforce authorization on the server for every function, with deny as the default, and not only by hiding controls in the interface.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "8a15d4e5-6843-407e-828d-393eb2d4e98d",
+      "threat_id": "f20660dc-4a46-4d1a-9104-0764d0bc0679",
+      "description": "Keep the authorization rules in one place that every entry point uses.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "246b5a36-be74-4683-9a60-e6c9cf1f8823",
+      "threat_id": "f20660dc-4a46-4d1a-9104-0764d0bc0679",
+      "description": "Test every role against every function, including with direct calls.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "81ab2700-342b-4149-b60f-0e911598010a",
+      "threat_id": "c9c03235-eedf-4389-8e01-6ed813bfbdb2",
+      "description": "Detect the reuse of a replaced credential and end the session when it happens.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "cab1f635-edcb-4432-8b8e-7ac08675f025",
+      "threat_id": "c9c03235-eedf-4389-8e01-6ed813bfbdb2",
+      "description": "Keep session credentials out of reach of scripts, for example in HttpOnly cookies, and never put them in URLs or logs.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "92911d8f-466d-4999-bc94-874c3d9803b7",
+      "threat_id": "c9c03235-eedf-4389-8e01-6ed813bfbdb2",
+      "description": "Make sessions short-lived, rotate credentials on every renewal and end the session on sign-out and on a password change.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "5a055412-b222-4f84-88be-910073a89aca",
+      "threat_id": "c9c03235-eedf-4389-8e01-6ed813bfbdb2",
+      "description": "Offer a way to end all of a user's sessions at once.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "3b1306e6-30c4-4baf-8b2b-09823ee0eb34",
+      "threat_id": "bd8b01d5-a42a-47d6-b030-fe22c184c5ad",
+      "description": "Encode output for where it will be shown.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "890d131f-fdcb-49d1-967b-ffab220be6c4",
+      "threat_id": "bd8b01d5-a42a-47d6-b030-fe22c184c5ad",
+      "description": "Pass input to databases, shells and other interpreters through parameterized or structured APIs, never by building command strings.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "503db4ae-d230-4d39-b0cd-78864853e490",
+      "threat_id": "bd8b01d5-a42a-47d6-b030-fe22c184c5ad",
+      "description": "Reject fields the process does not expect.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "5cbcefcb-ce6e-4945-821b-798856f6db35",
+      "threat_id": "bd8b01d5-a42a-47d6-b030-fe22c184c5ad",
+      "description": "Validate every input at the boundary against a strict schema: type, length, range and allowed values. Reject what does not match instead of repairing it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "f0f2bc16-d95c-4def-997d-2f3db1341849",
+      "threat_id": "6be18143-de79-417c-8192-234f2a97cf9e",
+      "description": "Build from pinned dependencies with a lockfile, review dependency updates, and keep the build pipeline under the same access controls as production.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "94bba69a-e06b-4cc1-8b88-de162f41ad04",
+      "threat_id": "6be18143-de79-417c-8192-234f2a97cf9e",
+      "description": "Keep configuration read-only for the running process.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "5d53d3b7-79ef-4424-887d-4d4a4744e459",
+      "threat_id": "6be18143-de79-417c-8192-234f2a97cf9e",
+      "description": "Limit who can change deployment settings and configuration, and keep a record of every change.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "9139239e-73ee-435d-a5d6-630f44c8e6d0",
+      "threat_id": "6be18143-de79-417c-8192-234f2a97cf9e",
+      "description": "Sign build artefacts and images, and verify the signature before running them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "3f953c65-7a1d-47b8-93f7-e743c1fd1abb",
+      "threat_id": "9780b833-5b6e-4720-9bc6-8431c5e7b843",
+      "description": "Alert on unusual access, such as bulk reads or access outside normal hours.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "f3065435-6b06-4b9c-a7f4-e25e6c108ee8",
+      "threat_id": "9780b833-5b6e-4720-9bc6-8431c5e7b843",
+      "description": "Protect the records from the people they describe.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "3de1806c-757f-4719-a2d8-4f090e802ee4",
+      "threat_id": "9780b833-5b6e-4720-9bc6-8431c5e7b843",
+      "description": "Record every read, export and change of sensitive records with the acting identity, the time and the purpose where it is known.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "237ec08a-879b-42ae-850b-1eed0174945d",
+      "threat_id": "13b1f7c6-cff6-4b6f-b853-9e36a6646db2",
+      "description": "Keep logs for as long as incidents and disputes can surface, and review them or alert on them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6de48c38-4b97-47db-8c30-8a3b6e2b8328",
+      "threat_id": "13b1f7c6-cff6-4b6f-b853-9e36a6646db2",
+      "description": "Log security-relevant events with who, what, when and the outcome: sign-ins and failures, permission changes, data changes and administrative actions.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "213521af-0290-446c-ac79-a9e6d524662d",
+      "threat_id": "13b1f7c6-cff6-4b6f-b853-9e36a6646db2",
+      "description": "Send logs off the machine to storage that the process cannot rewrite.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6358bf60-a3de-45d0-b0ff-f9708e37e869",
+      "threat_id": "77abfc02-7f76-44c4-8465-7ca746469867",
+      "description": "Check on the server, for every request, that this caller may access this record. Sign-in alone is not enough.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "a514bd22-069c-47cf-bc19-a5979ebf4d0e",
+      "threat_id": "77abfc02-7f76-44c4-8465-7ca746469867",
+      "description": "Do not treat hard-to-guess identifiers as access control; they only slow guessing down.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "e770e506-a28f-4da1-a220-5292060a85a4",
+      "threat_id": "77abfc02-7f76-44c4-8465-7ca746469867",
+      "description": "Test with two accounts, trying each one's records from the other.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "c1bf5ad7-a8c2-42b9-bbad-78776f7ac5ff",
+      "threat_id": "3c5eda80-2361-4ce0-83dc-c050b8bb5a25",
+      "description": "Make responses to missing and forbidden things look the same where the difference would help an attacker.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b7c6e5f5-d351-4d36-9241-9795201812e6",
+      "threat_id": "3c5eda80-2361-4ce0-83dc-c050b8bb5a25",
+      "description": "Return a short generic message to the caller and write the details to the log, with an identifier that links the two.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "cc55429f-c8ca-43af-b2a8-d5ce487cecf7",
+      "threat_id": "3c5eda80-2361-4ce0-83dc-c050b8bb5a25",
+      "description": "Turn off debug output and stack traces in production.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "290f4375-72c4-4670-b0f7-af6643165183",
+      "threat_id": "be4e7394-361a-4409-9a25-57a79e5200f9",
+      "description": "Decide which fields are sensitive and keep them out of logs, error reports and traces; mask or drop them before they are written.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "787c401f-eada-4de1-804e-d0f41a877330",
+      "threat_id": "be4e7394-361a-4409-9a25-57a79e5200f9",
+      "description": "Limit who can read logs and how long they are kept.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ddbf2c57-bb87-4b74-b321-914bfb3b0aff",
+      "threat_id": "be4e7394-361a-4409-9a25-57a79e5200f9",
+      "description": "Review logging statements, and add tests that check for leaks of known sensitive values.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "d377fa42-bd1d-4f5c-bc37-d2c6db3f38ae",
+      "threat_id": "5e6765f5-e6a9-498b-a4e3-48b34ce8a1f6",
+      "description": "Bound expensive operations such as searches, exports and uploads.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "690637d5-ee4a-42a9-a96c-e9b0347c48e1",
+      "threat_id": "5e6765f5-e6a9-498b-a4e3-48b34ce8a1f6",
+      "description": "Limit request rates per client, and cap request size, concurrency and processing time.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "80d66969-3891-44de-935a-dbeedf2eecfd",
+      "threat_id": "5e6765f5-e6a9-498b-a4e3-48b34ce8a1f6",
+      "description": "Put a gateway, content delivery network or load balancer in front that can absorb and shed load.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "15639014-f9e3-4e87-bf3f-fe918d1fc07a",
+      "threat_id": "5e6765f5-e6a9-498b-a4e3-48b34ce8a1f6",
+      "description": "Set a cost ceiling on any automatic scaling.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "98d37339-c091-41a8-b8e9-7b3bae4f2efe",
+      "threat_id": "6b96c8dc-703d-4e11-8c04-706e3008e72a",
+      "description": "Decide in advance what the process does without each dependency, and keep the critical path free of single points of failure.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6496d94a-5c27-4823-882f-3f4a04473def",
+      "threat_id": "6b96c8dc-703d-4e11-8c04-706e3008e72a",
+      "description": "Set timeouts on every call to another component, and retry with backoff and a limit.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "f89e7d34-7314-455a-8079-8ef718327bf2",
+      "threat_id": "6b96c8dc-703d-4e11-8c04-706e3008e72a",
+      "description": "Use circuit breakers or similar so a failing dependency is skipped quickly instead of waited for.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "e3dc7b56-c3a0-4b63-8dde-88e33b2b1f86",
+      "threat_id": "d87621fa-dd9a-4ccc-afc4-29300d2d75fb",
+      "description": "Enforce authorization on the server for every function, with deny as the default, and not only by hiding controls in the interface.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4cea66a5-86f9-4ffd-b9e3-b10ec40dfebd",
+      "threat_id": "d87621fa-dd9a-4ccc-afc4-29300d2d75fb",
+      "description": "Keep the authorization rules in one place that every entry point uses.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4d2a430b-dade-4593-a90d-ee39ba03c97f",
+      "threat_id": "d87621fa-dd9a-4ccc-afc4-29300d2d75fb",
+      "description": "Test every role against every function, including with direct calls.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b4f15e3f-7ea2-4c2e-86d7-cab6d69d627f",
+      "threat_id": "8ecef9d7-4e3c-4dfc-88e5-c4c1e73910bd",
+      "description": "Keep the runtime and the dependencies patched, and watch for new advisories.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "40c87d5b-9929-4f81-b1fe-f6853086180a",
+      "threat_id": "8ecef9d7-4e3c-4dfc-88e5-c4c1e73910bd",
+      "description": "Limit the damage if it happens: least privilege, a sandbox or container boundary, and restricted outbound connections.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "bafcf3e1-f32f-45a0-887f-148c6e3c8030",
+      "threat_id": "8ecef9d7-4e3c-4dfc-88e5-c4c1e73910bd",
+      "description": "Never evaluate input as code, and do not deserialize untrusted data into objects; use plain data formats and strict schemas.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b364aa2f-71c1-4318-a884-84dbc8ebe59a",
+      "threat_id": "d8c43cb0-dd6d-4e3f-acac-07e402c7e6dd",
+      "description": "Give each consumer its own account, read-only wherever writing is not needed, and avoid shared administrative credentials.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "07d7af45-d615-4ac3-8a76-08e0f9517678",
+      "threat_id": "d8c43cb0-dd6d-4e3f-acac-07e402c7e6dd",
+      "description": "Record who changed what, and review changes made outside the normal application path.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "dbc112db-c1af-4859-9683-f87715e7c6dd",
+      "threat_id": "d8c43cb0-dd6d-4e3f-acac-07e402c7e6dd",
+      "description": "Segment the network so that only the services that need the store can reach it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "9b4a9ddb-836b-4f58-b51d-e26a890ca793",
+      "threat_id": "20233f98-6ce9-4051-87a5-e3465eb434a9",
+      "description": "Check backups with checksums, and test a restore regularly.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "3e81d546-b60b-49e3-a0dc-08fd4e01d401",
+      "threat_id": "20233f98-6ce9-4051-87a5-e3465eb434a9",
+      "description": "Keep backups write-once or immutable for their retention period, in an account that normal operators and the application cannot change.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "9d033a55-8b10-4739-ba12-9fea49015d88",
+      "threat_id": "20233f98-6ce9-4051-87a5-e3465eb434a9",
+      "description": "Keep several generations so that a bad one can be skipped.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6eff36a2-41bb-4ab8-af16-3a95e35a496c",
+      "threat_id": "2540ff1e-87a1-4f7e-95d5-ba82ab180661",
+      "description": "Keep that history somewhere the ordinary application account can append to but not rewrite.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "68b83484-6126-43cd-8c42-80d0d24425dd",
+      "threat_id": "2540ff1e-87a1-4f7e-95d5-ba82ab180661",
+      "description": "Keep the history for as long as the data it describes matters.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "222488e9-b854-48bd-bc89-f73871b0e508",
+      "threat_id": "2540ff1e-87a1-4f7e-95d5-ba82ab180661",
+      "description": "Record who changed what and when, with the previous value where it matters, in an audit trail or change history.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "cb335757-1b30-4906-b666-84bc993d922f",
+      "threat_id": "b67d67d5-951a-45b8-8b62-7c4c05a46bf3",
+      "description": "Keep them for as long as a leak could still be discovered.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "0ed8d066-a9f7-410b-83dd-81fc18af9add",
+      "threat_id": "b67d67d5-951a-45b8-8b62-7c4c05a46bf3",
+      "description": "Send those logs to a separate system, and alert on bulk reads and unusual access.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "8612f5bd-a84e-4e21-8ea8-7c8413947674",
+      "threat_id": "b67d67d5-951a-45b8-8b62-7c4c05a46bf3",
+      "description": "Turn on access logging for the sensitive tables, buckets or files, with the identity that made each request.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ec91e2a7-2f60-4d98-9bc1-e3873e1fc567",
+      "threat_id": "36a4ca24-d2dd-44f1-bdff-04550dc5f2f0",
+      "description": "Delete copies when they are no longer needed and check that old ones expire.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4326d0e5-1197-42d2-9124-76f24aa2ba80",
+      "threat_id": "36a4ca24-d2dd-44f1-bdff-04550dc5f2f0",
+      "description": "Do not use real sensitive data in test environments; mask or generate it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "350d52bf-e350-46d4-9ca9-28480c88b00b",
+      "threat_id": "36a4ca24-d2dd-44f1-bdff-04550dc5f2f0",
+      "description": "Give every copy the same access control and encryption as the original, and list where copies exist.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6708b10d-90c2-4844-b0bc-9455d80d66f0",
+      "threat_id": "61947213-6773-4ea8-b58b-355628b83e12",
+      "description": "Encrypt the most sensitive fields in the application as well, if a person with store access should not read them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4c949883-0470-4fce-b863-0daf4573996e",
+      "threat_id": "61947213-6773-4ea8-b58b-355628b83e12",
+      "description": "Keep the keys apart from the data, with their own access controls and logging, and rotate them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6619e408-b2ce-4b4b-bfee-87531e28adc5",
+      "threat_id": "61947213-6773-4ea8-b58b-355628b83e12",
+      "description": "Turn on encryption at rest for the store, its replicas, snapshots and backups, using a managed key service.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "2dc3a631-6ea0-4c6f-97bd-deeb007426e9",
+      "threat_id": "8eaf0977-90f2-4280-8156-57b4c2fa14f9",
+      "description": "Grant each person and service the least access that works, with separate accounts, and limit the columns, rows or paths they can see.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6702bb06-930f-4760-b9a0-885d03a01983",
+      "threat_id": "8eaf0977-90f2-4280-8156-57b4c2fa14f9",
+      "description": "Provide a logged, time-limited way to get emergency access instead of standing broad access.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "cb34e73c-897c-4e91-bd1c-24ad3dd51ff5",
+      "threat_id": "8eaf0977-90f2-4280-8156-57b4c2fa14f9",
+      "description": "Review who has access on a schedule and remove what is no longer needed.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "7f728101-992e-441f-a38d-d6ab4152aa10",
+      "threat_id": "d12855e0-1dd2-4d36-9dd5-4d1d27e1eacb",
+      "description": "Archive or delete data on a retention schedule, and plan capacity ahead of demand.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "e3639f1b-f43a-47ae-a1db-4d8c5b544c38",
+      "threat_id": "d12855e0-1dd2-4d36-9dd5-4d1d27e1eacb",
+      "description": "Monitor growth and free space, and alert well before the limit.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "c7d62f83-d69a-442e-9381-3701a380a536",
+      "threat_id": "d12855e0-1dd2-4d36-9dd5-4d1d27e1eacb",
+      "description": "Set quotas and size limits per user, tenant and request, and refuse oversized writes.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "7a42933b-3c96-4919-a995-22195bcd9d30",
+      "threat_id": "4787dabe-3930-4aa7-821f-dfbe57b8ec47",
+      "description": "Keep destructive permissions apart from everyday ones, and ask for a second approval for bulk deletes.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "48e87cd5-49e2-48a6-b420-44fa505d479b",
+      "threat_id": "4787dabe-3930-4aa7-821f-dfbe57b8ec47",
+      "description": "Keep tested backups with recovery objectives that the business has agreed to, and rehearse a restore.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "a602c384-1724-4fd9-a0ed-ac7ea40f281f",
+      "threat_id": "4787dabe-3930-4aa7-821f-dfbe57b8ec47",
+      "description": "Turn on deletion protection, versioning or soft delete for the data that matters.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "5a15991e-a796-4e29-af08-e54d25ba1561",
+      "threat_id": "81f3b55f-872f-4577-9780-39ec6a0d8b3c",
+      "description": "Give each consumer its own account, read-only wherever writing is not needed, and avoid shared administrative credentials.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "c4868a15-aa99-4ba2-89d1-5f1e4b826393",
+      "threat_id": "81f3b55f-872f-4577-9780-39ec6a0d8b3c",
+      "description": "Record who changed what, and review changes made outside the normal application path.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "40c3dfd4-e9bc-491a-99c8-7f6ac733ec25",
+      "threat_id": "81f3b55f-872f-4577-9780-39ec6a0d8b3c",
+      "description": "Segment the network so that only the services that need the store can reach it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "0b9f4466-f392-49b9-9b76-827ef7e55d6a",
+      "threat_id": "3e27624e-5958-45bc-b4db-b52fe542af67",
+      "description": "Check backups with checksums, and test a restore regularly.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "0ac60109-0169-43b9-8e2d-8577d8c04197",
+      "threat_id": "3e27624e-5958-45bc-b4db-b52fe542af67",
+      "description": "Keep backups write-once or immutable for their retention period, in an account that normal operators and the application cannot change.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "7e6493c5-21b4-4dbf-bc7e-7f50a756dc54",
+      "threat_id": "3e27624e-5958-45bc-b4db-b52fe542af67",
+      "description": "Keep several generations so that a bad one can be skipped.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "0e6ea315-2ed9-436b-b208-f5913d57e6de",
+      "threat_id": "0c6fc1de-635d-4c2b-9e96-36d232dd417b",
+      "description": "Keep that history somewhere the ordinary application account can append to but not rewrite.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "f38ed415-df29-43c2-8337-bf59108b1240",
+      "threat_id": "0c6fc1de-635d-4c2b-9e96-36d232dd417b",
+      "description": "Keep the history for as long as the data it describes matters.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "62aade14-2673-4104-8a3c-2d78345c3ed5",
+      "threat_id": "0c6fc1de-635d-4c2b-9e96-36d232dd417b",
+      "description": "Record who changed what and when, with the previous value where it matters, in an audit trail or change history.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "2b352df6-4e9c-4179-a9fd-558859498ff5",
+      "threat_id": "e138d10f-c7b1-42c3-adfd-525bf40d05a8",
+      "description": "Keep them for as long as a leak could still be discovered.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "409b2c29-c87c-4744-893c-9c5aeb28b466",
+      "threat_id": "e138d10f-c7b1-42c3-adfd-525bf40d05a8",
+      "description": "Send those logs to a separate system, and alert on bulk reads and unusual access.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "9689b16f-39b7-4af6-a951-97dd525acaaa",
+      "threat_id": "e138d10f-c7b1-42c3-adfd-525bf40d05a8",
+      "description": "Turn on access logging for the sensitive tables, buckets or files, with the identity that made each request.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "060c6f5b-9683-496f-8ffb-421f7bf9dde8",
+      "threat_id": "1a06af3a-9a66-4544-989d-350539438149",
+      "description": "Delete copies when they are no longer needed and check that old ones expire.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4c81fb0f-a087-4619-9ede-49a689b64681",
+      "threat_id": "1a06af3a-9a66-4544-989d-350539438149",
+      "description": "Do not use real sensitive data in test environments; mask or generate it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "abc6d8fa-3e0b-471b-8faf-45ca23cced4e",
+      "threat_id": "1a06af3a-9a66-4544-989d-350539438149",
+      "description": "Give every copy the same access control and encryption as the original, and list where copies exist.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "3b741072-5714-4cd2-ab5e-5bbddcc62310",
+      "threat_id": "856024c6-ef50-42ef-9f34-80c98b6b04c9",
+      "description": "Grant each person and service the least access that works, with separate accounts, and limit the columns, rows or paths they can see.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "5c02a475-f476-4db9-8a51-cfada5ba3146",
+      "threat_id": "856024c6-ef50-42ef-9f34-80c98b6b04c9",
+      "description": "Provide a logged, time-limited way to get emergency access instead of standing broad access.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "e9f360c7-9bec-45f1-afa6-0b275f2bf035",
+      "threat_id": "856024c6-ef50-42ef-9f34-80c98b6b04c9",
+      "description": "Review who has access on a schedule and remove what is no longer needed.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ab4b5e6e-334e-47f6-861f-1e9f9235cc08",
+      "threat_id": "b7b5cd48-2e77-42c6-a9a8-6fc2f08e6833",
+      "description": "Keep destructive permissions apart from everyday ones, and ask for a second approval for bulk deletes.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6464d85e-b535-4d4f-9c52-39cb0481b16b",
+      "threat_id": "b7b5cd48-2e77-42c6-a9a8-6fc2f08e6833",
+      "description": "Keep tested backups with recovery objectives that the business has agreed to, and rehearse a restore.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "e9eb34a7-df8f-4cc1-8ced-e9f865aecdc5",
+      "threat_id": "b7b5cd48-2e77-42c6-a9a8-6fc2f08e6833",
+      "description": "Turn on deletion protection, versioning or soft delete for the data that matters.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "db272f40-6158-4290-9c09-c20b39022618",
+      "threat_id": "df91d816-d1e0-477b-80f6-3a1b3fb4e40f",
+      "description": "Archive or delete data on a retention schedule, and plan capacity ahead of demand.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b09ee653-370c-462a-a33f-e6efc411fd25",
+      "threat_id": "df91d816-d1e0-477b-80f6-3a1b3fb4e40f",
+      "description": "Monitor growth and free space, and alert well before the limit.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "f227226a-7217-4733-9510-08b31b9df751",
+      "threat_id": "df91d816-d1e0-477b-80f6-3a1b3fb4e40f",
+      "description": "Set quotas and size limits per user, tenant and request, and refuse oversized writes.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "608cce4d-5ce7-4e30-8060-790c097f8d63",
+      "threat_id": "544e3d3c-c5ff-4ba4-b083-858d79ea44fe",
+      "description": "Include a unique identifier or a timestamp in each message and have the receiver reject repeats and old ones.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ce8b0afa-bf52-42d5-a1a7-9e7471820079",
+      "threat_id": "544e3d3c-c5ff-4ba4-b083-858d79ea44fe",
+      "description": "Keep signed messages valid for a short time only.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "22bcc33b-9b90-4802-85f1-43df8fa8eeac",
+      "threat_id": "544e3d3c-c5ff-4ba4-b083-858d79ea44fe",
+      "description": "Make operations idempotent where you can, so a repeat has no further effect.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "3e2b812e-fabb-4104-a6c1-97a13295fd68",
+      "threat_id": "730419dd-e68a-4060-a68b-119c41aec264",
+      "description": "Let the store enforce what it can, such as types, lengths and constraints.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b9d29876-54c0-4eea-8748-56e53e3f72eb",
+      "threat_id": "730419dd-e68a-4060-a68b-119c41aec264",
+      "description": "Use parameterized statements and typed APIs; never build queries by joining strings.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "11db48ad-5b83-425f-9354-d0b7ffc5d323",
+      "threat_id": "730419dd-e68a-4060-a68b-119c41aec264",
+      "description": "Validate data at the service that writes to the store, against a strict schema, before anything is stored.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "918c598e-fc5e-4e10-b03a-6de380e9491d",
+      "threat_id": "ae6c4082-f517-4ff6-b21e-90f63ceb6624",
+      "description": "Limit the rate and size of what the receiver accepts from this sender, and drop or queue the excess instead of processing it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "04fa4bbc-9366-4745-8c5e-ab099f725667",
+      "threat_id": "ae6c4082-f517-4ff6-b21e-90f63ceb6624",
+      "description": "Monitor volumes, and alert when a sender exceeds what is normal.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "7f3e4181-9ab8-4996-b4bb-fc70b32e7489",
+      "threat_id": "ae6c4082-f517-4ff6-b21e-90f63ceb6624",
+      "description": "Use a queue or buffer so bursts are absorbed, with a bound on its size.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b83e001f-c1e6-49bc-a2ac-f179dcd7ec8b",
+      "threat_id": "e3a29703-c21e-46d5-a6dd-e4bf36488a65",
+      "description": "Include a unique identifier or a timestamp in each message and have the receiver reject repeats and old ones.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4ba3e761-63af-4891-9f99-ace77d7267fb",
+      "threat_id": "e3a29703-c21e-46d5-a6dd-e4bf36488a65",
+      "description": "Keep signed messages valid for a short time only.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "f82f050c-2745-4bef-a742-943ffd1bb0ec",
+      "threat_id": "e3a29703-c21e-46d5-a6dd-e4bf36488a65",
+      "description": "Make operations idempotent where you can, so a repeat has no further effect.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "5d67136c-66a7-4649-bf66-a2d3740edd81",
+      "threat_id": "4e688016-3980-4a7b-8924-edfe4b2dba3f",
+      "description": "All queries are parameterised; the API never builds SQL from input.",
+      "status": "implemented",
+      "external_ref": null
+    },
+    {
+      "id": "4891c0d5-c06a-4937-b33d-f8589e211263",
+      "threat_id": "d7886d30-cd73-462a-b7c3-8266c370e0e8",
+      "description": "Limit the rate and size of what the receiver accepts from this sender, and drop or queue the excess instead of processing it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "e2bcf954-7501-4de6-9e58-69dbfbcb072b",
+      "threat_id": "d7886d30-cd73-462a-b7c3-8266c370e0e8",
+      "description": "Monitor volumes, and alert when a sender exceeds what is normal.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "9de3eb77-0ba3-4ed5-aec5-642ea9d2881d",
+      "threat_id": "d7886d30-cd73-462a-b7c3-8266c370e0e8",
+      "description": "Use a queue or buffer so bursts are absorbed, with a bound on its size.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "500a14ea-4645-449f-84e2-3bab1bd666cb",
+      "threat_id": "0fd710b2-a7bc-4be4-bd06-827a392d8077",
+      "description": "Include a unique identifier or a timestamp in each message and have the receiver reject repeats and old ones.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6ff3a9ca-67aa-4e3b-a72d-96b8106d6afb",
+      "threat_id": "0fd710b2-a7bc-4be4-bd06-827a392d8077",
+      "description": "Keep signed messages valid for a short time only.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "e806d88a-3572-4d55-bfa0-f80db205d22c",
+      "threat_id": "0fd710b2-a7bc-4be4-bd06-827a392d8077",
+      "description": "Make operations idempotent where you can, so a repeat has no further effect.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "eda9a49c-18c1-448c-9e14-8528899bdac4",
+      "threat_id": "46f99d56-8907-46f8-8590-088188ce49ca",
+      "description": "Let the store enforce what it can, such as types, lengths and constraints.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "222b05d5-e80c-4dc1-bf08-5ec134a6e1b0",
+      "threat_id": "46f99d56-8907-46f8-8590-088188ce49ca",
+      "description": "Use parameterized statements and typed APIs; never build queries by joining strings.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "d140edf7-f4bb-49ad-ae18-aad07de5e905",
+      "threat_id": "46f99d56-8907-46f8-8590-088188ce49ca",
+      "description": "Validate data at the service that writes to the store, against a strict schema, before anything is stored.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "9920d87c-c4da-4a8a-a20b-83546aac8e97",
+      "threat_id": "fa453210-635e-4749-ac9f-c2e45bf30461",
+      "description": "For messages that cross several hops, sign them so that tampering is visible whatever the transport.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "db051d23-0c6f-4e9e-af07-6271672e2c4e",
+      "threat_id": "fa453210-635e-4749-ac9f-c2e45bf30461",
+      "description": "Protect the connection with TLS 1.2 or later, and reject plaintext connections.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ef8a0786-8986-42c2-b4b2-56342167e40d",
+      "threat_id": "fa453210-635e-4749-ac9f-c2e45bf30461",
+      "description": "Verify the other end's certificate, and use mutual TLS where both ends are services you control.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ccf99363-e406-4f5b-972a-e72d6eea6c2e",
+      "threat_id": "0aa52897-3559-4c95-816e-b13ea5d712b6",
+      "description": "Authenticate the server certificate on the client side.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ea40df8e-8410-463d-a916-2487ee2f87a4",
+      "threat_id": "0aa52897-3559-4c95-816e-b13ea5d712b6",
+      "description": "Encrypt the connection with TLS 1.2 or later and reject plaintext connections.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "475ad114-e693-4665-97c2-2e75523a9f92",
+      "threat_id": "56ef466a-7e00-43f7-b9b1-cd18454d8ba6",
+      "description": "Limit the rate and size of what the receiver accepts from this sender, and drop or queue the excess instead of processing it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "47467f02-bfdb-4f55-9624-afae629f84d9",
+      "threat_id": "56ef466a-7e00-43f7-b9b1-cd18454d8ba6",
+      "description": "Monitor volumes, and alert when a sender exceeds what is normal.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "0b4a973d-29c4-4ee5-b8b4-5462c78b3a0c",
+      "threat_id": "56ef466a-7e00-43f7-b9b1-cd18454d8ba6",
+      "description": "Use a queue or buffer so bursts are absorbed, with a bound on its size.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6e8b7079-31ad-4c66-9f4d-074b822b9863",
+      "threat_id": "dc162bca-1687-4adc-bf99-e27e81c8ce1e",
+      "description": "Include a unique identifier or a timestamp in each message and have the receiver reject repeats and old ones.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "d439d51a-a6c3-4df9-a1a7-fff8a1d52898",
+      "threat_id": "dc162bca-1687-4adc-bf99-e27e81c8ce1e",
+      "description": "Keep signed messages valid for a short time only.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "eb0307f7-c923-4eca-85b5-79de7dd95c66",
+      "threat_id": "dc162bca-1687-4adc-bf99-e27e81c8ce1e",
+      "description": "Make operations idempotent where you can, so a repeat has no further effect.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "925afb0a-111e-4d39-9486-49d2b063e786",
+      "threat_id": "6f241365-57e2-49ac-9583-85b6adcddeba",
+      "description": "Encrypt internal connections with TLS as well; a flat internal network is a weak assumption.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "7a0dbb5e-4908-4740-ae0b-a4c8e80fd465",
+      "threat_id": "6f241365-57e2-49ac-9583-85b6adcddeba",
+      "description": "Where encryption is not practical, restrict who can be on the network path and watch for changes.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b63d8d14-7149-4826-ba79-8f371e5813a4",
+      "threat_id": "2cd29280-82f2-48bf-ac75-0ecca82b8a3f",
+      "description": "Encrypt internal connections with TLS as well.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "9cbd16d2-aebc-44a1-ae79-34dd0bdf6ef9",
+      "threat_id": "2cd29280-82f2-48bf-ac75-0ecca82b8a3f",
+      "description": "Where encryption is not practical, keep sensitive data off the connection and restrict who can see the network path.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "31a293c4-5ed4-4284-9fe9-740345f34e4a",
+      "threat_id": "0278d800-304a-4608-838d-089d1f77a213",
+      "description": "Have senders back off when the receiver is slow, instead of retrying at once.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4afd9b26-3a15-4ad7-94c6-a50004d8bdbc",
+      "threat_id": "0278d800-304a-4608-838d-089d1f77a213",
+      "description": "Limit the rate the receiver accepts, and bound any queue between the two.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "0f49f491-c471-4acf-8d9f-eed08a67a5f9",
+      "threat_id": "999e4d34-b2ea-46c4-b550-cf009808e3d2",
+      "description": "Include a unique identifier or a timestamp in each message and have the receiver reject repeats and old ones.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "fd24f57a-fb7e-4e7d-82ee-35f7aae07fae",
+      "threat_id": "999e4d34-b2ea-46c4-b550-cf009808e3d2",
+      "description": "Keep signed messages valid for a short time only.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "a474d1e7-3244-4f58-af08-4a7d0aae2438",
+      "threat_id": "999e4d34-b2ea-46c4-b550-cf009808e3d2",
+      "description": "Make operations idempotent where you can, so a repeat has no further effect.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "171515cf-adb8-4045-926c-5c8481f927f1",
+      "threat_id": "f5427959-5280-4d71-b4dc-815775b2171c",
+      "description": "Limit the rate and size of what the receiver accepts from this sender, and drop or queue the excess instead of processing it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "daa6974a-6ea5-4e10-8b0c-25bff1c3c707",
+      "threat_id": "f5427959-5280-4d71-b4dc-815775b2171c",
+      "description": "Monitor volumes, and alert when a sender exceeds what is normal.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "390ef28e-b8fd-4e7d-bcb6-7c457f425978",
+      "threat_id": "f5427959-5280-4d71-b4dc-815775b2171c",
+      "description": "Use a queue or buffer so bursts are absorbed, with a bound on its size.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "e5999cd2-d0f7-4d69-9fcf-ecb593d2547c",
+      "threat_id": "0e3fe0d2-2fb6-4880-a7dc-bf3fafc1e002",
+      "description": "Monitor the outside party's availability, and agree what you can expect from them.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "6954a787-8a20-4f6d-acaa-fe14a78b07c6",
+      "threat_id": "0e3fe0d2-2fb6-4880-a7dc-bf3fafc1e002",
+      "description": "Set timeouts and a bounded number of retries with backoff on every call to the outside party.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "37c66ac2-4f60-42ed-8c23-f90dc5eb5670",
+      "threat_id": "0e3fe0d2-2fb6-4880-a7dc-bf3fafc1e002",
+      "description": "Use a circuit breaker, and decide in advance what the system does while the outside party is unavailable, such as queueing the work or showing a cached answer.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "cffbb119-7b83-48c8-9b12-a5fa20cbb01d",
+      "threat_id": "8e6e435c-2321-4e41-aed2-489cc3879072",
+      "description": "Include a unique identifier or a timestamp in each message and have the receiver reject repeats and old ones.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "b614ad90-417e-4e35-b736-77188e4af79d",
+      "threat_id": "8e6e435c-2321-4e41-aed2-489cc3879072",
+      "description": "Keep signed messages valid for a short time only.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "cff25a74-aff1-4567-869e-146e59511ea1",
+      "threat_id": "8e6e435c-2321-4e41-aed2-489cc3879072",
+      "description": "Make operations idempotent where you can, so a repeat has no further effect.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "4e5cc49b-3a32-41d8-918b-087b59e2cb6d",
+      "threat_id": "e93d6a4b-18a0-4d34-a8c1-cc6cfde7d384",
+      "description": "Limit the rate and size of what the receiver accepts from this sender, and drop or queue the excess instead of processing it.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "ce61dc99-32ce-4812-b762-db82e5a37ba2",
+      "threat_id": "e93d6a4b-18a0-4d34-a8c1-cc6cfde7d384",
+      "description": "Monitor volumes, and alert when a sender exceeds what is normal.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "d61b13c4-9dab-4db9-bced-8fa106530cb4",
+      "threat_id": "e93d6a4b-18a0-4d34-a8c1-cc6cfde7d384",
+      "description": "Use a queue or buffer so bursts are absorbed, with a bound on its size.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "92c71ba8-ad0c-43eb-b93f-53b27d8a02e3",
+      "threat_id": "81f65bd4-df40-4232-804e-7162c0230765",
+      "description": "Include a unique identifier or a timestamp in each message and have the receiver reject repeats and old ones.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "06e3ebfe-7e3e-405c-86bb-142ba9102d2b",
+      "threat_id": "81f65bd4-df40-4232-804e-7162c0230765",
+      "description": "Keep signed messages valid for a short time only.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "3aeaf427-9b4e-4d7f-b463-9b9ab0c7b6a9",
+      "threat_id": "81f65bd4-df40-4232-804e-7162c0230765",
+      "description": "Make operations idempotent where you can, so a repeat has no further effect.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "62a864f2-afd0-4cc7-8451-98550bd28353",
+      "threat_id": "787cd26e-124b-4eeb-8855-ad67a9abbfc0",
+      "description": "Encrypt internal connections with TLS as well; a flat internal network is a weak assumption.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "d0d92e3e-f844-4688-9d5f-597a2f128a30",
+      "threat_id": "787cd26e-124b-4eeb-8855-ad67a9abbfc0",
+      "description": "Where encryption is not practical, restrict who can be on the network path and watch for changes.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "03809454-6101-4960-9fd6-bd3d3fb6477d",
+      "threat_id": "b3bb8d8f-f127-45e6-a250-382da2aed0b6",
+      "description": "Encrypt internal connections with TLS as well.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "a3dea36f-1cfc-4141-8245-b2aef873f8ac",
+      "threat_id": "b3bb8d8f-f127-45e6-a250-382da2aed0b6",
+      "description": "Where encryption is not practical, keep sensitive data off the connection and restrict who can see the network path.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "46a39b93-016a-46b5-8e0f-2aa792656d40",
+      "threat_id": "c4f93047-e350-4dc4-be3b-46ba43219342",
+      "description": "Have senders back off when the receiver is slow, instead of retrying at once.",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
+      "id": "44ca3cfa-bbb1-403e-a7bc-8668674d4c3b",
+      "threat_id": "c4f93047-e350-4dc4-be3b-46ba43219342",
+      "description": "Limit the rate the receiver accepts, and bound any queue between the two.",
+      "status": "proposed",
+      "external_ref": null
+    }
+  ]
+}

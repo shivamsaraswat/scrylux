@@ -11,7 +11,7 @@ runs:
       id: node
       shell: bash
       run: |
-        majors="$(grep -E '^FROM node:' Dockerfile | sed -E 's/^FROM node:([0-9]+)-alpine(@sha256:[0-9a-f]{64})?( .*)?$/\1/' | sort -u)"
+        majors="$(grep -E '^FROM (--platform=[^ ]+ )?node:' Dockerfile | sed -E 's/^FROM (--platform=[^ ]+ )?node:([0-9]+)-alpine(@sha256:[0-9a-f]{64})?( .*)?$/\2/' | sort -u)"
         count="$(printf '%s\n' "$majors" | sed '/^$/d' | wc -l | tr -d ' ')"
         if [ "$count" != "1" ]; then
           echo "::error file=Dockerfile::Expected exactly one Node major version across all 'FROM node:' lines (research.md #5), found $count: $(printf '%s' "$majors" | tr '\n' ' ')"

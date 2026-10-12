@@ -1,6 +1,6 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Locator } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { GESTURE, addNode, boxOf, canvasOf, connect, centerOf, dragBy, elementsOf, nodeOf, positionOnDiagram, stored, untilSaved, untilStill, type Stored } from './diagram-helpers.js';
+import { GESTURE, addNode, boxOf, canvasOf, connect, centerOf, dragBy, dropNodeAt, elementsOf, nodeOf, positionOnDiagram, stored, untilSaved, untilStill, type Stored } from './diagram-helpers.js';
 import { apiRequest, apiToken, expect, seedElements, seedModel, signInAsNewAccount, test } from './fixtures.js';
 
 // The canvas sits below the threat model's header, so a window of the usual height shows only part of it.
@@ -118,23 +118,6 @@ function absoluteOf(element: Stored, byId: Map<string, Stored>): { x: number; y:
     y += at?.y ?? 0;
   }
   return { x, y };
-}
-
-// Drags a node so that its middle ends at a point on the screen, trying again if it did not get there.
-async function dropNodeAt(page: Page, node: Locator, target: { x: number; y: number }): Promise<void> {
-  const handle = node.locator('.diagram-node__label');
-  await canvasOf(page).scrollIntoViewIfNeeded();
-  await expect(async () => {
-    const from = await centerOf(handle);
-    if (Math.hypot(from.x - target.x, from.y - target.y) < 20) return;
-    await page.mouse.move(from.x, from.y);
-    await page.mouse.down();
-    await page.mouse.move((from.x + target.x) / 2, (from.y + target.y) / 2, { steps: 6 });
-    await page.mouse.move(target.x, target.y, { steps: 6 });
-    await page.mouse.up();
-    const now = await centerOf(handle);
-    expect(Math.hypot(now.x - target.x, now.y - target.y)).toBeLessThan(20);
-  }).toPass(GESTURE);
 }
 
 test('nests trust boundaries, and a boundary carries what it holds', async ({ page, baseURL }) => {

@@ -67,6 +67,23 @@ export async function dragBy(page: Page, node: Locator, dx: number, dy: number, 
   }).toPass(GESTURE);
 }
 
+// Drags a node so that its middle ends at a point on the screen, trying again if it did not get there.
+export async function dropNodeAt(page: Page, node: Locator, target: { x: number; y: number }): Promise<void> {
+  const handle = node.locator('.diagram-node__label');
+  await canvasOf(page).scrollIntoViewIfNeeded();
+  await expect(async () => {
+    const from = await centerOf(handle);
+    if (Math.hypot(from.x - target.x, from.y - target.y) < 20) return;
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move((from.x + target.x) / 2, (from.y + target.y) / 2, { steps: 6 });
+    await page.mouse.move(target.x, target.y, { steps: 6 });
+    await page.mouse.up();
+    const now = await centerOf(handle);
+    expect(Math.hypot(now.x - target.x, now.y - target.y)).toBeLessThan(20);
+  }).toPass(GESTURE);
+}
+
 export interface Box {
   x: number;
   y: number;

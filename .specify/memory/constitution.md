@@ -1,27 +1,30 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.11.0 → 1.12.0
-Rationale: Phase 2 Milestone 7 (dogfood, specs/phase-2/milestone-7-dogfood/) commits Specter's own threat model, built in
-  Specter, to the repository as a Specter file and a Markdown report (`docs/threat-model/`), and holds it to the
-  shipped code with checks in the required `test` check (`apps/api/test/dogfood/`). Plan.md's guiding principle 8 ("Specter
-  keeps its own threat model, built in Specter") is now a committed artefact, and the Threat Model section below has a
-  structured counterpart that can drift from it. This is a MINOR: Principle V gains the rule of which document governs
-  and the duty to keep the model current, which is materially expanded guidance. It adds no principle, no endpoint, no
-  table and no dependency.
-Modified principles: V (applied, text extended: the Threat Model section governs, the committed model is corrected to
-  agree with it, and a change that updates the section updates the model in the same change; a change that only adds a
-  threat-library rule may follow, because the checks then only warn). No other principle changes.
+Version change: 1.12.0 → 1.13.0
+Rationale: Phase 2 Milestone 8 (release v0.1, specs/phase-2/milestone-8-release-v0-1/) publishes Specter for the first time: a
+  tag-triggered release pipeline (`.github/workflows/release.yml`) that builds, tests and publishes a two-platform image to GHCR
+  and creates a GitHub release. It is the first workflow that holds a write permission (`packages: write` in one job and
+  `contents: write` in another), it adds an entry point (the creation of a version tag), assets (the published image and the
+  publishing credential) and a trust boundary (the release pipeline against the pipelines of pull requests), and Principle V
+  requires the Threat Model section, and the committed model, to say so in the same change. This is a MINOR: materially expanded
+  guidance (the threat model's assets, entry points, boundaries and nine risks, and a rule for how a release is made). It adds
+  no principle, no endpoint, no table and no runtime dependency.
+Modified principles: V (applied, not reworded: the section and `docs/threat-model/` are updated in the same change; the write
+  permission is justified below, as Governance asks). No other principle changes.
 Added sections: none (existing section set retained: Core Principles, Threat Model (STRIDE),
   Development Workflow & Quality Gates, Governance)
 Removed sections: none
-Threat Model changes: no entry point, asset or trust boundary is added, and the model discloses nothing the section does
-  not already publish. Two statements were corrected, because building the model checked them against the repository
-  (spec findings F3 and F5):
-  - Tampering: Dependabot's cooldown is 3 days (`.github/dependabot.yml`, `docs/ci.md`), not 2.
-  - Elevation of Privilege: with `ADMIN_USERNAME`/`ADMIN_PASSWORD` unset no account is seeded, so a new install cannot be
-    signed in to; an install that already holds an account stays usable.
-Development Workflow: a pull request that updates the Threat Model section also updates `docs/threat-model/`.
+Threat Model changes: assets (the published image; the pipeline's publishing credential), a trust boundary (the release
+  pipeline against the pull-request pipelines) and an entry point (the creation of a `v*` tag) are added, with nine risks:
+  - Spoofing: a forged version tag (mitigated); a look-alike image or registry (accepted until Phase 6).
+  - Tampering: a replaced build or release step (mitigated); a published image replaced after publication (open; Phase 6).
+  - Repudiation: no way to tell who built an image beyond its labels (open; Phase 6).
+  - Information Disclosure: a secret reaching the image, an asset or the log (mitigated).
+  - Elevation of Privilege: the publishing credential stolen or too broad (mitigated); the workflow running as defined at the
+    tagged commit (accepted until Phase 6); an install left on the documented default credentials (open).
+Development Workflow: one sentence added: a release is published only by the tag-triggered pipeline.
+Development Workflow (from Milestone 7, kept): a pull request that updates the Threat Model section also updates `docs/threat-model/`.
 Deferred / TODO items: none
 Templates requiring follow-up: none checked in this run (scope of this change is the constitution
   file only; dependent templates read it at runtime per the scope guard). The pull request template was
@@ -191,7 +194,9 @@ authenticated account through `/api/v1`; browser sessions (`browser_sessions`, P
 `specs/phase-1/milestone-6-react-app-shell/`), whose session credentials are stored only as SHA-256 digests, the
 short-lived access tokens the UI holds in page memory, and the sign-in failure counts
 (`sign_in_throttle`), whose keys are HMACs of what was typed and of the client address. The original
-threat entry records and Milestone 4's legacy links no longer exist: Milestone 5 removed them.
+threat entry records and Milestone 4's legacy links no longer exist: Milestone 5 removed them. Since Phase 2 Milestone 8: the
+published image, `ghcr.io/shivamsaraswat/specter`, which every user runs, and the credential the release pipeline holds to publish
+it (the run's `GITHUB_TOKEN` as held by its two publishing jobs; no other secret exists).
 **Assets (planned, not yet implemented)**: from Phase 3 — uploaded design documents, extracted
 text chunks and embeddings, LLM provider API keys, and the LLM outputs derived from them; from
 Phase 4 — read-only repository/IaC access tokens and cloned source code; from Phase 5 —
@@ -210,7 +215,11 @@ the UI's own scripts run inside the user's authenticated session. The
 app itself has a single trust tier: any holder of a valid JWT is fully trusted. Since Phase 1
 Milestone 2, a CI/CD boundary also exists: GitHub Actions workflows — including on pull requests
 from forks — run against this repository's contents with a scoped, read-by-default
-`GITHUB_TOKEN`, and pull third-party actions and container images from outside the repository.
+`GITHUB_TOKEN`, and pull third-party actions and container images from outside the repository. Since Phase 2 Milestone 8 a second
+boundary sits inside it: the release pipeline (`.github/workflows/release.yml`) is the only workflow that holds a write permission
+(`packages: write` in one job, `contents: write` in another, nothing by default), and it is started by one entry point, **the
+creation of a `v*` tag**, which only the repository owner can make (ruleset `release-tags`); the pipelines of pull requests, of
+forks included, hold none.
 **Trust boundaries (planned)**: Phase 3 adds an outbound boundary from the worker process to a
 third-party LLM provider (or a local model, which stays inside the trust boundary) and an inbound
 boundary for untrusted document content flowing into prompts (prompt-injection surface — see
@@ -243,6 +252,13 @@ webhooks.
   update operations still refuse every other origin); a file with an AI-drafted threat is refused, as Principle VI requires
   until Phase 3 defines the rationale and citations such a threat carries; and every threat from another tool's file, OTM or
   Threat Dragon, is imported as manual, with its rule, stale mark and origin never read.
+  *Mitigated (Phase 2 Milestone 8)*: a forged or mistaken version tag cannot publish a release. The release pipeline's gate refuses a
+  tag that is not `vMAJOR.MINOR.PATCH`, a tag whose commit is not on `main`, and a tag whose package versions, changelog entry or
+  required checks disagree (`scripts/release/gate.ts`, tested in `scripts/release/gate.test.ts`), and two tag rulesets let only the
+  repository owner create or delete a `v*` tag and let nobody move one (`.github/rulesets/release-tags.json`,
+  `release-tags-immutable.json`; `docs/ci.md`, `docs/releasing.md`). *Accepted risk (Phase 2 Milestone 8)*: a look-alike image or
+  registry can be mistaken for the project's: the README and every release's notes name the exact image and its digest, and a user can
+  be told no more than that without a signature; accepted until Phase 6 ("Verifiable release images", `plan.md`).
 - **Tampering**: All SQL is parameterized or built with Kysely (`apps/api/src/v1/`,
   `apps/api/src/routes/users.ts`, `apps/api/src/auth.ts`) — no injection path found. Request bodies
   are size-capped at 100kb (`apps/api/src/app.ts`, and for `/api/v1` the per-operation parser in
@@ -328,6 +344,13 @@ webhooks.
   is a fixed rule with a place, never a value from the file. The one deliberate exception to the lifecycle rules is the
   one a restore needs: a threat keeps the status it carries, and is then shown as missing what its status needs.
   Imported text is stored, and shown in the app and in reports, as text.
+  *Mitigated (Phase 2 Milestone 8)*: a build or release step cannot be swapped for a malicious one unnoticed. Every third-party action
+  of every workflow is pinned to a commit and the release workflow uses only first-party actions, which a test holds
+  (`scripts/workflows.test.ts`); BuildKit is pinned by digest and refreshed by hand (`docs/ci.md`, `docs/releasing.md`).
+  *Open risk (Phase 2 Milestone 8)*: a published image can be replaced after publication by whoever has write access to the package,
+  because the registry does not enforce immutable tags. The pipeline never overwrites a version and completes a half-done release from
+  the image already there (`scripts/release/gate.test.ts`), and the release notes print the image's digest so that a user can pin it;
+  the image is not signed and carries no build attestation or SBOM. *Planned*: `plan.md` Phase 6, "Verifiable release images".
 - **Repudiation**: *Open risk*: no audit trail persists who created, updated, or deleted a
   threat-model record or a user — the JWT's `sub` is known per-request but never written to storage.
   This is a notable gap precisely because Repudiation is one of the STRIDE categories the app
@@ -348,6 +371,9 @@ webhooks.
   Phase 6). Phase 6's audit log closes this. *Partially mitigated (Phase 2 Milestone 6)*: an import writes one stdout line
   with the account id, the project, the ids of the threat models it created and counts of what it created and left
   out, never a name or any content of the file. The records it creates get no line of their own.
+  *Open risk (Phase 2 Milestone 8)*: a user cannot tell who built an image, or from which commit, beyond its labels. The image carries
+  its source repository and commit as labels (`scripts/release/versions.ts`), which the smoke run checks on both platforms before
+  publishing and again after (`scripts/release/smoke.ts`). *Planned*: `plan.md` Phase 6, "Verifiable release images" (a signature, a build attestation and an SBOM).
 - **Information Disclosure**: Generic 500s are returned to clients while details are logged
   server-side only (`apps/api/src/app.ts` error handler); `x-powered-by` is disabled. Secrets are never
   read from committed files (`.env` is gitignored) and can be sourced from AWS Secrets Manager.
@@ -379,6 +405,10 @@ webhooks.
   made to be kept, moved and shared. It holds no credential, account name or account id (the project's name is in the
   Specter file for information), is sent `Cache-Control: no-store` with `sandbox; default-src 'none'`, and is never logged.
   An import's summary shows names and places from the file back to the user who chose it, as text.
+  *Mitigated (Phase 2 Milestone 8)*: no secret reaches the image, a release asset or the release pipeline's log. The image is built by
+  the pipeline from a clean checkout filtered by `.dockerignore`, never from a person's machine (`docs/releasing.md`); the pipeline
+  references no secret but the per-run token (`scripts/workflows.test.ts`); and the demo and the release's text files are scanned for
+  credential, email address, IP address and cloud-account patterns (`apps/api/test/demo/`).
 - **Denial of Service**: JSON payloads are capped at 100kb (64 MiB for the two import operations); the `/api/v1` lists are not
   paginated, so a list returns every matching record (low risk at current expected scale, and
   specs/phase-1/milestone-5-rest-api-v1 SC-007 measures a threat model of 1,000 threats and 2,000 mitigations). *Partially mitigated (Phase 1 Milestone 6)*: failed sign-ins are throttled per address, never per
@@ -426,7 +456,8 @@ webhooks.
   Principle V, not treated as free because "there's no RBAC yet anyway." *Mitigated (Phase 1
   Milestone 2)*: the repository's default `GITHUB_TOKEN` permission is read-only
   (`contents: read`); only the CodeQL job is granted the additional `security-events: write` it
-  needs, and only for itself. The merge-gate ruleset on `main` has no bypass actors — no one,
+  needs, and only for itself, and since Phase 2 Milestone 8 the release workflow's two publishing jobs
+  are granted the two write permissions described below, and nothing else is. The merge-gate ruleset on `main` has no bypass actors — no one,
   including repository admins, can merge or push around a failing or missing required check.
   *No widening (Phase 2 Milestone 1)*: the batch endpoint is in the same trust tier as the
   single-record element endpoints and can do nothing they cannot, and it cannot reach across threat models:
@@ -441,6 +472,21 @@ webhooks.
   *No widening (Phase 2 Milestone 6)*: any authenticated account could already create a threat model in any project and read
   every one. Export reads what was readable; an import creates what could be created by hand, in the project the account
   names, and never changes an existing threat model.
+  *Mitigated (Phase 2 Milestone 8)*: the publishing credential is not stolen or broader than needed. It is the run's `GITHUB_TOKEN`,
+  which ends with the job; a write permission is held only by the two jobs that publish (`packages: write`, `contents: write`), neither
+  of which runs repository code or installs a dependency, and the workflow's default is none (`scripts/workflows.test.ts`); the
+  repository's default stays read-only (`docs/ci.md`). *Accepted risk (Phase 2 Milestone 8)*: a tag push runs the release workflow as
+  defined at the tagged commit, so the gate cannot guard against a commit whose gate was edited. Whoever can create a version tag can
+  already change the workflow and the rulesets, so the tag adds no power the owner lacks, and the owner is the only one who can create
+  it; accepted until Phase 6 gives the project roles. *Open risk (Phase 2 Milestone 8)*: an install can be left running on the
+  documented default credentials (`admin`/`admin`, a development signing secret, the database password), now that the quickstart is
+  public. The quickstart's compose file publishes only the app, on the loopback address, which every release's smoke run proves on
+  the real image (`scripts/release/smoke.ts`), and the file and the README say the defaults are for local use only and name each value
+  to set (`docker-compose.release.yml`, `README.md`); the product does not refuse the defaults, and no phase schedules that.
+  *Justified widening (Phase 2 Milestone 8, Governance)*: the release pipeline is the first workflow with a write permission. It is
+  per run, per job, a stored secret nowhere, started only by a tag only the owner can create, refused six ways before it builds, and
+  its write jobs run only `docker`, `skopeo` and `gh`; publishing from a maintainer's machine would put a long-lived credential on a
+  laptop with nothing between a typo and the registry.
 
 Any change that adds an endpoint, a new external integration, or a new credential type MUST add
 or update a bullet above in the same PR, whether or not the surrounding phase has been reached.
@@ -456,7 +502,8 @@ milestone). A PR that touches authentication, configuration/secrets handling, an
 route's authorization/validation logic, or (from Phase 3) prompt construction, LLM provider
 adapters, or document-ingestion code MUST call out the security implication explicitly in its
 description and MUST update the Threat Model section, and `docs/threat-model/`, if it changes an entry point, asset, or
-trust boundary. From Phase 3 onward, a PR that changes a prompt, provider adapter, or the
+trust boundary. A release is published only by the tag-triggered release pipeline (`.github/workflows/release.yml`,
+`docs/releasing.md`), never from a maintainer's machine. From Phase 3 onward, a PR that changes a prompt, provider adapter, or the
 extraction/threat-generation pipeline MUST include the eval harness results against the
 committed thresholds. Reviewers MUST reject PRs that reintroduce a mitigated risk from the
 Threat Model (e.g. reverting to string-built SQL, removing the dummy-hash timing defense,
@@ -481,4 +528,4 @@ rather than silently merged. This file is the source of truth for "why" a rule e
 implementation-level how-to guidance belongs in `README.md`, `API.md`, `CONTRIBUTING.md`, `SECURITY.md`, `plan.md`, and code
 comments, not here.
 
-**Version**: 1.12.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-11
+**Version**: 1.13.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-12

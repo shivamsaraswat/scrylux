@@ -54,7 +54,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
         run: pnpm exec tsx scripts/release/gate.ts
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gate
           path: gate.json
@@ -96,7 +96,7 @@ jobs:
         run: |
           skopeo inspect --raw oci-archive:image.tar \
             | jq -e '[.manifests[] | "\(.platform.os)/\(.platform.architecture)"] | sort == ["linux/amd64","linux/arm64"]'
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: image-oci
           path: image.tar
@@ -271,7 +271,7 @@ jobs:
           PRERELEASE: ${{ needs.gate.outputs.prerelease }}
           DIGEST: ${{ needs.publish-image.outputs.digest || needs.gate.outputs.image_digest }}
         run: pnpm exec tsx scripts/release/notes.ts CHANGELOG.md docker-compose.release.yml "$VERSION" "$DIGEST" "$PRERELEASE" release-files
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-files
           path: release-files

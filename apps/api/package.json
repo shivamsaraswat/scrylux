@@ -20,7 +20,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.1146.0",
+    "@aws-sdk/client-secrets-manager": "^3.1148.0",
     "@specter/core": "workspace:*",
     "@specter/db": "workspace:*",
     "@specter/threat-library": "workspace:*",

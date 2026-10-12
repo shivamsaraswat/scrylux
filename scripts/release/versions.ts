@@ -30,6 +30,7 @@ export interface ParsedTag {
 const NUMBER = '(?:0|[1-9]\\d*)';
 const CORE = `${NUMBER}\\.${NUMBER}\\.${NUMBER}`;
 const SUFFIX = '[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*';
+const escapeRegExp = (value: string): string => value.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
 // No `m` flag and no `$` tricks: the whole string must match, so a tag with a newline in it is not a version tag. Build
 // metadata (`+x`) is refused because a Docker tag cannot hold a `+`.
 const TAG = new RegExp(`^v(${CORE})(?:-(${SUFFIX}))?$`);
@@ -67,7 +68,7 @@ const validDate = (year: number, month: number, day: number): boolean => {
 // version that is only a prefix of another (0.1.0 is not 0.1.01 and is not 0.1.0-rc.1).
 export function findChangelogEntry(changelog: string, core: string): string | null {
   if (!CORE_ONLY.test(core)) return null;
-  const heading = new RegExp(`^## \\[${core.replaceAll('.', '\\.')}\\] - (\\d{4})-(\\d{2})-(\\d{2})$`);
+  const heading = new RegExp(`^## \\[${escapeRegExp(core)}\\] - (\\d{4})-(\\d{2})-(\\d{2})$`);
   const lines = changelog.split('\n');
   const start = lines.findIndex((line) => {
     const m = heading.exec(line);

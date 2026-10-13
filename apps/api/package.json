@@ -20,12 +20,12 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.1148.0",
+    "@aws-sdk/client-secrets-manager": "^3.1149.0",
     "@specter/core": "workspace:*",
     "@specter/db": "workspace:*",
     "@specter/threat-library": "workspace:*",
     "bcryptjs": "^3.0.3",
-    "express": "^5.2.1",
+    "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "kysely": "^0.29.6",
     "pg": "^8.23.1",

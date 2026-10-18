@@ -4,7 +4,7 @@ An open-source, self-hosted threat modeling platform, in early development.
 
 The goal: give Scrylux the context of a project (design docs, a repository, Jira/Confluence) and get a threat model back, or build one by hand on a data-flow diagram. Both paths produce the same threat model, AI suggestions are always drafts with citations that a human accepts or rejects, and you bring your own LLM, including a fully local one, so nothing has to leave your network.
 
-> **Current status: Phase 2 in progress; the data-flow diagram editor has landed.** Today Scrylux is an API and a web app for STRIDE threat models: sign in, manage projects and threat models, draw the system as a data-flow diagram (processes, data stores, external entities, data flows and trust boundaries, with undo and redo, saved as you go), and create, edit and delete threats and their mitigations (Node.js + Express, React, PostgreSQL), already deployable to AWS. Rule-generated threats, reports and import/export are the rest of Phase 2. Roadmap phases not marked ✅ are planned, not built. The run instructions, environment variables and API documented here describe the app as it exists now.
+> **Current status: v0.1, the first release.** Phases 0 to 2 are built: Scrylux is a manual threat modeling tool you run yourself. Draw a system as a data-flow diagram, generate STRIDE threats from rules, work them to a decision, and take the result with you as a report, a Scrylux file, an OTM file, or into and out of Threat Dragon. Phases 3 onward (AI threat models from documents and code, integrations, enterprise features) are planned, not built. See the [changelog](CHANGELOG.md) for what v0.1 does and does not do, and the [releases](https://github.com/shivamsaraswat/scrylux/releases) page. The run instructions, environment variables and API documented here describe the app as it is.
 
 ## Screenshots
 
@@ -34,6 +34,16 @@ They are pictures of the demo, taken by hand, and nothing checks that they are c
 
 </details>
 
+## Try the demo
+
+A finished example, a **fictional** note-taking app, is attached to every release as `notes-app.scrylux.json` (and is in [`docs/demo/`](docs/demo/)).
+
+1. Start Scrylux ([Quickstart](#quickstart)), sign in, and open a project (make one if you have none).
+2. Choose **Import threat model** and pick `notes-app.scrylux.json`. The preview says what it holds; import it.
+3. Look at the diagram and its two trust boundaries, filter the threats by element, and open the report.
+
+[`docs/demo/`](docs/demo/) says what to look at. The demo describes no real system.
+
 ## Roadmap
 
 Built one phase at a time; each phase ends with something usable.
@@ -42,7 +52,7 @@ Built one phase at a time; each phase ends with something usable.
 | --- | --- | --- |
 | 0 ✅ | CRUD tracker for STRIDE threats, deployed to AWS | — |
 | 1 ✅ | Re-platform to a TypeScript monorepo (React, Express, Postgres) with a real domain model: projects, threat models, diagram elements, threats, mitigations. Phase 0's learning data is dropped, not migrated | — |
-| 2 | Manual threat modeling: data-flow-diagram editor with trust boundaries, rule-based STRIDE-per-element threat generation, threat lifecycle and risk scoring, reports, OTM and Threat Dragon import/export | v0.1 |
+| 2 ✅ | Manual threat modeling: data-flow-diagram editor with trust boundaries, rule-based STRIDE-per-element threat generation, threat lifecycle and risk scoring, reports, OTM and Threat Dragon import/export | v0.1 |
 | 3 | AI threat models from uploaded docs or pasted text, with citations and human review. Bring your own LLM: Anthropic, OpenAI, Bedrock/Azure, or local models via Ollama/vLLM | v0.2 |
 | 4 | Threat models from code repositories and IaC (Terraform, Kubernetes, compose), with drift detection as the code changes | v0.3 |
 | 5 | Integrations: Jira/Confluence context, threats pushed as tickets, automatic design reviews on PRs and tickets, MCP server, CLI | v0.4 |

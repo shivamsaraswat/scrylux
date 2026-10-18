@@ -61,7 +61,42 @@ What v0.1 does not do, so that you can decide before you rely on it:
 
 More: the [changelog](CHANGELOG.md), the [releases](https://github.com/shivamsaraswat/scrylux/releases), the [demo threat model](docs/demo/), [Scrylux's own threat model](docs/threat-model/), the [contribution guide](CONTRIBUTING.md) and the [security policy](SECURITY.md).
 
-## Run locally with Docker
+## Quickstart
+
+You need Docker with Compose. You do not need to clone this repository.
+
+```sh
+curl -fsSLO https://github.com/shivamsaraswat/scrylux/releases/download/v0.1.0/docker-compose.yml
+docker compose up -d
+```
+
+(`…/releases/latest/download/docker-compose.yml` is the same file for the newest final release.)
+
+Then open <http://localhost:3000> and sign in with `admin` / `admin`. Create a project, add a threat model, and draw your system, or
+[try the demo](#try-the-demo) first.
+
+- `docker compose down` stops it and **keeps** your data, which lives in the `pgdata` volume.
+- `docker compose down -v` stops it and **wipes** your data.
+
+**Choosing a version.** The file starts the version of the release it came from. To start another: `SCRYLUX_VERSION=0.1.0 docker compose up -d`.
+A published version never changes. `latest` exists too, for those who ask for it by hand; the file never uses it for you.
+
+**Upgrading.** Back up first: `docker compose exec db pg_dump -U postgres threats > backup.sql`. Then choose the next version and start it.
+Migrations only move forward and run when the app starts; there is no downgrade. The [changelog](CHANGELOG.md) says what each release
+changes.
+
+> **Before you expose this anywhere else**
+>
+> The defaults above are for trying Scrylux on your own machine.
+>
+> - Set `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_USERNAME` and `ADMIN_PASSWORD` (export them, or put them in a `.env` file next to
+>   `docker-compose.yml`). Anyone who knows `JWT_SECRET` can forge a login token, and `admin` / `admin` is public knowledge.
+> - Scrylux does **not** terminate TLS. Put a proxy that does in front of it, and set `TRUST_PROXY` (see
+>   [Behind a load balancer or reverse proxy](#behind-a-load-balancer-or-reverse-proxy)). The [Deployment](#deployment) section lists what a deployed install needs.
+> - The app is published on `127.0.0.1` only, so only your machine can reach it. To change that on purpose, edit the `ports:` line of
+>   the app service, and do it only after the steps above. The database publishes no port and should keep publishing none.
+
+## Run from source (contributors)
 
 ```sh
 docker compose up --build

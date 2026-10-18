@@ -2,7 +2,7 @@
 
 - **Project:** Scrylux
 - **Methodology:** STRIDE
-- **Threat model status:** In review
+- **Threat model status:** Approved
 - **Exported:** 2026-10-12 07:14 UTC
 - **Contents:** 41 elements, 264 threats, 203 mitigations
 

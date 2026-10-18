@@ -239,6 +239,10 @@ jobs:
             echo "::error::the tag ${VERSION} and the digest ${DIGEST} are not the same image on this platform"
             exit 1
           fi
+      # `--pull never` below keeps compose from touching the image just verified, so the database image, which a fresh runner does not
+      # have, is pulled first.
+      - name: Pull the database image
+        run: docker compose -f docker-compose.release.yml pull db
       - name: Start the release compose file with the pulled image
         run: docker compose -f docker-compose.release.yml up -d --pull never
       - name: Run the smoke checks against it

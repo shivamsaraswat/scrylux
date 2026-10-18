@@ -52,7 +52,7 @@ const FINAL = [
   `- Digest: \`${DIGEST}\``,
   `- Pin it: \`ghcr.io/shivamsaraswat/scrylux@${DIGEST}\``,
   '',
-  'This image is **not signed** and carries no build attestation or SBOM in this release, so pin it by its digest. Verifiable release images are planned for Phase 6 (`plan.md`).',
+  'This image is **not signed** and carries no build attestation or SBOM in this release, so pin it by its digest. Verifiable release images are planned for Phase 6.',
   '',
   "Open risks are recorded in Scrylux's own threat model: [`docs/threat-model/`](https://github.com/shivamsaraswat/scrylux/tree/v0.1.0/docs/threat-model). To report a vulnerability, follow [`SECURITY.md`](https://github.com/shivamsaraswat/scrylux/blob/v0.1.0/SECURITY.md) and report it privately; never open a public issue.",
   '',

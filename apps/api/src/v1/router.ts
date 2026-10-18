@@ -29,10 +29,12 @@ function idOf(record: unknown): string | undefined {
   return typeof record.id === 'string' ? record.id : undefined;
 }
 
-// A document to download. `attachment` names the file (Express encodes the name for the header), and nothing may keep
-// a copy: it holds a whole threat model.
+// A document to download. `attachment` names the file, and nothing may keep a copy: it holds a whole threat model. The
+// header is written out, with the name quoted, because the web app reads the name from `filename="..."` and Express 5.3
+// stopped quoting a name that needs no quotes. The names come from `fileSlug` and hold only lower-case letters, digits,
+// hyphens and dots, so there is nothing to escape.
 function sendText(res: Response, result: TextResult): void {
-  res.attachment(result.filename);
+  res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
   res.type(result.contentType);
   res.setHeader('Cache-Control', 'no-store');
   if (result.csp !== undefined) res.setHeader('Content-Security-Policy', result.csp);

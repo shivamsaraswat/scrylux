@@ -1,21 +1,22 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkLinks, MAX_IMAGE_BYTES, MAX_IMAGES_BYTES, MIN_README_IMAGES, type LinkInputs } from './check-links.js';
+import { checkLinks, LINK_FILES, MAX_IMAGE_BYTES, MAX_IMAGES_BYTES, MIN_IMAGES, MIN_README_IMAGES, type LinkInputs } from './check-links.js';
 import { formatFinding } from './release/versions.js';
 
 // Check L of contracts/checks.md (spec FR-020, FR-021, SC-006): a relative link or an image of the README, the changelog and the
-// release documents points at a file that exists; every image has alt text; the README shows at least four screenshots of at most
-// 600 KB each and 3 MB together; and the front page links where a visitor goes next. The check takes the files' text and what is
+// release documents points at a file that exists; every image has alt text; the README shows a screenshot and, with the
+// screenshots page, at least four are shown, of at most 600 KB each and 3 MB together; and the front page links where a visitor goes next. The check takes the files' text and what is
 // on disk as arguments, so each clause is shown to fail on input made to break it.
 
 const IMAGES = ['diagram-editor', 'threats-for-element', 'report', 'import-export'].map((n) => `docs/images/${n}.png`);
 
-// A set of files that satisfies every clause: the README embeds four images and links everything required.
+// A set of files that satisfies every clause: the README embeds one image, the screenshots page the other three, and the README
+// links everything required.
 function good(): LinkInputs {
   const readme = [
     '# Scrylux',
-    ...IMAGES.map((p, i) => `![Screenshot ${i + 1} of the demo](${p})`),
+    `![Screenshot 1 of the demo](${IMAGES[0]})`,
     'See the [changelog](CHANGELOG.md), the [releases](https://github.com/shivamsaraswat/scrylux/releases), the [demo](docs/demo/),',
     'the [threat model](docs/threat-model/), [contributing](CONTRIBUTING.md) and [security](SECURITY.md).',
   ].join('\n');
@@ -24,6 +25,10 @@ function good(): LinkInputs {
     'CHANGELOG.md': '# Changelog\n[0.1.0]: https://github.com/shivamsaraswat/scrylux/releases/tag/v0.1.0',
     'docs/releasing.md': 'See the [README](../README.md).',
     'docs/demo/README.md': 'Back to the [README](../../README.md).',
+    'docs/install.md': 'Back to the [README](../README.md).',
+    'docs/development.md': 'Back to the [README](../README.md).',
+    'docs/roadmap.md': 'Back to the [README](../README.md).',
+    'docs/screenshots.md': IMAGES.slice(1).map((p, i) => `![Screenshot ${i + 2} of the demo](${p.replace('docs/', '')})`).join('\n'),
   };
   const onDisk = new Set([...Object.keys(files), ...IMAGES, 'CONTRIBUTING.md', 'SECURITY.md', 'docs/demo/notes-app.scrylux.json', 'docs/threat-model/README.md']);
   return { files, exists: (p) => onDisk.has(p.replace(/\/$/, '')) || [...onDisk].some((f) => f.startsWith(p.endsWith('/') ? p : `${p}/`)), images: IMAGES.map((p) => ({ path: p, bytes: 100_000 })) };
@@ -94,18 +99,26 @@ describe('images (FR-020)', () => {
     expect(said(input)).toMatch(/no alt text/);
   });
 
-  it('refuses a README that shows fewer than four images from docs/images/', () => {
+  it('refuses a README that shows no image from docs/images/', () => {
     const input = good();
-    input.files['README.md'] = (input.files['README.md'] ?? '').replace(/!\[Screenshot 4 of the demo\]\([^)]*\)\n?/, '');
-    expect(MIN_README_IMAGES).toBe(4);
+    input.files['README.md'] = (input.files['README.md'] ?? '').replace(/!\[Screenshot 1 of the demo\]\([^)]*\)\n?/, '');
+    input.files['docs/screenshots.md'] = IMAGES.map((p, i) => `![Screenshot ${i + 1} of the demo](${p.replace('docs/', '')})`).join('\n');
+    expect(MIN_README_IMAGES).toBe(1);
+    expect(said(input)).toMatch(/README.md.*0 image/);
+  });
+
+  it('refuses a README and a screenshots page that show fewer than four images between them', () => {
+    const input = good();
+    input.files['docs/screenshots.md'] = (input.files['docs/screenshots.md'] ?? '').replace(/!\[Screenshot 4 of the demo\]\([^)]*\)\n?/, '');
+    expect(MIN_IMAGES).toBe(4);
     expect(said(input)).toMatch(/3 image/);
   });
 
   it('does not count the same image twice, or an image from somewhere else', () => {
     const input = good();
-    input.files['README.md'] = (input.files['README.md'] ?? '').replace(IMAGES[3] ?? '', IMAGES[0] ?? '');
+    input.files['docs/screenshots.md'] = (input.files['docs/screenshots.md'] ?? '').replace('images/import-export.png', 'images/report.png');
     expect(said(input)).toMatch(/3 image/);
-    input.files['README.md'] = (input.files['README.md'] ?? '').replace(IMAGES[2] ?? '', 'docs/demo/notes-app.scrylux.json');
+    input.files['docs/screenshots.md'] = (input.files['docs/screenshots.md'] ?? '').replaceAll('images/report.png', '../docs/demo/notes-app.scrylux.json');
     expect(said(input)).toMatch(/2 image/);
   });
 
@@ -166,11 +179,10 @@ describe('where a visitor goes next (FR-021)', () => {
 describe("this repository's own front page, changelog and release documents", () => {
   const root = path.resolve(import.meta.dirname, '..');
   const rel = (p: string): string => p.split(path.sep).join('/');
-  const FILES = ['README.md', 'CHANGELOG.md', 'docs/releasing.md', 'docs/demo/README.md'];
 
-  it('link only to what exists, show at least four small screenshots, and link where a visitor goes next (SC-006)', () => {
+  it('link only to what exists, show a screenshot and, with the screenshots page, at least four small ones, and link where a visitor goes next (SC-006)', () => {
     const files: Record<string, string> = {};
-    for (const f of FILES) if (existsSync(path.join(root, f))) files[f] = readFileSync(path.join(root, f), 'utf8');
+    for (const f of LINK_FILES) if (existsSync(path.join(root, f))) files[f] = readFileSync(path.join(root, f), 'utf8');
     const dir = path.join(root, 'docs', 'images');
     const images = existsSync(dir)
       ? readdirSync(dir)

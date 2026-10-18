@@ -2,13 +2,25 @@ import path from 'node:path';
 import type { Finding } from './release/versions.js';
 
 // Check L of contracts/checks.md (spec FR-020, FR-021, SC-006). A relative link or an image in the front page, the changelog and
-// the release documents points at a file that exists; every image has alt text; the README shows at least four screenshots, of at
-// most 600 KB each and 3 MB together; and the front page and the changelog link where a visitor goes next. It takes the files'
+// the release documents points at a file that exists; every image has alt text; the README shows a screenshot and, with the
+// screenshots page, the project shows at least four, of at most 600 KB each and 3 MB together; and the front page and the changelog
+// link where a visitor goes next. It takes the files'
 // text and what is on disk as arguments, so each clause can be shown to fail (links.test.ts). External addresses are not
 // followed: the build does not depend on the network.
 
-export const LINK_FILES = ['README.md', 'CHANGELOG.md', 'docs/releasing.md', 'docs/demo/README.md'];
-export const MIN_README_IMAGES = 4;
+export const LINK_FILES = [
+  'README.md',
+  'CHANGELOG.md',
+  'docs/releasing.md',
+  'docs/demo/README.md',
+  'docs/install.md',
+  'docs/development.md',
+  'docs/roadmap.md',
+  'docs/screenshots.md',
+];
+const SCREENSHOT_PAGES = ['README.md', 'docs/screenshots.md'];
+export const MIN_README_IMAGES = 1;
+export const MIN_IMAGES = 4;
 export const MAX_IMAGE_BYTES = 600 * 1024;
 export const MAX_IMAGES_BYTES = 3 * 1024 * 1024;
 
@@ -56,6 +68,7 @@ export function checkLinks({ files, exists, images }: LinkInputs): Finding[] {
   const reached = new Set<string>();
   const external: string[] = [];
   const shown = new Set<string>();
+  const inReadme = new Set<string>();
 
   for (const file of LINK_FILES) {
     const text = files[file];
@@ -72,12 +85,18 @@ export function checkLinks({ files, exists, images }: LinkInputs): Finding[] {
       if (image && alt.trim() === '') findings.push(finding(file, `an image has no alt text: ${to}`, 'describe what it shows, in a sentence, between the brackets'));
       if (!exists(to)) findings.push(finding(file, `links to ${to}, which is not there`, `fix the link, or add ${to}`));
       else if (file === 'README.md' || file === 'CHANGELOG.md') reached.add(to);
-      if (image && file === 'README.md' && to.startsWith(IMAGE_DIR) && exists(to)) shown.add(to);
+      if (image && SCREENSHOT_PAGES.includes(file) && to.startsWith(IMAGE_DIR) && exists(to)) {
+        shown.add(to);
+        if (file === 'README.md') inReadme.add(to);
+      }
     }
   }
 
-  if (files['README.md'] !== undefined && shown.size < MIN_README_IMAGES) {
-    findings.push(finding('README.md', `it embeds ${shown.size} image(s) from ${IMAGE_DIR}, and at least ${MIN_README_IMAGES} are required`, `take the screenshots of the demo and embed them (README, "Screenshots")`));
+  if (files['README.md'] !== undefined && inReadme.size < MIN_README_IMAGES) {
+    findings.push(finding('README.md', `it embeds ${inReadme.size} image(s) from ${IMAGE_DIR}, and at least ${MIN_README_IMAGES} is required`, 'embed a screenshot of the demo near the top'));
+  }
+  if (files['README.md'] !== undefined && shown.size < MIN_IMAGES) {
+    findings.push(finding('docs/screenshots.md', `the README and this page embed ${shown.size} image(s) from ${IMAGE_DIR}, and at least ${MIN_IMAGES} are required`, 'take the screenshots of the demo and embed them (docs/screenshots.md)'));
   }
   for (const { path: image, bytes } of images) {
     if (bytes > MAX_IMAGE_BYTES) findings.push(finding(image, `it is ${kb(bytes)}, over the 600 KB limit of one screenshot`, 'optimise it, or crop it to the application area'));

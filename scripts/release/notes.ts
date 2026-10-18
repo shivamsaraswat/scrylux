@@ -41,7 +41,7 @@ export function buildNotes({ changelog, version, core, digest, prerelease }: Not
     `- Digest: \`${digest}\``,
     `- Pin it: \`${IMAGE}@${digest}\``,
     '',
-    'This image is **not signed** and carries no build attestation or SBOM in this release, so pin it by its digest. Verifiable release images are planned for Phase 6 (`plan.md`).',
+    'This image is **not signed** and carries no build attestation or SBOM in this release, so pin it by its digest. Verifiable release images are planned for Phase 6.',
     '',
     `Open risks are recorded in Scrylux's own threat model: [\`docs/threat-model/\`](${IMAGE_SOURCE}/tree/${tag}/docs/threat-model). To report a vulnerability, follow [\`SECURITY.md\`](${IMAGE_SOURCE}/blob/${tag}/SECURITY.md) and report it privately; never open a public issue.`,
     '',

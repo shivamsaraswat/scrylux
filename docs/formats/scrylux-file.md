@@ -126,7 +126,7 @@ in one file.
 
 Exporting or importing a model of that size takes about 500 to 650 MB of the server's memory while it runs, on top of
 what the app uses at rest, so a host that will hold models like it needs at least **2 GiB** (see
-[Deployment in the README](../../README.md#deployment)). A smaller host is fine for ordinary threat models.
+[Deployment](../install.md#deployment)). A smaller host is fine for ordinary threat models.
 
 ## Versioning
 

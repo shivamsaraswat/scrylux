@@ -15,7 +15,7 @@ vulnerability, read [SECURITY.md](SECURITY.md) and **never** open a public issue
   [`specs/`](specs/), grouped by roadmap phase (`specs/phase-<N>/milestone-<M>-<name>/`), with its
   spec, plan and tasks (for example `specs/phase-1/milestone-6-react-app-shell/`). Read a recent
   one to see the shape. A feature request is the place to start that conversation.
-- **Stay within the current phase.** The roadmap is in the README's [Roadmap](README.md#roadmap).
+- **Stay within the current phase.** The roadmap is in [docs/roadmap.md](docs/roadmap.md).
   Scrylux is built phase by phase, and work on a later phase's features is not accepted while an
   earlier phase is in progress.
 
@@ -43,7 +43,7 @@ Then edit `.env.test`: set `DB_PASSWORD=devpassword` (the database password in
 `JWT_SECRET=local-only-not-a-secret` and `ADMIN_PASSWORD=admin`. `DB_HOST=localhost` is already
 right. Never commit this file.
 
-The README's [Development](README.md#development-contributing) section describes the workspace
+[docs/development.md](docs/development.md) describes the workspace
 layout and how to run the app while you work on it.
 
 ## Checks

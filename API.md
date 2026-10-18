@@ -306,7 +306,7 @@ Two kinds of token reach `/api/v1`: the bearer token from `/api/login`, and the 
 
 ### Sign-in throttling
 
-Failed sign-ins on both `/api/login` and `/api/session` are counted per username and address, and per address. After enough failures the next attempts get `429 {"error":"Too many sign-in attempts. Try again later."}` with a `Retry-After` header, and the wait doubles with each further failure up to a cap. A refused attempt does not check the password, so even the correct one is refused during the wait. Nothing locks an account: only the address that is guessing is slowed down. An IPv6 address counts as its /64. Behind a proxy, set `TRUST_PROXY` so the real client address is counted. The limits are the `SIGN_IN_*` variables in the [README](README.md#environment-variables).
+Failed sign-ins on both `/api/login` and `/api/session` are counted per username and address, and per address. After enough failures the next attempts get `429 {"error":"Too many sign-in attempts. Try again later."}` with a `Retry-After` header, and the wait doubles with each further failure up to a cap. A refused attempt does not check the password, so even the correct one is refused during the wait. Nothing locks an account: only the address that is guessing is slowed down. An IPv6 address counts as its /64. Behind a proxy, set `TRUST_PROXY` so the real client address is counted. The limits are the `SIGN_IN_*` variables in the [README](docs/install.md#environment-variables).
 
 ## OpenAPI document
 

@@ -14,7 +14,7 @@ platforms, publishes the tested image, proves it can be pulled with no login, an
 - A release candidate (`v0.1.0-rc.1`) is published for real and marked as a pre-release. It never becomes `latest`, and it stays
   in the registry.
 - The image is **not signed** and carries no build attestation or SBOM in v0.1; the release notes say so and give its digest.
-  Verifiable release images are planned for Phase 6 (`plan.md`).
+  Verifiable release images are planned for Phase 6.
 
 ## Before the first release only: the name check
 

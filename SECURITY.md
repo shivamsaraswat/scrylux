@@ -5,8 +5,7 @@ taking the time to report one.
 
 ## Supported versions
 
-Scrylux has no release yet (v0.1 is planned for Phase 2). Until then, only the latest commit on
-`main` receives security fixes.
+The latest release line (v0.1.x) receives security fixes. Nothing older does, and `main` is not a supported version: run a release.
 
 ## Reporting a vulnerability
 

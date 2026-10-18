@@ -56,7 +56,15 @@ const clean = (findings: Finding[]): void => {
 };
 
 // The text files this milestone adds that are scanned with the demo (FR-043). A deleted one fails the check; none is skipped.
-const SCANNED = ['CHANGELOG.md', 'docs/releasing.md', 'docker-compose.release.yml'];
+const SCANNED = [
+  'CHANGELOG.md',
+  'docs/releasing.md',
+  'docker-compose.release.yml',
+  'docs/install.md',
+  'docs/development.md',
+  'docs/roadmap.md',
+  'docs/screenshots.md',
+];
 
 const MAX_WARNINGS = 10;
 

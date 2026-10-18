@@ -53,7 +53,7 @@ pnpm run lint
 pnpm run test
 ```
 
-The tests, and the browser tests further down, read a gitignored `.env.test` at the repository root (CI supplies the same values as job variables instead). After copying `.env.example`, set `DB_PASSWORD=devpassword` (the database password in `docker-compose.yml`) and replace the other `change-me` values with local-only values, for example `JWT_SECRET=local-only-not-a-secret` and `ADMIN_PASSWORD=admin`. `DB_HOST=localhost` is already right. [CONTRIBUTING.md](../CONTRIBUTING.md) walks through the full setup.
+The tests, and the browser tests further down, read a gitignored `.env.test` at the repository root (CI supplies the same values as job variables instead). After copying `.env.example`, set the database password to the one in `docker-compose.yml` and replace the other `change-me` values with local-only values of your own. `DB_HOST=localhost` is already right. [CONTRIBUTING.md](../CONTRIBUTING.md) walks through the exact values and the full setup.
 
 To run the web app while you work on it, start the API and Vite in two terminals. Vite proxies `/api` to the API, and serves the app on <http://localhost:5173>:
 

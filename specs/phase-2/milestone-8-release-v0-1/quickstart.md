@@ -109,7 +109,7 @@ missing test. Publish `v0.1.0-rc.2` and repeat; candidates stay in the registry.
 ## 6. The clean-machine walkthrough (FR-030, SC-001)
 
 On a machine with Docker and **no clone of the repository**, by someone who did not write the
-quickstart, following only the README, with a stopwatch. The README's release-facing text (the
+quickstart, following only the README, and the pages it links where it sends them (`docs/install.md` for the version choice, the upgrade and what to set before exposing the app), with a stopwatch. The README's release-facing text (the
 quickstart, the status, the demo download) is in the second pull request (tasks.md T052), not yet merged
 at this point: follow the README **of that pull request's branch**, and the candidate's release assets:
 

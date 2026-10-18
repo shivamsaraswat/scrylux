@@ -361,6 +361,36 @@ describe('release.yml: when each job runs (FR-007, FR-010)', () => {
   });
 });
 
+// ---------------------------------------------------------------------------------------------------------------------
+// What `verify-public` starts (spec FR-010, FR-007; tasks.md T069). It starts the release compose file with `--pull never`, so that
+// compose cannot touch the image the job just pulled with no credentials and verified. That flag also stops compose pulling the
+// database image, which a fresh runner does not have: `v0.1.0-rc.1` failed there after the anonymous pull had succeeded. The
+// database image is therefore pulled by a step of its own, first, from the same file and for a service that file defines.
+describe('release.yml: verify-public can start the compose file it checks (FR-010)', () => {
+  const COMPOSE = /docker compose -f (\S+) /;
+  const verify = (): Step[] => stepsOf(jobsOf(release())['verify-public'] ?? {});
+  const starts = (step: Step): boolean => /docker compose\b[^\n]*\bup\b[^\n]*--pull never/.test(step.run ?? '');
+  const pulls = (step: Step): RegExpExecArray | null => /docker compose -f (\S+) pull (\S+)/.exec(step.run ?? '');
+
+  it('starts the compose file with --pull never, which is what makes the next test necessary', () => {
+    expect(verify().some(starts)).toBe(true);
+  });
+
+  it('pulls the database image of that file, in a step before the one that starts it', () => {
+    const steps = verify();
+    const start = steps.findIndex(starts);
+    expect(start, 'no step of verify-public starts the compose file with --pull never').toBeGreaterThanOrEqual(0);
+    const file = COMPOSE.exec(steps[start]?.run ?? '')?.[1];
+    const pull = steps.slice(0, start).map(pulls).find((m) => m !== null && m[1] === file);
+    expect(pull, `no step before the start runs "docker compose -f ${file} pull <service>"`).toBeDefined();
+    const compose = parse(readFileSync(path.join(ROOT, file ?? ''), 'utf8')) as { services?: Record<string, { image?: string }> };
+    const service = pull?.[2] ?? '';
+    expect(Object.keys(compose.services ?? {}), `${file} defines no service "${service}"`).toContain(service);
+    expect(compose.services?.[service]?.image, `service "${service}" of ${file} is not an image that has to be pulled`).toBeDefined();
+    expect(compose.services?.[service]?.image, 'the pulled service must not be the one the job just verified').not.toMatch(/scrylux/);
+  });
+});
+
 describe('the evaluator these tests use', () => {
   const context = { results: { gate: 'success', publish: 'skipped' } as Record<string, Result>, outputs: { 'gate.flag': 'true' } };
   it.each([

@@ -56,6 +56,31 @@ not asked for; see the Assumptions.
   tag-triggered pipeline. The pipeline has no dry-run or manual mode (FR-001), and the rehearsal's
   image and release stay in the registry, marked as a pre-release (FR-005, FR-007).
 
+### Session 2026-10-18
+
+Recorded by the maintainer's decisions after the candidates `v0.1.0-rc.1` and `v0.1.0-rc.2`. Nothing else of this spec changes, and
+the name Specter, where this spec, the plan and the tasks use it, is the name before the rename below.
+
+- Q: Must the README itself carry the version choice, the upgrade notes, the values to set before exposing the app, the roadmap
+  table and the retaking procedure, and show four screenshots (FR-017, FR-018, FR-019, FR-020, FR-033, SC-006)? → A: No. The README is
+  a short front page: the pitch, one screenshot, the quickstart with a warning, and the limits of v0.1. The front page and the pages it
+  links together carry what those requirements list (`docs/install.md`, `docs/roadmap.md`, `docs/screenshots.md`,
+  `docs/development.md`); the README needs one screenshot, and the README with `docs/screenshots.md` shows four. The link check
+  (`scripts/check-links.ts`) holds this and checks the new pages' links.
+- Q: What did the name check (FR-035) decide, and does FR-040 allow what followed? → A: The name check found collisions with
+  "Specter", and the maintainer chose **Scrylux**. The rename was made in its own pull request, before the first release, with no
+  compatibility path because nothing had shipped: the packages (`@scrylux/*`), the export condition, `SCRYLUX_VERSION`, the
+  `scrylux_session` cookie, the `.scrylux.json` file and its `format`, and constitution 1.13.1. It is an exception to FR-040's "no change
+  to the product", made by the maintainer for the reason FR-035 gives.
+- Q: May the milestone add a logo? → A: Yes: `docs/brand/logo.svg`, shown in the README, and the same mark as the web app's favicon
+  (`apps/web/public/favicon.svg`). It is the one change to the app's pages, an exception to FR-040 made by the maintainer; it adds no
+  behaviour, endpoint, table or dependency.
+- Q: Why does the API write the download's `Content-Disposition` header itself, when FR-040 allows a fix only for a defect FR-027 or
+  FR-030 finds? → A: It is a defect fix forced by a dependency update, not a feature: Express 5.3 stopped quoting a filename that needs
+  no quotes, and the web app's download code reads only the quoted form, so a downloaded report or export would have lost its name
+  (pull request #38, found by Dependabot's bump in pull request #37). The five contract tests of `exchange.test.ts` and
+  `reports.test.ts` failed first and pass with it. The behaviour a user sees is unchanged.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A maintainer publishes a version safely (Priority: P1)

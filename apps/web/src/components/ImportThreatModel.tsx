@@ -6,7 +6,7 @@ import {
   type ImportFormat,
   type ImportResult,
   type NameIssue,
-} from '@specter/core';
+} from '@scrylux/core';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { apiPost } from '../api/client.js';
@@ -23,17 +23,17 @@ import { ImportNotes } from './ImportNotes.js';
 
 // Typed by core's list of formats, so a format the API gains is a type error here until it has a label.
 const FORMAT_LABELS: Record<ImportFormat, string> = {
-  specter: 'Specter file',
+  scrylux: 'Scrylux file',
   otm: 'OTM file',
   'threat-dragon': 'Threat Dragon file',
 };
 
 const READS =
-  'Specter imports Specter files (version 1), OTM 0.2.0 files in JSON, and Threat Dragon version 2 files.';
+  'Scrylux imports Scrylux files (version 1), OTM 0.2.0 files in JSON, and Threat Dragon version 2 files.';
 const NOT_JSON = `This file isn't JSON. ${READS}`;
-const NOT_RECOGNISED = `This file isn't in a format Specter reads. ${READS}`;
+const NOT_RECOGNISED = `This file isn't in a format Scrylux reads. ${READS}`;
 const THREAT_DRAGON_V1 = 'This is a Threat Dragon version 1 file. Open and save it in Threat Dragon 2, which converts it, then import it here.';
-const TOO_LARGE = `This file is larger than ${IMPORT_MAX_BYTES / (1024 * 1024)} MiB, the most Specter can import.`;
+const TOO_LARGE = `This file is larger than ${IMPORT_MAX_BYTES / (1024 * 1024)} MiB, the most Scrylux can import.`;
 
 const NAME_ISSUE_TEXT: Record<NameIssue, string> = {
   taken: 'A threat model with this name already exists in this project.',

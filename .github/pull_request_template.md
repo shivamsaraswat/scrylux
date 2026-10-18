@@ -4,7 +4,7 @@
 
 ## How this satisfies Principles I–VI
 
-See the [constitution](https://github.com/shivamsaraswat/specter/blob/main/.specify/memory/constitution.md) for what each principle requires.
+See the [constitution](https://github.com/shivamsaraswat/scrylux/blob/main/.specify/memory/constitution.md) for what each principle requires.
 
 <!-- One row per principle of the constitution (.specify/memory/constitution.md). "N/A" is fine, with a reason. -->
 
@@ -26,7 +26,7 @@ See the [constitution](https://github.com/shivamsaraswat/specter/blob/main/.spec
 
 <!-- Updated: which section of the constitution's Threat Model changed. Or "No change", and why
      (the change adds no asset, entry point or trust boundary). If you added an asset, an entry point or a
-     trust boundary, or retired or changed a threat-library rule: was Specter's own threat model
+     trust boundary, or retired or changed a threat-library rule: was Scrylux's own threat model
      (`docs/threat-model/`, see its README) updated in the same change? -->
 
 ## Testing

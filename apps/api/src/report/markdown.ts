@@ -1,4 +1,4 @@
-import { RISK_LEVELS, THREAT_STATUSES } from '@specter/core';
+import { RISK_LEVELS, THREAT_STATUSES } from '@scrylux/core';
 import { markdownAutolink, markdownInline, markdownLines } from './escape.js';
 import { renderMermaid } from './mermaid.js';
 import { GAP_TEXT, STATUS_LABELS, contentsLine, crossingText, type BoundaryGroup, type Report, type ReportElement, type ReportMitigation, type ReportThreat } from './model.js';
@@ -112,7 +112,7 @@ function diagramBlock(report: Report): Block {
   const drawn = renderMermaid(report);
   if (drawn.tooLarge) {
     return [
-      `> The diagram has ${drawn.elementCount} elements and is too large to draw here. Its structure is listed under Elements below; the HTML report from Specter draws it in full.`,
+      `> The diagram has ${drawn.elementCount} elements and is too large to draw here. Its structure is listed under Elements below; the HTML report from Scrylux draws it in full.`,
     ];
   }
   return ['```mermaid', drawn.text, '```'];

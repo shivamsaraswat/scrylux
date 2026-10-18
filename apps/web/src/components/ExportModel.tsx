@@ -1,4 +1,4 @@
-import type { ExportFormat } from '@specter/core';
+import type { ExportFormat } from '@scrylux/core';
 import { useState } from 'react';
 import { download } from '../api/download.js';
 import { ApiError, isGone } from '../api/errors.js';
@@ -12,7 +12,7 @@ import { ErrorSummary } from './ErrorSummary.js';
 
 // Typed by core's list of formats, so a format the API gains is a type error here until it has a button.
 const FORMATS: Record<ExportFormat, { label: string; extension: string }> = {
-  specter: { label: 'Download Specter file', extension: 'specter.json' },
+  scrylux: { label: 'Download Scrylux file', extension: 'scrylux.json' },
   otm: { label: 'Download OTM file', extension: 'otm.json' },
 };
 const CHOICES = (Object.keys(FORMATS) as ExportFormat[]).map((format) => ({ format, ...FORMATS[format] }));

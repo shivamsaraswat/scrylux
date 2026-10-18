@@ -1,8 +1,11 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.12.0 → 1.13.0
-Rationale: Phase 2 Milestone 8 (release v0.1, specs/phase-2/milestone-8-release-v0-1/) publishes Specter for the first time: a
+Version change: 1.13.0 → 1.13.1
+Rationale: the product is renamed from Specter to Scrylux before its first release, after the name check for v0.1 found
+  "Specter" taken (docs/releasing.md, "the name check"). This is a PATCH: the name is changed throughout, and the cookie, the
+  package scope, the image path and the file format follow it. No principle, section, rule or risk changes.
+Previous change (1.12.0 → 1.13.0): Phase 2 Milestone 8 (release v0.1, specs/phase-2/milestone-8-release-v0-1/) publishes Scrylux for the first time: a
   tag-triggered release pipeline (`.github/workflows/release.yml`) that builds, tests and publishes a two-platform image to GHCR
   and creates a GitHub release. It is the first workflow that holds a write permission (`packages: write` in one job and
   `contents: write` in another), it adds an entry point (the creation of a version tag), assets (the published image and the
@@ -31,7 +34,7 @@ Templates requiring follow-up: none checked in this run (scope of this change is
   extended in the same milestone.
 -->
 
-# Specter Constitution
+# Scrylux Constitution
 
 ## Core Principles
 
@@ -65,7 +68,7 @@ UI's access token, checked against its still-active session on every request. Th
 endpoints are authenticated by the session cookie, which is the reviewed mechanism: `SameSite=Strict`,
 scoped to that path, with an Origin check and a JSON content type on every request
 (`apps/api/src/session/cookie.ts`).
-**Rationale**: Specter stores STRIDE threat data and, later, an organization's design
+**Rationale**: Scrylux stores STRIDE threat data and, later, an organization's design
 documents and code context; a security lapse in the tool that tracks threats undermines its own
 purpose. Non-negotiable because these are the few rules that, if violated, turn a code review
 comment into a breach.
@@ -141,14 +144,14 @@ available; a broader grant is permitted only when explicitly justified in the PR
 The app currently has no role separation, and that gap is a known, tracked risk scheduled to
 close with RBAC/SSO/audit logging in Phase 6 (see Threat Model) — until then, broadening what an
 authenticated user can do MUST still be called out explicitly, not treated as free.
-Specter's own threat model is committed in `docs/threat-model/` (a Specter file and its Markdown report, built
-in Specter and checked on every pull request). The Threat Model section below governs: where the two
+Scrylux's own threat model is committed in `docs/threat-model/` (a Scrylux file and its Markdown report, built
+in Scrylux and checked on every pull request). The Threat Model section below governs: where the two
 disagree, the model is corrected. A change that updates the section MUST update the model in the same
 change; a change that only adds a rule to the threat library may follow with the update, because the
 checks then only warn, while retiring or changing a rule makes them fail.
 **Rationale**: A threat-tracking app is a natural target and a credibility risk if it is itself
-insecure (plan.md guiding principle: "secure by default, and dogfooded — Specter keeps its own
-threat model, built in Specter"); treating the threat model as a living document keeps security
+insecure (plan.md guiding principle: "secure by default, and dogfooded — Scrylux keeps its own
+threat model, built in Scrylux"); treating the threat model as a living document keeps security
 review proportional to what actually changed, phase over phase.
 
 ### VI. AI Output Is a Draft With Provenance, Never Silent
@@ -162,14 +165,14 @@ persisted as-is. Uploaded or ingested documents (and, from Phase 4, repository/I
 be treated as untrusted input: clearly delimited in prompts, never executed, and never allowed
 to trigger a tool call or an autonomous action on their own — Phase 3 and Phase 4 are explicitly
 scoped to exclude agentic tool-calling. AI-generated text MUST be rendered escaped in the UI. The
-LLM provider integration MUST stay behind Specter's own provider-agnostic interface
+LLM provider integration MUST stay behind Scrylux's own provider-agnostic interface
 (`packages/llm`) — no feature may hard-depend on one vendor's API, and a fully local model
 (e.g. Ollama/vLLM) MUST remain a supported path. When a non-local, hosted provider is configured,
 the UI MUST clearly disclose that data leaves the install.
-**Rationale**: This is Specter's core trust proposition (plan.md guiding principles: "AI output
+**Rationale**: This is Scrylux's core trust proposition (plan.md guiding principles: "AI output
 is a draft with provenance... nothing AI-generated enters the threat model silently", "private
 by default", "provider-agnostic LLM layer") — without it, an AI-assisted threat model is not
-more trustworthy than an unreviewed guess, and self-hosters lose the reason to choose Specter
+more trustworthy than an unreviewed guess, and self-hosters lose the reason to choose Scrylux
 over a vendor-locked competitor.
 
 ## Threat Model (STRIDE)
@@ -180,7 +183,7 @@ PostgreSQL, optional AWS Secrets Manager) and MUST be kept current per
 Principle V as each phase in plan.md lands. Phase boundaries that will change this section are
 called out inline below; they are not yet implemented and MUST NOT be treated as mitigated until
 they ship.
-`docs/threat-model/` holds the same threat model as a Specter file and a report, kept in step with this
+`docs/threat-model/` holds the same threat model as a Scrylux file and a report, kept in step with this
 section; this section governs.
 
 **Assets (current)**: user credentials (`users.password_hash`); the JWT signing secret; database
@@ -195,7 +198,7 @@ authenticated account through `/api/v1`; browser sessions (`browser_sessions`, P
 short-lived access tokens the UI holds in page memory, and the sign-in failure counts
 (`sign_in_throttle`), whose keys are HMACs of what was typed and of the client address. The original
 threat entry records and Milestone 4's legacy links no longer exist: Milestone 5 removed them. Since Phase 2 Milestone 8: the
-published image, `ghcr.io/shivamsaraswat/specter`, which every user runs, and the credential the release pipeline holds to publish
+published image, `ghcr.io/shivamsaraswat/scrylux`, which every user runs, and the credential the release pipeline holds to publish
 it (the run's `GITHUB_TOKEN` as held by its two publishing jobs; no other secret exists).
 **Assets (planned, not yet implemented)**: from Phase 3 — uploaded design documents, extracted
 text chunks and embeddings, LLM provider API keys, and the LLM outputs derived from them; from
@@ -206,7 +209,7 @@ webhook targets.
 **Trust boundaries (current)**: Internet → load balancer/reverse proxy → Express app
 (`apps/api/src/app.ts`) → PostgreSQL (`apps/api/src/db.ts`); API clients → JSON API (`/api/login`,
 `/api/session`, `/api/users` and `/api/v1`, with its OpenAPI document; since Phase 2 Milestone 1 `/api/v1`
-includes `POST /api/v1/threat-models/{id}/elements/batch`, which writes up to 200 elements in one request, and since Phase 2 Milestone 3 `POST /api/v1/threat-models/{id}/threats/generate`, which creates the threats and mitigations the shipped rules propose for a diagram, and since Phase 2 Milestone 5 `GET /api/v1/threat-models/{id}/report`, which answers with a whole threat model as a Markdown or an HTML document to download, and since Phase 2 Milestone 6 `GET /api/v1/threat-models/{id}/export`, which answers with a whole threat model as a JSON file (the Specter file or OTM), and `POST /api/v1/projects/{id}/imports/check` and `POST /api/v1/projects/{id}/imports`, which read an untrusted file of up to 64 MiB and, for the import, create threat models from it; `/api/v1` has authenticated a request before reading its body since the same milestone),
+includes `POST /api/v1/threat-models/{id}/elements/batch`, which writes up to 200 elements in one request, and since Phase 2 Milestone 3 `POST /api/v1/threat-models/{id}/threats/generate`, which creates the threats and mitigations the shipped rules propose for a diagram, and since Phase 2 Milestone 5 `GET /api/v1/threat-models/{id}/report`, which answers with a whole threat model as a Markdown or an HTML document to download, and since Phase 2 Milestone 6 `GET /api/v1/threat-models/{id}/export`, which answers with a whole threat model as a JSON file (the Scrylux file or OTM), and `POST /api/v1/projects/{id}/imports/check` and `POST /api/v1/projects/{id}/imports`, which read an untrusted file of up to 64 MiB and, for the import, create threat models from it; `/api/v1` has authenticated a request before reading its body since the same milestone),
 where everything but login and
 session sign-in sits behind authentication: a bearer token for `/api/users` and `/api/v1`, the session
 cookie for the rest of `/api/session`. Since Phase 1 Milestone 6 the same app also serves the web app
@@ -245,8 +248,8 @@ webhooks.
   Phase 3, indirect prompt injection from an ingested document could attempt to "spoof"
   instructions to the LLM (e.g. impersonate the system prompt); Principle VI's untrusted-input
   handling is the primary mitigation and MUST be verified before Phase 3 ships.
-  *Accepted risk (Phase 2 Milestone 6)*: provenance can be claimed by a file. A Specter file, or an OTM file carrying Specter's
-  mark, may say a threat is rule-generated, with any rule reference, and Specter cannot check it: generation then treats
+  *Accepted risk (Phase 2 Milestone 6)*: provenance can be claimed by a file. A Scrylux file, or an OTM file carrying Scrylux's
+  mark, may say a threat is rule-generated, with any rule reference, and Scrylux cannot check it: generation then treats
   that threat as its own, so it may flag it stale or match it instead of creating one. Nothing else follows from it. The
   import is the only path by which a threat other than a manual one can be created outside generation (the API's create and
   update operations still refuse every other origin); a file with an AI-drafted threat is refused, as Principle VI requires
@@ -265,7 +268,7 @@ webhooks.
   `apps/api/src/v1/router.ts`, which runs only after the request is authenticated, so a body is read and sized only for a
   signed-in account; the two import operations raise the cap to 64 MiB). CSRF: `/api/v1` and `/api/users` authorize only by a credential the client sends explicitly,
   never by a cookie, so no cross-site request can ride a session there. The one cookie
-  (`specter_session`) reaches only `/api/session`, is `SameSite=Strict`, and those endpoints also
+  (`scrylux_session`) reaches only `/api/session`, is `SameSite=Strict`, and those endpoints also
   require an Origin matching the request's host (Express's `req.host`, which honours
   `X-Forwarded-Host` only from a trusted proxy) and a JSON content type, which forces a CORS
   preflight the app never answers. *Planned*: from Phase 3, AI-proposed edits are a new
@@ -335,7 +338,7 @@ webhooks.
   *Mitigated (Phase 2 Milestone 6)*: an import writes the content of an untrusted file into the database, and is held
   to the rules of every other write. The file is bounded first, by a walk with its own stack, so a file nested a million
   levels deep is answered and not a stack overflow: at most 64 levels and 2,000,000 values. Only then is it parsed by
-  schemas in `packages/core` (a Specter file strictly; OTM and Threat Dragon by the members Specter reads, with every
+  schemas in `packages/core` (a Scrylux file strictly; OTM and Threat Dragon by the members Scrylux reads, with every
   other member accepted and never walked, stored or echoed). The rules across records (every reference resolves,
   nesting without cycles, flows between nodes, the element limit, a reason only on accepted or not applicable threats, a
   stale mark only on generated threats, one generated threat per element and rule, http and https tickets only) are applied
@@ -396,14 +399,14 @@ webhooks.
   (Phase 2 Milestone 4)*: a status reason is user text, like a threat's description. The web app draws it as text, the
   API's refusals of it are fixed messages that never repeat it, and no log line holds it or the status it explains.
   *Accepted risk (Phase 2 Milestone 5)*: a report is a copy of a whole threat model outside the app, made on purpose
-  for people to share. Once it is downloaded, Specter can neither protect it nor take it back. It holds no credential,
+  for people to share. Once it is downloaded, Scrylux can neither protect it nor take it back. It holds no credential,
   account name or account id: the header names the threat model, its project and the time of the export, and no
   token is ever in an address or a file name (the web app sends the bearer token in the `Authorization` header and
   saves the answer as a file). The response is `Cache-Control: no-store`, a report's text is never logged, and the
   documents are read in one read-only snapshot, so a report never mixes two states of the threat model.
   *Accepted risk (Phase 2 Milestone 6)*: an export is the same on purpose, as a data file: a whole threat model, in a form
   made to be kept, moved and shared. It holds no credential, account name or account id (the project's name is in the
-  Specter file for information), is sent `Cache-Control: no-store` with `sandbox; default-src 'none'`, and is never logged.
+  Scrylux file for information), is sent `Cache-Control: no-store` with `sandbox; default-src 'none'`, and is never logged.
   An import's summary shows names and places from the file back to the user who chose it, as text.
   *Mitigated (Phase 2 Milestone 8)*: no secret reaches the image, a release asset or the release pipeline's log. The image is built by
   the pipeline from a clean checkout filtered by `.dockerignore`, never from a person's machine (`docs/releasing.md`); the pipeline
@@ -429,7 +432,7 @@ webhooks.
   (Phase 3) or limiting it (Phase 6) is the remedy if it ever matters. *Accepted risk (Phase 2 Milestone 6)*: an import is parsed, planned and written, and an export is built, in the
   API process, by any signed-in account, for a body of up to 64 MiB, which is read only after authentication and bounded
   in nesting and value count before anything walks it. Measured (quickstart §5): the largest threat model Milestone 3
-  allows (1,000 elements, 15,000 threats, 49,000 mitigations; a Specter file of 25 MB) checks in about 0.2 seconds and
+  allows (1,000 elements, 15,000 threats, 49,000 mitigations; a Scrylux file of 25 MB) checks in about 0.2 seconds and
   imports in about 1.4, and a file of exactly 64 MiB in about 1.9. Another request is answered within 35 ms while it runs, because
   most of the time is the database, in chunked statements inside one transaction. The memory follows the number of
   records more than the bytes: the process peaks at about 470 MB on a fresh server and up to about 760 MB after heavy
@@ -528,4 +531,4 @@ rather than silently merged. This file is the source of truth for "why" a rule e
 implementation-level how-to guidance belongs in `README.md`, `API.md`, `CONTRIBUTING.md`, `SECURITY.md`, `plan.md`, and code
 comments, not here.
 
-**Version**: 1.13.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-12
+**Version**: 1.13.1 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-18

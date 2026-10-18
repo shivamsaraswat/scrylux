@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { TYPE_LABELS, type ThreatRecord } from '@specter/core';
+import { TYPE_LABELS, type ThreatRecord } from '@scrylux/core';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { keys, useCreateThreat, useElements, useModelMitigations, useThreats } from '../api/queries.js';

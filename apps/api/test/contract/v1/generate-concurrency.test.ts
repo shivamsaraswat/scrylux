@@ -1,5 +1,5 @@
-import { ThreatRecord } from '@specter/core';
-import { shippedLibrary } from '@specter/threat-library';
+import { ThreatRecord } from '@scrylux/core';
+import { shippedLibrary } from '@scrylux/threat-library';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
 import { login, startTestServer, type TestServer } from '../helpers.js';

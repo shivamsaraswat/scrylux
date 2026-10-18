@@ -16,7 +16,7 @@ import {
   type StrideCategory,
   type ThreatModelStatus,
   type ThreatStatus,
-} from '@specter/core';
+} from '@scrylux/core';
 import { HttpError } from '../../v1/errors.js';
 
 // What an import will create, before and after the rules across records are applied (data-model.md, "ImportPlan").

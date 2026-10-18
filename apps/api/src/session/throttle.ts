@@ -14,7 +14,7 @@ const THROTTLED = 'Too many sign-in attempts. Try again later.';
 
 // A purpose-specific subkey, so the JWT signing secret is never used raw for a second purpose.
 function throttleKey(): Buffer {
-  return createHmac('sha256', String(config.jwtSecret)).update('specter/sign-in-throttle/v1').digest();
+  return createHmac('sha256', String(config.jwtSecret)).update('scrylux/sign-in-throttle/v1').digest();
 }
 
 function hmac(data: string): string {

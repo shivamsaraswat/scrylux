@@ -10,7 +10,7 @@ every repository setting that isn't a file in this repo.
 | --- | --- | --- | --- |
 | `typecheck` | `pnpm typecheck` (`tsc --noEmit` in every package and in `scripts/`) | `pnpm typecheck` | 10 min |
 | `lint` | `pnpm lint` (ESLint in every package and in `scripts/`, then the [license check](#license-check)), then the [lockfile-format guard](#lockfile-format) | `pnpm lint` | 10 min |
-| `test` | `pnpm test` (Vitest in every package and in `scripts/`; a `globalSetup` migrates the database and seeds the admin user) against a real `postgres:16-alpine` service container, then the `Threat model warnings` step (two test files, Specter's own threat model and the demo's, run alone as one project so that their annotations attach, [below](#specters-own-threat-model)), then `pnpm build`, the built-output check (`pnpm --filter @specter/web verify:build`: no inline script or style, no `data:` URIs), and the Playwright browser tests against the built app (`pnpm test:e2e`, Chromium) | `docker compose up -d db && pnpm test && pnpm build && pnpm --filter @specter/web verify:build && pnpm test:e2e` (once: `pnpm --filter @specter/web exec playwright install chromium`) | 25 min |
+| `test` | `pnpm test` (Vitest in every package and in `scripts/`; a `globalSetup` migrates the database and seeds the admin user) against a real `postgres:16-alpine` service container, then the `Threat model warnings` step (two test files, Scrylux's own threat model and the demo's, run alone as one project so that their annotations attach, [below](#scryluxs-own-threat-model)), then `pnpm build`, the built-output check (`pnpm --filter @scrylux/web verify:build`: no inline script or style, no `data:` URIs), and the Playwright browser tests against the built app (`pnpm test:e2e`, Chromium) | `docker compose up -d db && pnpm test && pnpm build && pnpm --filter @scrylux/web verify:build && pnpm test:e2e` (once: `pnpm --filter @scrylux/web exec playwright install chromium`) | 25 min |
 | `docker-build` | `docker build --pull .` (never pushed anywhere) | `docker build .` | 15 min |
 
 All four run on every pull request to `main`, on every push to `main`, and on demand
@@ -26,19 +26,19 @@ Two other workflows run but are **not required checks**, and a third publishes a
 | Audit (`audit`) | Daily, on demand | No — see [Audit](#audit) |
 | Release (`gate` … `release`) | The push of a `v*` tag, and nothing else | Not a check: it publishes — see [Release pipeline](#release-pipeline) |
 
-## Specter's own threat model
+## Scrylux's own threat model
 
-Part of the `test` check holds [Specter's own threat model](../docs/threat-model/) to account
+Part of the `test` check holds [Scrylux's own threat model](../docs/threat-model/) to account
 (Phase 2 / Milestone 7, `specs/phase-2/milestone-7-dogfood/`). The tests are in `apps/api/test/dogfood/`
 and run with the rest of the API's tests, against the same database. They load the two committed files
 through the real import, export, generate and report operations, and nothing about them needs a new job
 or a secret.
 
-- **They fail the build** when a committed file is not what Specter writes, the model does not import
+- **They fail the build** when a committed file is not what Scrylux writes, the model does not import
   and export back to the same content, two records could only be ordered by their ids, a STRIDE category
   or a status reason is missing, the folder holds another file, a file holds something that looks like a
   credential, or "Generate threats" flags a threat of the model as **stale** (a rule was retired or
-  changed). The report must be the one Specter builds for the file.
+  changed). The report must be the one Scrylux builds for the file.
 - **They only warn** when "Generate threats" would **add** threats because a rule was added: the warning
   is a `::warning` annotation on the test file (Vitest's `github-actions` reporter, which it turns on by
   itself under `GITHUB_ACTIONS`), and the check passes. It comes from a step of its own, **Threat model
@@ -47,7 +47,7 @@ or a secret.
   `::warning` command only at the start of a line, so a warning raised there is printed in the log and
   never becomes an annotation. Run alone, as one project, the test's output is not prefixed. The step runs
   even when `pnpm test` failed, so a failure is annotated on the file too.
-- To reproduce a failure locally: `pnpm --filter @specter/api exec vitest run test/dogfood`. The message
+- To reproduce a failure locally: `pnpm --filter @scrylux/api exec vitest run test/dogfood`. The message
   names the file, the check and the fix; [the folder's README](../docs/threat-model/README.md) has the
   procedure.
 - **The demo model** ([`docs/demo/`](demo/), Phase 2 / Milestone 8) is held the same way by `apps/api/test/demo/`:
@@ -113,8 +113,8 @@ right. Never commit the file.
 so this works against a freshly created database volume — you don't need to have run the full
 app first.
 
-`packages/db`'s tests also drop and recreate a database called `specter_db_test`, and create and
-drop short-lived `specter_upgrade_*` databases, on that same server. They need a role that can
+`packages/db`'s tests also drop and recreate a database called `scrylux_db_test`, and create and
+drop short-lived `scrylux_upgrade_*` databases, on that same server. They need a role that can
 create databases: the `postgres` user in `docker-compose.yml` and in the CI service container can.
 Don't point `DB_HOST` at a server that holds anything that matters.
 
@@ -125,12 +125,12 @@ A pull request cannot merge unless `typecheck`, `lint`, `test` and `docker-build
 on its latest commit. **Nobody can bypass this, including repository admins** — there are no
 bypass actors on the ruleset.
 
-- **Ruleset ID**: `24080645` (`shivamsaraswat/specter`, target `main`).
+- **Ruleset ID**: `24080645` (`shivamsaraswat/scrylux`, target `main`).
 - **Definition**: `.github/rulesets/main.json`. This is the file to recreate the ruleset from if
   it's ever deleted:
 
   ```sh
-  gh api -X POST repos/shivamsaraswat/specter/rulesets --input .github/rulesets/main.json
+  gh api -X POST repos/shivamsaraswat/scrylux/rulesets --input .github/rulesets/main.json
   ```
 
 - **Emergency path**: if the hosting platform itself is down and no check can report at all, the
@@ -138,12 +138,12 @@ bypass actors on the ruleset.
 
   ```sh
   # Disable (emergency only):
-  gh api -X PUT repos/shivamsaraswat/specter/rulesets/24080645 \
-    --input <(gh api repos/shivamsaraswat/specter/rulesets/24080645 | jq '.enforcement = "disabled"')
+  gh api -X PUT repos/shivamsaraswat/scrylux/rulesets/24080645 \
+    --input <(gh api repos/shivamsaraswat/scrylux/rulesets/24080645 | jq '.enforcement = "disabled"')
 
   # Restore once the merge has gone through:
-  gh api -X PUT repos/shivamsaraswat/specter/rulesets/24080645 \
-    --input <(gh api repos/shivamsaraswat/specter/rulesets/24080645 | jq '.enforcement = "active"')
+  gh api -X PUT repos/shivamsaraswat/scrylux/rulesets/24080645 \
+    --input <(gh api repos/shivamsaraswat/scrylux/rulesets/24080645 | jq '.enforcement = "active"')
   ```
 
   A normal broken check (a bug in the pipeline itself, a pinned action failing) does **not**
@@ -158,14 +158,14 @@ command below both documents and recreates the setting.
 | Setting | Value | Recreate with |
 | --- | --- | --- |
 | Merge-gate ruleset | Active, id `24080645`, no bypass actors | see [Merge gate](#merge-gate) above |
-| Dependabot alerts | Enabled | `gh api -X PUT repos/shivamsaraswat/specter/vulnerability-alerts` |
-| Dependabot security updates | Enabled | `gh api -X PUT repos/shivamsaraswat/specter/automated-security-fixes` |
-| CodeQL default setup | Disabled (the advanced-setup `codeql.yml` runs instead) | `gh api -X PATCH repos/shivamsaraswat/specter/code-scanning/default-setup -f state=not-configured` |
-| Default `GITHUB_TOKEN` permissions | Read-only; cannot approve PRs | `gh api -X PUT repos/shivamsaraswat/specter/actions/permissions/workflow -f default_workflow_permissions=read -F can_approve_pull_request_reviews=false` |
-| Fork PR workflow approval | `first_time_contributors` (GitHub's default) | left as-is; verify with `gh api repos/shivamsaraswat/specter/actions/permissions/fork-pr-contributor-approval` |
-| Release tags: create and delete | Ruleset `release-tags`, id `24911587`, target `refs/tags/v*`; owner only | `gh api -X POST repos/shivamsaraswat/specter/rulesets --input .github/rulesets/release-tags.json` |
-| Release tags: never moved | Ruleset `release-tags-immutable`, id `24911595`, no bypass actor | `gh api -X POST repos/shivamsaraswat/specter/rulesets --input .github/rulesets/release-tags-immutable.json` |
-| Package `ghcr.io/shivamsaraswat/specter` | **Public**, linked to the repository; set once in the package's settings after the first publication | verify: `DOCKER_CONFIG="$(mktemp -d)" docker pull ghcr.io/shivamsaraswat/specter:<version>`; see [`releasing.md`](releasing.md#the-package-is-public-after-the-first-publication-once) |
+| Dependabot alerts | Enabled | `gh api -X PUT repos/shivamsaraswat/scrylux/vulnerability-alerts` |
+| Dependabot security updates | Enabled | `gh api -X PUT repos/shivamsaraswat/scrylux/automated-security-fixes` |
+| CodeQL default setup | Disabled (the advanced-setup `codeql.yml` runs instead) | `gh api -X PATCH repos/shivamsaraswat/scrylux/code-scanning/default-setup -f state=not-configured` |
+| Default `GITHUB_TOKEN` permissions | Read-only; cannot approve PRs | `gh api -X PUT repos/shivamsaraswat/scrylux/actions/permissions/workflow -f default_workflow_permissions=read -F can_approve_pull_request_reviews=false` |
+| Fork PR workflow approval | `first_time_contributors` (GitHub's default) | left as-is; verify with `gh api repos/shivamsaraswat/scrylux/actions/permissions/fork-pr-contributor-approval` |
+| Release tags: create and delete | Ruleset `release-tags`, id `24911587`, target `refs/tags/v*`; owner only | `gh api -X POST repos/shivamsaraswat/scrylux/rulesets --input .github/rulesets/release-tags.json` |
+| Release tags: never moved | Ruleset `release-tags-immutable`, id `24911595`, no bypass actor | `gh api -X POST repos/shivamsaraswat/scrylux/rulesets --input .github/rulesets/release-tags-immutable.json` |
+| Package `ghcr.io/shivamsaraswat/scrylux` | **Public**, linked to the repository; set once in the package's settings after the first publication | verify: `DOCKER_CONFIG="$(mktemp -d)" docker pull ghcr.io/shivamsaraswat/scrylux:<version>`; see [`releasing.md`](releasing.md#the-package-is-public-after-the-first-publication-once) |
 
 **Scheduled workflows note**: GitHub disables scheduled workflows on public repositories after
 60 days with no repository activity. If the weekly CodeQL run or the daily audit run stops firing,
@@ -195,7 +195,7 @@ step of `pnpm lint`, so a local `pnpm lint` and the CI job behave identically.
 - **No network access**: it reads the installed package manifests only.
 - **Third-party notices**: the web build also writes `apps/web/dist/.vite/license.md`, with the
   license text of every bundled dependency, because the minified bundle keeps no license comments.
-  The image carries it, it is not served, and `pnpm --filter @specter/web verify:build` checks it.
+  The image carries it, it is not served, and `pnpm --filter @scrylux/web verify:build` checks it.
 
 ## Lockfile format
 

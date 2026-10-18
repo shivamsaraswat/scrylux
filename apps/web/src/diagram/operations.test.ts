@@ -1,4 +1,4 @@
-import type { ElementRecord } from '@specter/core';
+import type { ElementRecord } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { setBoundaryAction } from './membership.js';
 import { applyOps, inverseOf, type BatchOp } from './operations.js';

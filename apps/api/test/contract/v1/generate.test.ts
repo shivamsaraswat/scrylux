@@ -1,5 +1,5 @@
-import { ThreatGenerationResult, ThreatRecord } from '@specter/core';
-import { shippedLibrary, type FlowContext } from '@specter/threat-library';
+import { ThreatGenerationResult, ThreatRecord } from '@scrylux/core';
+import { shippedLibrary, type FlowContext } from '@scrylux/threat-library';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
 import db from '../../../src/db.js';

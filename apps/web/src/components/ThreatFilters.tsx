@@ -1,4 +1,4 @@
-import { RISK_LEVELS, THREAT_STATUSES, type ElementRecord, type RiskLevel, type ThreatStatus } from '@specter/core';
+import { RISK_LEVELS, THREAT_STATUSES, type ElementRecord, type RiskLevel, type ThreatStatus } from '@scrylux/core';
 import { ElementOptions } from './ElementOptions.js';
 import { NO_FILTER, isFiltered, type ThreatFilter } from './threat-filter.js';
 

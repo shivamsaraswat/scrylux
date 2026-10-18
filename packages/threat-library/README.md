@@ -1,4 +1,4 @@
-# @specter/threat-library
+# @scrylux/threat-library
 
 The STRIDE-per-element threat rules, as plain YAML files, and the small amount of code that checks them
 and works out which threats apply to a diagram element.
@@ -150,7 +150,7 @@ The files are read as YAML 1.2, strictly.
    wording, so you won't be tempted to rename it when you improve the text.
 2. **Create the file** `rules/<element_type>/<id>.yaml`. Copy a rule of the same element type and
    change everything in it, so nothing is left over.
-3. **Write original text.** Titles, descriptions and mitigations are written for Specter. Do not copy
+3. **Write original text.** Titles, descriptions and mitigations are written for Scrylux. Do not copy
    from other tools' templates or catalogs unless their licence allows it under Apache-2.0. You may cite
    CWE and CAPEC numbers in `references`.
 4. **Write the examples.** Give at least one element the rule applies to and, if it has conditions, at
@@ -174,7 +174,7 @@ the pull request template asks about it.
 ### Run the checks
 
 ```sh
-pnpm --filter @specter/threat-library test
+pnpm --filter @scrylux/threat-library test
 ```
 
 They load every file in `rules/` and fail if anything is wrong. Each problem is one line:
@@ -240,7 +240,7 @@ see, so reviewers look for removed lines in this file.
 ## Using the library from code
 
 ```ts
-import { shippedLibrary } from '@specter/threat-library';
+import { shippedLibrary } from '@scrylux/threat-library';
 
 const library = shippedLibrary(); // loads rules/ once; throws, listing every problem, if any rule is wrong
 

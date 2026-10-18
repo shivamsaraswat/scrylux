@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { parseLibrary, type Library, type RuleSourceFile } from '@specter/threat-library';
+import { parseLibrary, type Library, type RuleSourceFile } from '@scrylux/threat-library';
 import type { ElementRow } from '../../src/rule-engine/flow-context.js';
 
 // Small in-memory rule sets for the planner's tests. YAML 1.2 is a superset of JSON, so the rule

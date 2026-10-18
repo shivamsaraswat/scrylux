@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { IMPACTS, LIKELIHOODS, METHODOLOGIES, MITIGATION_STATUSES, THREAT_MODEL_STATUSES, THREAT_ORIGINS, THREAT_STATUSES } from '../enums.js';
 import { StaleReason } from '../schemas/stale.js';
-import { SPECTER_FORMAT_VERSION, formatVersionMessage } from './formats.js';
+import { SCRYLUX_FORMAT_VERSION, formatVersionMessage } from './formats.js';
 
-// What Specter reads of an Open Threat Model 0.2.0 file (contracts/otm-mapping.md, research #7). Only the members the
+// What Scrylux reads of an Open Threat Model 0.2.0 file (contracts/otm-mapping.md, research #7). Only the members the
 // mapping uses are declared, with their types and generous caps, so one value cannot dominate. Every object is loose:
-// other tools write members Specter has no use for, so those are allowed, but they are bounded first by `checkBounds`
-// and then never walked, stored, logged or echoed. `attributes` is typed `unknown` on purpose, and only the Specter
-// parts of it are parsed, strictly, by `OtmSpecter` below and only for a file Specter wrote.
+// other tools write members Scrylux has no use for, so those are allowed, but they are bounded first by `checkBounds`
+// and then never walked, stored, logged or echoed. `attributes` is typed `unknown` on purpose, and only the Scrylux
+// parts of it are parsed, strictly, by `OtmScrylux` below and only for a file Scrylux wrote.
 
 const NAME_CAP = 10_000;
 const TEXT_CAP = 100_000;
@@ -111,16 +111,16 @@ export const OtmFile = loose({
 });
 export type OtmFile = z.infer<typeof OtmFile>;
 
-// What Specter's own OTM export writes in `attributes.specter` of each object (contracts/otm-mapping.md, "Export"). A
-// file marked as written by Specter is read from these, strictly: any other key, or a value outside its vocabulary,
-// refuses the file. The values are then checked again, by field, by the Specter file's own schema.
+// What Scrylux's own OTM export writes in `attributes.scrylux` of each object (contracts/otm-mapping.md, "Export"). A
+// file marked as written by Scrylux is read from these, strictly: any other key, or a value outside its vocabulary,
+// refuses the file. The values are then checked again, by field, by the Scrylux file's own schema.
 const nodeLayout = z.strictObject({ x: z.number(), y: z.number() });
 const boundaryLayout = z.strictObject({ x: z.number(), y: z.number(), width: z.number(), height: z.number() });
 const flags = z.record(z.string(), z.boolean());
 
-export const OtmSpecter = {
+export const OtmScrylux = {
   project: z.strictObject({
-    format_version: z.literal(SPECTER_FORMAT_VERSION, { error: (issue) => formatVersionMessage(issue.input) }),
+    format_version: z.literal(SCRYLUX_FORMAT_VERSION, { error: (issue) => formatVersionMessage(issue.input) }),
     exported_at: z.string(),
     status: z.enum(THREAT_MODEL_STATUSES),
     methodology: z.enum(METHODOLOGIES),

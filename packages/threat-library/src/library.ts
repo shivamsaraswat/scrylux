@@ -1,4 +1,4 @@
-import type { UnmetCondition } from '@specter/core';
+import type { UnmetCondition } from '@scrylux/core';
 import { checkInput, matches, toCandidate, unmet, type Candidate, type ElementInput } from './evaluate.js';
 import { LibraryInputError } from './errors.js';
 import type { RetirementRecord, Rule } from './rule-schema.js';

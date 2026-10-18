@@ -1,6 +1,6 @@
-# Contributing to Specter
+# Contributing to Scrylux
 
-Thanks for wanting to help. Specter is an open-source, self-hosted threat modeling platform, built
+Thanks for wanting to help. Scrylux is an open-source, self-hosted threat modeling platform, built
 one phase at a time. This guide covers how to set up, what a good change looks like, and what the
 project asks of you.
 
@@ -16,7 +16,7 @@ vulnerability, read [SECURITY.md](SECURITY.md) and **never** open a public issue
   spec, plan and tasks (for example `specs/phase-1/milestone-6-react-app-shell/`). Read a recent
   one to see the shape. A feature request is the place to start that conversation.
 - **Stay within the current phase.** The roadmap is in the README's [Roadmap](README.md#roadmap).
-  Specter is built phase by phase, and work on a later phase's features is not accepted while an
+  Scrylux is built phase by phase, and work on a later phase's features is not accepted while an
   earlier phase is in progress.
 
 ## Setup
@@ -56,8 +56,8 @@ pnpm typecheck
 pnpm lint                                                       # ESLint, then the license check (see Dependencies)
 pnpm test                                                       # needs the database from Setup
 pnpm build
-pnpm --filter @specter/web verify:build                         # the built page has no inline code or data: URIs
-pnpm --filter @specter/web exec playwright install chromium     # once
+pnpm --filter @scrylux/web verify:build                         # the built page has no inline code or data: URIs
+pnpm --filter @scrylux/web exec playwright install chromium     # once
 pnpm test:e2e                                                   # browser tests, against the built app
 docker build .
 ```
@@ -83,12 +83,12 @@ a summary, and the constitution wins if they ever differ.
 
 ## Threat rules
 
-The threats Specter suggests come from rules kept as YAML files in
+The threats Scrylux suggests come from rules kept as YAML files in
 [`packages/threat-library/rules/`](packages/threat-library/rules/), not from code. You can add or
 improve a rule without touching any TypeScript. The package's
 [README](packages/threat-library/README.md) explains the format, how to choose an id, how to write the
 examples and how to retire a rule. Rule changes are reviewed like code. The checks run with
-`pnpm --filter @specter/threat-library test`, and they name the file, the rule and the problem.
+`pnpm --filter @scrylux/threat-library test`, and they name the file, the rule and the problem.
 
 Two rules are enforced in review, because the checks cannot see a rule's earlier version:
 
@@ -97,26 +97,26 @@ Two rules are enforced in review, because the checks cannot see a rule's earlier
   produces.
 - **Nothing is removed from `rules/ids.yaml`.** It lists every id ever issued.
 
-A retired or changed rule shows up as a **stale** threat in [Specter's own threat model](docs/threat-model/),
+A retired or changed rule shows up as a **stale** threat in [Scrylux's own threat model](docs/threat-model/),
 and that fails the required check, so a retirement updates the model in the same pull request. A rule that
 is only added makes the check **warn** that the model is behind, and does not fail it.
 
 Write rule text yourself. Don't copy from other tools' templates or catalogs unless their license
 allows it under Apache-2.0. Citing CWE and CAPEC numbers is fine.
 
-## Specter's own threat model
+## Scrylux's own threat model
 
-Specter keeps a threat model of itself, built in Specter, in [`docs/threat-model/`](docs/threat-model/):
-a Specter file and a Markdown report. The **Threat Model (STRIDE)** section of the
+Scrylux keeps a threat model of itself, built in Scrylux, in [`docs/threat-model/`](docs/threat-model/):
+a Scrylux file and a Markdown report. The **Threat Model (STRIDE)** section of the
 [constitution](.specify/memory/constitution.md) governs; the model is its structured counterpart.
 
 - A change that adds an entry point, an asset or a trust boundary updates the constitution's section
   **and** the model **in the same change**.
 - A change that retires or changes a threat-library rule updates the model in the same change, because
   the checks fail until it does. A change that only adds a rule gets a warning, and the model can follow.
-- You change the model **in Specter**, never in the files: import the committed file, make the change,
+- You change the model **in Scrylux**, never in the files: import the committed file, make the change,
   export both files again. [`docs/threat-model/README.md`](docs/threat-model/README.md) has the steps,
-  the table for deciding a threat's status, and what the checks do. Every id in the Specter file changes
+  the table for deciding a threat's status, and what the checks do. Every id in the Scrylux file changes
   on every update, so review the report's diff.
 - If you find a vulnerability while modelling, follow [SECURITY.md](SECURITY.md) first.
 
@@ -128,9 +128,9 @@ a Specter file and a Markdown report. The **Threat Model (STRIDE)** section of t
   version the packages carry, or if its entry strays from the three headings.
 - **A release is made by pushing one version tag**, and nothing else publishes anything. To prepare one,
   open a pull request that sets the version of every `package.json` and the default of
-  `SPECTER_VERSION` in `docker-compose.release.yml` to the new version, and adds the dated changelog
+  `SCRYLUX_VERSION` in `docker-compose.release.yml` to the new version, and adds the dated changelog
   entry. Then follow [`docs/releasing.md`](docs/releasing.md). A check keeps the versions together.
-- **The demo threat model** ([`docs/demo/`](docs/demo/)) is held like Specter's own: a retired or changed
+- **The demo threat model** ([`docs/demo/`](docs/demo/)) is held like Scrylux's own: a retired or changed
   rule that leaves one of its threats stale fails the build, and a rule that would add a threat only warns.
 
 ## Commit messages
@@ -158,7 +158,7 @@ Development-only dependencies are not checked.
 
 ## License of your contributions
 
-Specter is licensed under the [Apache License 2.0](LICENSE). By submitting a change, you license it
+Scrylux is licensed under the [Apache License 2.0](LICENSE). By submitting a change, you license it
 under Apache-2.0, as section 5 of that license provides. There is no Contributor License Agreement,
 and commits do not need a sign-off.
 

@@ -1,4 +1,4 @@
-import { STRIDE_CATEGORIES, type ElementType } from '@specter/core';
+import { STRIDE_CATEGORIES, type ElementType } from '@scrylux/core';
 
 // The order of an export (research #3, data-model.md "Export order"). It depends only on what a record is: every row
 // one import inserts gets the same created_at, so sorting by it would leave the re-export in random id order and break

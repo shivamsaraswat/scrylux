@@ -11,14 +11,14 @@ import {
   type StrideCategory,
   type ThreatDragonFile,
   type ThreatStatus,
-} from '@specter/core';
+} from '@scrylux/core';
 import { assignBoxes, placeBoundary, placeNode, relativeTo, type Rect } from './geometry.js';
 import { adapters, hasText, letters, matchStride, note } from './notes.js';
 import { refuse } from './parse-with.js';
 import type { ImportPlan, PlanElement, PlanMitigation, PlanModel, PlanThreat } from './plan.js';
 
 // A Threat Dragon version 2 file as a plan (contracts/threat-dragon-mapping.md): one model per diagram (FR-013a). Every
-// threat is manual; everything the file holds that Specter has no place for is listed in the notes (FR-016).
+// threat is manual; everything the file holds that Scrylux has no place for is listed in the notes (FR-016).
 
 type Diagram = ThreatDragonFile['detail']['diagrams'][number];
 type Cell = Diagram['cells'][number];

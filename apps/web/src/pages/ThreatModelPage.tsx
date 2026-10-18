@@ -1,4 +1,4 @@
-import { THREAT_MODEL_STATUSES, uuid, type ThreatModelStatus } from '@specter/core';
+import { THREAT_MODEL_STATUSES, uuid, type ThreatModelStatus } from '@scrylux/core';
 import { useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router';
 import { GONE_MESSAGE, isGone, writeErrorMessage } from '../api/errors.js';

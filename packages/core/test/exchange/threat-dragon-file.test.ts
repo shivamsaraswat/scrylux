@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ThreatDragonFile } from '../../src/index.js';
 
-// What Specter reads of a Threat Dragon version 2 file (contracts/threat-dragon-mapping.md, research #7): only the
+// What Scrylux reads of a Threat Dragon version 2 file (contracts/threat-dragon-mapping.md, research #7): only the
 // members the mapping uses, typed, every other member allowed and never walked.
 
 const dir = fileURLToPath(new URL('../../../../apps/api/test/exchange/fixtures/threat-dragon/', import.meta.url));

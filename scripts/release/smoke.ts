@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { checkLabels, expectedLabels } from './versions.js';
 
 // The smoke run of the release pipeline (contracts/release-pipeline.md "What `smoke` checks"; spec FR-004, FR-009, FR-017).
-// It talks to a running Specter over HTTP, as a user's script would, and uses no code of the application. It fails on the
+// It talks to a running Scrylux over HTTP, as a user's script would, and uses no code of the application. It fails on the
 // FIRST step that does not hold, with a message that names the step and never repeats a credential.
 
 export const STEP_NAMES = ['health', 'web app', 'sign in', 'demo import', 'generate', 'database port', 'image labels'] as const;
@@ -127,7 +127,7 @@ export async function runSmoke(options: SmokeOptions): Promise<SmokeReport> {
   });
   const projectId = project.status === 201 ? ((await project.json()) as { id: string }).id : undefined;
   if (projectId === undefined) throw new SmokeFailure(4, `could not create a project to import into (POST /api/v1/projects answered ${project.status})`);
-  const body = JSON.stringify({ format: 'specter', file: demo });
+  const body = JSON.stringify({ format: 'scrylux', file: demo });
   const check = await call(4, 'the import check', `/api/v1/projects/${projectId}/imports/check`, { method: 'POST', headers: authed(), body });
   if (check.status !== 200) throw new SmokeFailure(4, `the import check refused the demo (answered ${check.status})`);
   const summary = (await check.json()) as { models: { name_issue: string | null; elements: number }[]; notes: unknown[] };

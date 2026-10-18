@@ -1,6 +1,6 @@
-# Threat model report: Specter application
+# Threat model report: Scrylux application
 
-- **Project:** Specter
+- **Project:** Scrylux
 - **Methodology:** STRIDE
 - **Threat model status:** In review
 - **Exported:** 2026-10-12 07:14 UTC
@@ -120,7 +120,7 @@ flowchart LR
 - **Risk:** High (likelihood Medium × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > The proxy or load balancer belongs to the operator\, not to Specter\: Specter ships none and has no control over it\; its handling of malformed requests is the operator\'s
+  > The proxy or load balancer belongs to the operator\, not to Scrylux\: Scrylux ships none and has no control over it\; its handling of malformed requests is the operator\'s
 - **Origin:** Rule-generated
 
 > Reverse proxy takes input from the public internet\. Anyone can send it data shaped to be misread\: an oversized value\, a wrong type\, or text that looks like a command or query\. If the process trusts that input\, the attacker decides what it does\.
@@ -149,7 +149,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > The proxy or load balancer belongs to the operator\, not to Specter\: Specter ships none and has no control over it\; its code and configuration are the operator\'s
+  > The proxy or load balancer belongs to the operator\, not to Scrylux\: Scrylux ships none and has no control over it\; its code and configuration are the operator\'s
 - **Origin:** Rule-generated
 
 > An attacker who can change what Reverse proxy runs gets everything the process can do\. The route can be a poisoned dependency\, a tampered build or image\, or a changed configuration or environment variable\.
@@ -164,7 +164,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > The proxy or load balancer belongs to the operator\, not to Specter\: Specter ships none and has no control over it\; its access log is the operator\'s record
+  > The proxy or load balancer belongs to the operator\, not to Scrylux\: Scrylux ships none and has no control over it\; its access log is the operator\'s record
 - **Origin:** Rule-generated
 
 > Reverse proxy handles sensitive data\. If reads\, exports and changes of that data are not recorded with who did them\, a leak or a misuse cannot be traced\, and a person who misused their access can deny it\.
@@ -179,7 +179,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > The proxy or load balancer belongs to the operator\, not to Specter\: Specter ships none and has no control over it\; its access log\, if the operator enables one\, is the record of requests
+  > The proxy or load balancer belongs to the operator\, not to Scrylux\: Scrylux ships none and has no control over it\; its access log\, if the operator enables one\, is the record of requests
 - **Origin:** Rule-generated
 
 > Without a record of security\-relevant events\, nobody can say afterwards who signed in\, who changed what or what an attacker did\. Reverse proxy may do the right thing and still be unable to prove it\.
@@ -207,7 +207,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > The proxy or load balancer belongs to the operator\, not to Specter\: Specter ships none and has no control over it\; an ALB scales with load \(deployment\.md\)\, and its protection is the operator\'s
+  > The proxy or load balancer belongs to the operator\, not to Scrylux\: Scrylux ships none and has no control over it\; an ALB scales with load \(deployment\.md\)\, and its protection is the operator\'s
 - **Origin:** Rule-generated
 
 > Reverse proxy accepts work from the public internet\. Without limits\, a flood of requests\, a few very expensive ones or a slow connection held open on purpose can use up its CPU\, memory or connections and shut out real users\.
@@ -235,7 +235,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > The proxy or load balancer belongs to the operator\, not to Specter\: Specter ships none and has no control over it\; keeping it patched is the operator\'s job
+  > The proxy or load balancer belongs to the operator\, not to Scrylux\: Scrylux ships none and has no control over it\; keeping it patched is the operator\'s job
 - **Origin:** Rule-generated
 
 > Reverse proxy is reachable from the internet\. If it evaluates input as code\, deserializes untrusted data\, handles uploaded files unsafely or uses a vulnerable dependency\, an attacker can make it run their code and gain whatever the process itself can do\.
@@ -250,7 +250,7 @@ No mitigations.
 - **Risk:** Low (likelihood Medium × impact Low)
 - **Status:** Accepted
 - **Reason:**
-  > The proxy or load balancer belongs to the operator\, not to Specter\: Specter ships none and has no control over it\; Specter sends fixed error bodies and no X\-Powered\-By\, but the proxy\'s own error pages are whatever the operator configured
+  > The proxy or load balancer belongs to the operator\, not to Scrylux\: Scrylux ships none and has no control over it\; Scrylux sends fixed error bodies and no X\-Powered\-By\, but the proxy\'s own error pages are whatever the operator configured
 - **Origin:** Rule-generated
 
 > Detailed errors help developers and attackers alike\. Stack traces\, query text\, file paths and version numbers in a response show an attacker how Reverse proxy is built and where to push\.
@@ -289,7 +289,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Account and session queries carries data from Sign\-in and sessions to Account and session records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -304,7 +304,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Account and session queries carries data from Sign\-in and sessions to Account and session records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -373,7 +373,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Account queries carries data from Accounts API to Account and session records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -388,7 +388,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Account queries carries data from Accounts API to Account and session records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -458,7 +458,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Between the proxy and the app the traffic is plain HTTP\: Specter has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
 - **Origin:** Rule-generated
 
 > Account requests carries data from Reverse proxy to Accounts API without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -473,7 +473,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Between the proxy and the app the traffic is plain HTTP\: Specter has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
 - **Origin:** Rule-generated
 
 > Account requests carries data from Reverse proxy to Accounts API without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -527,7 +527,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Generated threats carries data from Rule engine to Threat model records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -542,7 +542,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Generated threats carries data from Rule engine to Threat model records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -611,7 +611,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Import and export queries carries data from Import and export to Threat model records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -626,7 +626,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Import and export queries carries data from Import and export to Threat model records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -694,7 +694,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Migrations and seeding carries data from Startup and configuration to Account and session records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -709,7 +709,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Migrations and seeding carries data from Startup and configuration to Account and session records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -779,7 +779,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Between the proxy and the app the traffic is plain HTTP\: Specter has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
 - **Origin:** Rule-generated
 
 > Page requests carries data from Reverse proxy to Web app server without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -809,7 +809,7 @@ No mitigations.
 - **Risk:** Low (likelihood Low × impact Low)
 - **Status:** Accepted
 - **Reason:**
-  > Between the proxy and the app the traffic is plain HTTP\: Specter has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
 - **Origin:** Rule-generated
 
 > Page requests carries data from Reverse proxy to Web app server without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -849,7 +849,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Report reads carries data from Report builder to Threat model records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -864,7 +864,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Report reads carries data from Report builder to Threat model records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -934,7 +934,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Session check carries data from Threat model API to Account and session records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -949,7 +949,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Session check carries data from Threat model API to Account and session records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -1017,7 +1017,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Between the proxy and the app the traffic is plain HTTP\: Specter has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
 - **Origin:** Rule-generated
 
 > Sign\-in and session requests carries data from Reverse proxy to Sign\-in and sessions without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -1032,7 +1032,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Between the proxy and the app the traffic is plain HTTP\: Specter has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
 - **Origin:** Rule-generated
 
 > Sign\-in and session requests carries data from Reverse proxy to Sign\-in and sessions without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -1087,7 +1087,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Threat model queries carries data from Threat model API to Threat model records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -1102,7 +1102,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > TLS to PostgreSQL is not Specter\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
 - **Origin:** Rule-generated
 
 > Threat model queries carries data from Threat model API to Threat model records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -1172,7 +1172,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Between the proxy and the app the traffic is plain HTTP\: Specter has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
 - **Origin:** Rule-generated
 
 > Threat model requests carries data from Reverse proxy to Threat model API without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -1187,7 +1187,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Between the proxy and the app the traffic is plain HTTP\: Specter has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own \(its HSTS header is left to the TLS\-terminating proxy\, apps\/api\/src\/security\-headers\.ts\)\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)
 - **Origin:** Rule-generated
 
 > Threat model requests carries data from Reverse proxy to Threat model API without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -1354,7 +1354,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > Specter has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
+  > Scrylux has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
 - **Origin:** Rule-generated
 
 > Accounts API relies on other components such as databases\, queues and other services\. If one of them is slow or down and the process waits for it without a limit\, requests pile up and the failure spreads\.
@@ -1421,7 +1421,7 @@ No mitigations.
 
 #### E17 · Process · Import and export
 
-- **Tags:** Specter file, OTM, Threat Dragon
+- **Tags:** Scrylux file, OTM, Threat Dragon
 - **Internet facing:** No
 - **Requires authentication:** Yes
 - **Handles sensitive data:** Yes
@@ -1532,10 +1532,10 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > The same as a report\, as a data file\: it holds no credential\, account name or account id \(the project\'s name is in the Specter file for information\)\, is sent no\-store with sandbox\; default\-src \'none\'\, and is never logged\. The summary shows names and places as text to the account that chose the file \(Phase 2 Milestone 6\)\.
+  > The same as a report\, as a data file\: it holds no credential\, account name or account id \(the project\'s name is in the Scrylux file for information\)\, is sent no\-store with sandbox\; default\-src \'none\'\, and is never logged\. The summary shows names and places as text to the account that chose the file \(Phase 2 Milestone 6\)\.
 - **Origin:** Manual
 
-> A Specter file or an OTM file is the whole threat model in a form made to be kept\, moved and shared\; and an import\'s summary shows names and places from the file back to the user who chose it\.
+> A Scrylux file or an OTM file is the whole threat model in a form made to be kept\, moved and shared\; and an import\'s summary shows names and places from the file back to the user who chose it\.
 
 **Mitigations**
 
@@ -1560,7 +1560,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > Specter has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
+  > Scrylux has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
 - **Origin:** Rule-generated
 
 > Import and export relies on other components such as databases\, queues and other services\. If one of them is slow or down and the process waits for it without a limit\, requests pile up and the failure spreads\.
@@ -1593,11 +1593,11 @@ No mitigations.
   > Nothing else follows from it\: generation may match it or flag it stale instead of creating one\. An AI\-drafted threat is refused \(Principle VI\)\, every threat from another tool\'s file is imported as manual\, and the API\'s create and update still refuse every origin but manual \(Phase 2 Milestone 6\)\.
 - **Origin:** Manual
 
-> A Specter file\, or an OTM file carrying Specter\'s mark\, can say that a threat is rule\-generated\, with any rule reference\. Specter cannot check it\, and a later \"Generate threats\" then treats that threat as its own\.
+> A Scrylux file\, or an OTM file carrying Scrylux\'s mark\, can say that a threat is rule\-generated\, with any rule reference\. Scrylux cannot check it\, and a later \"Generate threats\" then treats that threat as its own\.
 
 **Mitigations**
 
-1. **Verified** — An import refuses a threat with origin ai\, and reads no origin\, rule or stale mark from an OTM or Threat Dragon file other than Specter\'s own \(apps\/api\/src\/exchange\/import\/specter\.ts\, otm\.ts\, threat\-dragon\.ts\; tests\: apps\/api\/test\/exchange\/\)
+1. **Verified** — An import refuses a threat with origin ai\, and reads no origin\, rule or stale mark from an OTM or Threat Dragon file other than Scrylux\'s own \(apps\/api\/src\/exchange\/import\/scrylux\.ts\, otm\.ts\, threat\-dragon\.ts\; tests\: apps\/api\/test\/exchange\/\)
 
 ##### Import and export may reveal its internals in error messages — Low
 
@@ -1730,7 +1730,7 @@ No mitigations.
   > It holds no credential\, account name or account id\: the header names the threat model\, its project and the time of the export\. The answer is Cache\-Control\: no\-store\, the report\'s text is never logged\, and the documents are read in one read\-only snapshot \(Phase 2 Milestone 5\)\.
 - **Origin:** Manual
 
-> A report is made on purpose for people to share\. Once it is downloaded\, Specter can neither protect it nor take it back\.
+> A report is made on purpose for people to share\. Once it is downloaded\, Scrylux can neither protect it nor take it back\.
 
 **Mitigations**
 
@@ -1770,7 +1770,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > Specter has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
+  > Scrylux has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
 - **Origin:** Rule-generated
 
 > Report builder relies on other components such as databases\, queues and other services\. If one of them is slow or down and the process waits for it without a limit\, requests pile up and the failure spreads\.
@@ -1950,7 +1950,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > Specter has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
+  > Scrylux has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
 - **Origin:** Rule-generated
 
 > Rule engine relies on other components such as databases\, queues and other services\. If one of them is slow or down and the process waits for it without a limit\, requests pile up and the failure spreads\.
@@ -2170,7 +2170,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > Specter has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
+  > Scrylux has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
 - **Origin:** Rule-generated
 
 > Sign\-in and sessions relies on other components such as databases\, queues and other services\. If one of them is slow or down and the process waits for it without a limit\, requests pile up and the failure spreads\.
@@ -2312,7 +2312,7 @@ No mitigations.
 - **Status:** Mitigated
 - **Origin:** Manual
 
-> JWT\_SECRET\, the database credentials and the admin credentials would let anyone who saw them act as Specter\.
+> JWT\_SECRET\, the database credentials and the admin credentials would let anyone who saw them act as Scrylux\.
 
 **Mitigations**
 
@@ -2621,7 +2621,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > Specter has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
+  > Scrylux has one PostgreSQL and no failover\: when it is down every operation but \/health fails\, and nothing is written half\-done \(generation\, import and writes are one transaction each\)\. Availability of the database is the operator\'s
 - **Origin:** Rule-generated
 
 > Threat model API relies on other components such as databases\, queues and other services\. If one of them is slow or down and the process waits for it without a limit\, requests pile up and the failure spreads\.
@@ -2699,7 +2699,7 @@ No mitigations.
 - **Risk:** High (likelihood High × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > It serves static files\, as any web server does\; a proxy or a CDN in front is the usual control\, and Specter adds no rate limiting before Phase 6 \(plan\.md\)
+  > It serves static files\, as any web server does\; a proxy or a CDN in front is the usual control\, and Scrylux adds no rate limiting before Phase 6 \(plan\.md\)
 - **Origin:** Rule-generated
 
 > Web app server accepts work from the public internet\. Without limits\, a flood of requests\, a few very expensive ones or a slow connection held open on purpose can use up its CPU\, memory or connections and shut out real users\.
@@ -3062,7 +3062,7 @@ No mitigations.
 - **Risk:** High (likelihood Medium × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Specter makes no backups\: a copy is the operator\'s database backup or snapshot\, which has the protection the operator gives it \(the AWS guide\'s RDS storage is encrypted by default\, step5\-rds\-guide\.md\)\. The copies Specter does make\, a report and an export\, are made on purpose and are accepted as threats of Report builder and Import and export
+  > Scrylux makes no backups\: a copy is the operator\'s database backup or snapshot\, which has the protection the operator gives it \(the AWS guide\'s RDS storage is encrypted by default\, step5\-rds\-guide\.md\)\. The copies Scrylux does make\, a report and an export\, are made on purpose and are accepted as threats of Report builder and Import and export
 - **Origin:** Rule-generated
 
 > Sensitive data in Account and session records does not stay in one place\: it is copied into backups\, exports\, replicas and test environments\. Each copy is often guarded less well than the store itself\, and any one of them can leak the lot\.
@@ -3077,7 +3077,7 @@ No mitigations.
 - **Risk:** High (likelihood Medium × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Specter does not encrypt at rest\: that is the storage\'s job\. The AWS guide\'s RDS has encryption on by default \(step5\-rds\-guide\.md\)\; the compose volume has none\, and the compose defaults are for local use\. Credentials are protected separately\, as bcrypt hashes and SHA\-256 digests
+  > Scrylux does not encrypt at rest\: that is the storage\'s job\. The AWS guide\'s RDS has encryption on by default \(step5\-rds\-guide\.md\)\; the compose volume has none\, and the compose defaults are for local use\. Credentials are protected separately\, as bcrypt hashes and SHA\-256 digests
 - **Origin:** Rule-generated
 
 > Account and session records stores sensitive data without encryption at rest\. Anyone who gets hold of the underlying disk\, a snapshot\, a backup file or a decommissioned drive can read it directly\, bypassing every access control in the application\.
@@ -3092,7 +3092,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Specter makes no backups\; the integrity of the operator\'s backups is the operator\'s\, and a restore goes through the same database rules as any write
+  > Scrylux makes no backups\; the integrity of the operator\'s backups is the operator\'s\, and a restore goes through the same database rules as any write
 - **Origin:** Rule-generated
 
 > A backup is only useful if it holds what was really there\. If someone can change or replace the copies of Account and session records\, a restore after an incident reinstates the attacker\'s version\, or fails when it is needed most\.
@@ -3199,7 +3199,7 @@ No mitigations.
 - **Risk:** High (likelihood Medium × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Specter makes no backups\: a copy is the operator\'s database backup or snapshot\, which has the protection the operator gives it \(the AWS guide\'s RDS storage is encrypted by default\, step5\-rds\-guide\.md\)\. The copies Specter does make\, a report and an export\, are made on purpose and are accepted as threats of Report builder and Import and export
+  > Scrylux makes no backups\: a copy is the operator\'s database backup or snapshot\, which has the protection the operator gives it \(the AWS guide\'s RDS storage is encrypted by default\, step5\-rds\-guide\.md\)\. The copies Scrylux does make\, a report and an export\, are made on purpose and are accepted as threats of Report builder and Import and export
 - **Origin:** Rule-generated
 
 > Sensitive data in Threat model records does not stay in one place\: it is copied into backups\, exports\, replicas and test environments\. Each copy is often guarded less well than the store itself\, and any one of them can leak the lot\.
@@ -3214,7 +3214,7 @@ No mitigations.
 - **Risk:** High (likelihood Medium × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Specter does not encrypt at rest\: that is the storage\'s job\. The AWS guide\'s RDS has encryption on by default \(step5\-rds\-guide\.md\)\; the compose volume has none\, and the compose defaults are for local use\. Credentials are protected separately\, as bcrypt hashes and SHA\-256 digests
+  > Scrylux does not encrypt at rest\: that is the storage\'s job\. The AWS guide\'s RDS has encryption on by default \(step5\-rds\-guide\.md\)\; the compose volume has none\, and the compose defaults are for local use\. Credentials are protected separately\, as bcrypt hashes and SHA\-256 digests
 - **Origin:** Rule-generated
 
 > Threat model records stores sensitive data without encryption at rest\. Anyone who gets hold of the underlying disk\, a snapshot\, a backup file or a decommissioned drive can read it directly\, bypassing every access control in the application\.
@@ -3229,7 +3229,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Specter makes no backups\; the integrity of the operator\'s backups is the operator\'s\, and a restore goes through the same database rules as any write
+  > Scrylux makes no backups\; the integrity of the operator\'s backups is the operator\'s\, and a restore goes through the same database rules as any write
 - **Origin:** Rule-generated
 
 > A backup is only useful if it holds what was really there\. If someone can change or replace the copies of Threat model records\, a restore after an incident reinstates the attacker\'s version\, or fails when it is needed most\.
@@ -3286,7 +3286,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > A single threat model is bounded \(1\,000 elements\, 15\,000 threats at most from generation\) but an account may create any number of them\, and Specter has no per\-account quota\; watching the storage is the operator\'s job \(README\, Deployment\)
+  > A single threat model is bounded \(1\,000 elements\, 15\,000 threats at most from generation\) but an account may create any number of them\, and Scrylux has no per\-account quota\; watching the storage is the operator\'s job \(README\, Deployment\)
 - **Origin:** Rule-generated
 
 > If nothing limits how much can be written to Threat model records\, one runaway job\, one noisy customer or one attacker can fill it\. When it is full\, writes fail and everything that depends on it stops\.
@@ -3457,7 +3457,7 @@ No mitigations.
 - **Risk:** Low (likelihood Low × impact Medium)
 - **Status:** Not applicable
 - **Reason:**
-  > The web app runs in the user\'s own browser and writes no server log\; Specter has no telemetry \(plan\.md\, guiding principle 4\)
+  > The web app runs in the user\'s own browser and writes no server log\; Scrylux has no telemetry \(plan\.md\, guiding principle 4\)
 - **Origin:** Rule-generated
 
 > Logs are copied\, indexed\, shipped and read by many people and tools\. If Web app writes sensitive values into them\, such as passwords\, tokens\, personal data or request bodies\, the data ends up in places with much weaker protection than the system it came from\.
@@ -3544,7 +3544,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Not applicable
 - **Reason:**
-  > The operator acts on the host\, not through a network interface of Specter\, so there is nothing for someone in the network to pose against
+  > The operator acts on the host\, not through a network interface of Scrylux\, so there is nothing for someone in the network to pose against
 - **Origin:** Rule-generated
 
 > Operator connects from inside the network and does not prove who it is\. A compromised machine or a curious colleague on the same network can send the same requests and be taken for the real entity\.\
@@ -3560,7 +3560,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > The operator acts on the host and its environment\, not through Specter\; the host\'s own audit \(in the AWS guide\, Systems Manager Session Manager\, deployment\.md\) is the record
+  > The operator acts on the host and its environment\, not through Scrylux\; the host\'s own audit \(in the AWS guide\, Systems Manager Session Manager\, deployment\.md\) is the record
 - **Origin:** Rule-generated
 
 > Operator does not authenticate\, so the system cannot say who was behind a request\. After an incident or a dispute there is nothing to link the actions to a person or a system\.
@@ -3575,7 +3575,7 @@ No mitigations.
 - **Risk:** Low (likelihood Low × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > What the operator does on the host is outside Specter\; the host\'s own audit \(in the AWS guide\, Systems Manager Session Manager\) is the record
+  > What the operator does on the host is outside Scrylux\; the host\'s own audit \(in the AWS guide\, Systems Manager Session Manager\) is the record
 - **Origin:** Rule-generated
 
 > If the system keeps no trustworthy record of what Operator asked for\, the entity can later claim it never did\, and the system cannot show otherwise\. That matters most for orders\, approvals\, deletions and payments\.
@@ -3596,7 +3596,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Access to the secret is by the instance\'s role\, limited to that one secret \(deployment\.md\, step4\)\; the credentials of that role are the provider\'s to protect\, outside Specter
+  > Access to the secret is by the instance\'s role\, limited to that one secret \(deployment\.md\, step4\)\; the credentials of that role are the provider\'s to protect\, outside Scrylux
 - **Origin:** Rule-generated
 
 > Secrets manager proves who it is with a credential such as a password\, key or token\. If that credential is stolen\, leaked or guessed\, the attacker is indistinguishable from the real entity until someone notices\.
@@ -3611,7 +3611,7 @@ No mitigations.
 - **Risk:** Low (likelihood Low × impact Medium)
 - **Status:** Accepted
 - **Reason:**
-  > The provider keeps its own record of who read a secret \(for AWS\, its audit trail\)\; that record is outside Specter
+  > The provider keeps its own record of who read a secret \(for AWS\, its audit trail\)\; that record is outside Scrylux
 - **Origin:** Rule-generated
 
 > If the system keeps no trustworthy record of what Secrets manager asked for\, the entity can later claim it never did\, and the system cannot show otherwise\. That matters most for orders\, approvals\, deletions and payments\.
@@ -3636,7 +3636,7 @@ No mitigations.
 
 **Mitigations**
 
-1. **Proposed** — OIDC single sign\-on\, then SAML \(plan\.md\, Phase 6\)\: with it the identity provider\'s own sign\-in rules\, a second factor among them\, would apply\; plan\.md lists no second factor of Specter\'s own
+1. **Proposed** — OIDC single sign\-on\, then SAML \(plan\.md\, Phase 6\)\: with it the identity provider\'s own sign\-in rules\, a second factor among them\, would apply\; plan\.md lists no second factor of Scrylux\'s own
 2. **Verified** — Sessions can be ended\: sign out ends one\, sign out everywhere ends every one of the account \(apps\/api\/src\/routes\/session\.ts\; tests\: apps\/api\/test\/contract\/session\.test\.ts\)
 
 ##### Reused passwords let attackers sign in as Signed\-in user — Medium
@@ -3834,7 +3834,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Not applicable
 - **Reason:**
-  > The operator places the settings in the host\'s environment \(a systemd unit\, a compose file or a secrets manager\)\; Specter defines no network path for them
+  > The operator places the settings in the host\'s environment \(a systemd unit\, a compose file or a secrets manager\)\; Scrylux defines no network path for them
 - **Origin:** Rule-generated
 
 > Environment settings carries data from Operator to Startup and configuration without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
@@ -3849,7 +3849,7 @@ No mitigations.
 - **Risk:** Medium (likelihood Low × impact High)
 - **Status:** Not applicable
 - **Reason:**
-  > The operator places the settings in the host\'s environment \(a systemd unit\, a compose file or a secrets manager\)\; Specter defines no network path for them
+  > The operator places the settings in the host\'s environment \(a systemd unit\, a compose file or a secrets manager\)\; Scrylux defines no network path for them
 - **Origin:** Rule-generated
 
 > Environment settings carries data from Operator to Startup and configuration without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
@@ -3889,7 +3889,7 @@ No mitigations.
 - **Risk:** Low (likelihood Low × impact Medium)
 - **Status:** Not applicable
 - **Reason:**
-  > Specter makes this call to the secrets manager once at start\-up\, over HTTPS\, signed by the AWS SDK with a timestamp
+  > Scrylux makes this call to the secrets manager once at start\-up\, over HTTPS\, signed by the AWS SDK with a timestamp
 - **Origin:** Rule-generated
 
 > Secrets is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Startup and configuration will accept it a second time\.

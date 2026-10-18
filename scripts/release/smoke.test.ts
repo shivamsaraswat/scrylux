@@ -5,7 +5,7 @@ import { runSmoke, SmokeFailure, type SmokeOptions } from './smoke.js';
 import { expectedLabels } from './versions.js';
 
 // The seven steps of contracts/release-pipeline.md ("What `smoke` checks"), against a fake server so that each can be made
-// to fail on its own (check S, spec FR-004, SC-003). The fake answers as Specter's API does for the calls the script makes.
+// to fail on its own (check S, spec FR-004, SC-003). The fake answers as Scrylux's API does for the calls the script makes.
 
 const SHA = '0123456789abcdef0123456789abcdef01234567';
 const VERSION = '0.1.0';
@@ -105,7 +105,7 @@ function clock() {
 function options(overrides: Partial<SmokeOptions> = {}): SmokeOptions {
   return {
     baseUrl,
-    demo: { format: 'specter', format_version: 1 },
+    demo: { format: 'scrylux', format_version: 1 },
     version: VERSION,
     sha: SHA,
     labels: expectedLabels({ version: VERSION, sha: SHA }),
@@ -134,10 +134,10 @@ describe('a healthy image', () => {
   });
 
   it('imports the demo file it was given, in a project of its own, with the signed-in token', async () => {
-    await runSmoke(options({ demo: { format: 'specter', marker: 'the-demo' } }));
+    await runSmoke(options({ demo: { format: 'scrylux', marker: 'the-demo' } }));
     const check = seen.find((r) => r.url === '/api/v1/projects/p1/imports/check');
     expect(check?.auth).toBe('Bearer TOKEN-SECRET');
-    expect(JSON.parse(check?.body ?? '{}')).toEqual({ format: 'specter', file: { format: 'specter', marker: 'the-demo' } });
+    expect(JSON.parse(check?.body ?? '{}')).toEqual({ format: 'scrylux', file: { format: 'scrylux', marker: 'the-demo' } });
     expect(seen.some((r) => r.method === 'POST' && r.url === '/api/v1/projects/p1/imports')).toBe(true);
   });
 

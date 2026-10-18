@@ -1,9 +1,9 @@
-import { OtmFile, SpecterFileV1, ThreatDragonFile, checkBounds, detectFormat, type ImportFormat } from '@specter/core';
+import { OtmFile, ScryluxFileV1, ThreatDragonFile, checkBounds, detectFormat, type ImportFormat } from '@scrylux/core';
 import { HttpError } from '../../v1/errors.js';
 import { planOtm } from './otm.js';
 import { parseWith } from './parse-with.js';
 import type { ImportPlan } from './plan.js';
-import { planSpecter } from './specter.js';
+import { planScrylux } from './scrylux.js';
 import { planThreatDragon } from './threat-dragon.js';
 
 // A request's file, from raw JSON to a plan (research #6): bound it, parse it with the chosen format's schema, plan
@@ -11,12 +11,12 @@ import { planThreatDragon } from './threat-dragon.js';
 // place under `file`.
 
 interface Parsed {
-  specter: SpecterFileV1;
+  scrylux: ScryluxFileV1;
   otm: OtmFile;
   'threat-dragon': ThreatDragonFile;
 }
 
-// Specter reads OTM 0.2.0 only; a file of another version, or no OTM file at all, is refused before anything else is
+// Scrylux reads OTM 0.2.0 only; a file of another version, or no OTM file at all, is refused before anything else is
 // read from it, saying which (research #12).
 function parseOtm(raw: unknown): OtmFile {
   const version = typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as { otmVersion?: unknown }).otmVersion : undefined;
@@ -25,7 +25,7 @@ function parseOtm(raw: unknown): OtmFile {
 }
 
 // One parser per import format, typed by the list, so a format without one is a type error.
-// Specter reads Threat Dragon version 2 only. A version 1 file keeps its diagram in `diagramJson`; opening and saving it
+// Scrylux reads Threat Dragon version 2 only. A version 1 file keeps its diagram in `diagramJson`; opening and saving it
 // in Threat Dragon 2 converts it, which the message says (research #13).
 function parseThreatDragon(raw: unknown): ThreatDragonFile {
   const detected = detectFormat(raw);
@@ -41,7 +41,7 @@ function parseThreatDragon(raw: unknown): ThreatDragonFile {
 }
 
 const PARSERS: { [F in ImportFormat]: (raw: unknown) => Parsed[F] } = {
-  specter: (raw) => parseWith(SpecterFileV1, raw),
+  scrylux: (raw) => parseWith(ScryluxFileV1, raw),
   otm: parseOtm,
   'threat-dragon': parseThreatDragon,
 };
@@ -54,8 +54,8 @@ export function parseFile<F extends ImportFormat>(format: F, raw: unknown): Pars
 
 export function planImport(format: ImportFormat, raw: unknown): ImportPlan {
   switch (format) {
-    case 'specter':
-      return planSpecter(parseFile('specter', raw));
+    case 'scrylux':
+      return planScrylux(parseFile('scrylux', raw));
     case 'otm':
       return planOtm(parseFile('otm', raw));
     case 'threat-dragon':

@@ -10,7 +10,7 @@ import { apiToken, expect, seedElements, seedModel, signInAsNewAccount, test } f
 // elements, about 15,000 threats and 49,000 mitigations), and the page stays usable while it is made. This is a
 // regression guard on a shared runner. The authoritative numbers are taken against `docker compose`, and recorded in
 // the pull request and in quickstart §5:
-//   PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @specter/web test:e2e report-large
+//   PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @scrylux/web test:e2e report-large
 test.use({ viewport: { width: 1400, height: 1500 } });
 
 const BUTTONS = { markdown: 'Download Markdown report', html: 'Download HTML report (print or save as PDF)' } as const;
@@ -110,7 +110,7 @@ test('leaves the flowchart out of a diagram with more than 400 flows, and the HT
 
   const markdown = readFileSync((await (await downloaded(page, 'markdown', 'flows')).download.path()), 'utf8');
   expect(markdown).not.toContain('```mermaid');
-  expect(markdown).toContain(`> The diagram has ${2 + flows} elements and is too large to draw here. Its structure is listed under Elements below; the HTML report from Specter draws it in full.`);
+  expect(markdown).toContain(`> The diagram has ${2 + flows} elements and is too large to draw here. Its structure is listed under Elements below; the HTML report from Scrylux draws it in full.`);
   // The note points at the element sections, which are all there.
   expect(markdown.match(/^#### E\d+ · Data flow · /gm)).toHaveLength(flows);
 

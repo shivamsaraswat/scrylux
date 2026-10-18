@@ -19,7 +19,7 @@ export interface LegacyEntry {
 
 // Creates an empty database next to the test database and returns a pool connected to it.
 export async function scratchDatabase(): Promise<pg.Pool> {
-  const name = `specter_scratch_${uid()}`;
+  const name = `scrylux_scratch_${uid()}`;
   await pool().query(`CREATE DATABASE ${escapeIdentifier(name)}`);
   scratchNames.push(name);
   const p = new pg.Pool(connectionSettings(name));

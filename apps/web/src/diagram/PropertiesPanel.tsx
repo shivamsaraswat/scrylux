@@ -1,4 +1,4 @@
-import { ELEMENT_FLAGS, ElementInputBase, TYPE_LABELS, flagLabel, type ElementRecord, type ElementType } from '@specter/core';
+import { ELEMENT_FLAGS, ElementInputBase, TYPE_LABELS, flagLabel, type ElementRecord, type ElementType } from '@scrylux/core';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog.js';
 import { FormField } from '../components/FormField.js';

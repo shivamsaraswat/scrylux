@@ -78,7 +78,7 @@ export async function sessionRequest(
   };
   const origin = options.origin === undefined ? baseUrl : options.origin;
   if (origin !== null) headers.Origin = origin;
-  if (options.cookie !== undefined) headers.Cookie = `specter_session=${options.cookie}`;
+  if (options.cookie !== undefined) headers.Cookie = `scrylux_session=${options.cookie}`;
 
   const res = await fetch(`${baseUrl}/api/session${path}`, {
     method: options.method ?? 'POST',
@@ -86,7 +86,7 @@ export async function sessionRequest(
     body: options.method === 'GET' ? undefined : JSON.stringify(options.body ?? {}),
   });
   const text = await res.text();
-  const header = res.headers.getSetCookie().find((c) => c.startsWith('specter_session='));
+  const header = res.headers.getSetCookie().find((c) => c.startsWith('scrylux_session='));
   return {
     status: res.status,
     body: (text ? JSON.parse(text) : null) as SessionBody,

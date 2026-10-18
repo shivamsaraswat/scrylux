@@ -13,9 +13,9 @@ import {
 import { DESCRIPTION_MAX_LENGTH, NAME_MAX_LENGTH, httpUrl, optionalText, requiredText } from '../fields.js';
 import { normalizeElementShape } from '../schemas/element.js';
 import { StaleReason } from '../schemas/stale.js';
-import { SPECTER_FORMAT_VERSION, formatVersionMessage } from './formats.js';
+import { SCRYLUX_FORMAT_VERSION, formatVersionMessage } from './formats.js';
 
-// The Specter file, format version 1 (contracts/specter-file.md): one threat model, lossless. It is built from the same
+// The Scrylux file, format version 1 (contracts/scrylux-file.md): one threat model, lossless. It is built from the same
 // field schemas as the create inputs, so a file the schema accepts passes the field rules of FR-008 and one it rejects
 // is refused by the import. Every key is always present, nullable where the contract says (so a diff shows every
 // change on its own line), and no key may be added.
@@ -82,9 +82,9 @@ const FileMitigation = z.strictObject({
   external_ref: httpUrl.nullable(),
 });
 
-export const SpecterFileV1 = z.strictObject({
-  format: z.literal('specter'),
-  format_version: z.literal(SPECTER_FORMAT_VERSION, { error: (issue) => formatVersionMessage(issue.input) }),
+export const ScryluxFileV1 = z.strictObject({
+  format: z.literal('scrylux'),
+  format_version: z.literal(SCRYLUX_FORMAT_VERSION, { error: (issue) => formatVersionMessage(issue.input) }),
   exported_at: z.string().meta({ description: 'When the file was exported (ISO 8601, UTC). Ignored on import.' }),
   project: z.strictObject({ name: z.string() }).meta({ description: 'The project the model was exported from, for information. Ignored on import.' }),
   // The name is not limited here: an empty or over-long name is reported in the import's preview, where it can be
@@ -94,4 +94,4 @@ export const SpecterFileV1 = z.strictObject({
   threats: z.array(FileThreat),
   mitigations: z.array(FileMitigation),
 });
-export type SpecterFileV1 = z.infer<typeof SpecterFileV1>;
+export type ScryluxFileV1 = z.infer<typeof ScryluxFileV1>;

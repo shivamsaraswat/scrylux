@@ -1,7 +1,7 @@
 # Exchange fixtures
 
 Files from other projects, used only as test data for the import and export suites
-(`apps/api/test/exchange/`). They are not shipped in the image and are not part of Specter's source.
+(`apps/api/test/exchange/`). They are not shipped in the image and are not part of Scrylux's source.
 They were fetched on 2026-10-10 and are unchanged.
 
 ## Open Threat Model (OTM)
@@ -18,7 +18,7 @@ these files only; the rest of the repository stays Apache-2.0.
 | `otm/otm_schema.json` | `otm_schema.json` | `06288a0d4d9d242a7bc80e138ed7417fccd60a5d` |
 | `otm/EXAMPLE.json` | `EXAMPLE.json` | `92d7ec6e1c43af8dc4500fb182ea0bb04863be8a` |
 
-Used to check that Specter's OTM export is valid (SC-002) and that an OTM file from another tool
+Used to check that Scrylux's OTM export is valid (SC-002) and that an OTM file from another tool
 imports (SC-003).
 
 ## Threat Dragon
@@ -37,7 +37,7 @@ Licence: **Apache-2.0**, the same as this repository.
 | `threat-dragon/three-tier-web-app.json` | `5eb83f6d6eab98fc5a8711d62a53caed651f81c9` | STRIDE; two boundary boxes |
 | `threat-dragon/cryptocurrency-wallet.json` | `5eb83f6d6eab98fc5a8711d62a53caed651f81c9` | **CIA** diagram: its threats are noted, not imported |
 | `threat-dragon/renting-car.json` | `24b89f45e33dccd43337c23bcef51e1a456a9fba` | **LINDDUN** diagram: its threats are noted, not imported |
-| `otm/mobile-cloud.otm.json` | `683b12db4f1eb7063001b5a75655dee9bc8bb20a` | OTM **0.1.0**: a refusal fixture, since Specter reads 0.2.0 only |
+| `otm/mobile-cloud.otm.json` | `683b12db4f1eb7063001b5a75655dee9bc8bb20a` | OTM **0.1.0**: a refusal fixture, since Scrylux reads 0.2.0 only |
 
 All eight `threat-dragon/` files are Threat Dragon version `2.3.0`. The demo folder's
 `huskyai.tmbom.json` is neither Threat Dragon v2 nor OTM and is not used.

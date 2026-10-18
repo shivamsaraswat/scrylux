@@ -1,11 +1,11 @@
-import { RISK_LEVELS, THREAT_STATUSES } from '@specter/core';
+import { RISK_LEVELS, THREAT_STATUSES } from '@scrylux/core';
 import { htmlText } from './escape.js';
 import { GAP_TEXT, STATUS_LABELS, contentsLine, crossingText, type BoundaryGroup, type Report, type ReportElement, type ReportMitigation, type ReportThreat } from './model.js';
 import { REPORT_CSS, REPORT_CSS_HASH } from './report-css.js';
 import { renderSvg } from './svg.js';
 
 // The HTML report (contracts/report-format.md "HTML"): one file that opens and prints the same offline, from disk,
-// with no Specter session. It says what the Markdown report says, in the same order and the same words, and it is
+// with no Scrylux session. It says what the Markdown report says, in the same order and the same words, and it is
 // inert: the policy in its first <meta> allows no script and nothing from outside but its own stylesheet, by hash, so
 // even text that slipped past the escaping could neither run nor call out (FR-016). Every piece of user text goes
 // through htmlText; everything else here is the report's own fixed wording.

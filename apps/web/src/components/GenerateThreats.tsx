@@ -1,4 +1,4 @@
-import type { ThreatGenerationResult } from '@specter/core';
+import type { ThreatGenerationResult } from '@scrylux/core';
 import { useState } from 'react';
 import { ApiError } from '../api/errors.js';
 import { useGenerateThreats } from '../api/queries.js';
@@ -7,7 +7,7 @@ import { useDiagramEditor } from '../diagram/DiagramEditorProvider.js';
 // What the user is told after the app's answer is lost: the run may or may not have been stored, and
 // running it again is safe because it never duplicates (spec FR-004, US1 scenario 9).
 const OUTCOME_UNKNOWN =
-  'The connection was lost before Specter answered, so the threats may or may not have been generated. Generating again is safe: it never creates duplicates.';
+  'The connection was lost before Scrylux answered, so the threats may or may not have been generated. Generating again is safe: it never creates duplicates.';
 
 function failureText(err: unknown): string {
   if (err instanceof ApiError) {
@@ -26,7 +26,7 @@ function summary(result: ThreatGenerationResult, names: (id: string) => string):
       ? 'No threats to generate: no rule applies to the elements of this diagram.'
       : `Generated threats: ${created} created, ${existing} already existed (of which ${no_longer_stale} no longer stale), ${newly_stale} newly stale.`;
   if (skipped_elements.length === 0) return headline;
-  return `${headline} ${skipped_elements.length} element(s) skipped because their stored properties include keys Specter no longer uses: ${skipped_elements.map(names).join(', ')}. Change any property of each in the diagram to clean it up, then generate again.`;
+  return `${headline} ${skipped_elements.length} element(s) skipped because their stored properties include keys Scrylux no longer uses: ${skipped_elements.map(names).join(', ')}. Change any property of each in the diagram to clean it up, then generate again.`;
 }
 
 // The "Generate threats" action, on both tabs of the threat model page. It waits for the diagram's

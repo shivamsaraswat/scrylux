@@ -1,4 +1,4 @@
-import { NODE_SIZE } from '@specter/core';
+import { NODE_SIZE } from '@scrylux/core';
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { openThreatsText, type DiagramNodeData } from '../flow.js';
 

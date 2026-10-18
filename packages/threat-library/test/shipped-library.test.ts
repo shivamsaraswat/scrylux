@@ -1,4 +1,4 @@
-import { ELEMENT_FLAGS, ELEMENT_TYPES, type ElementType } from '@specter/core';
+import { ELEMENT_FLAGS, ELEMENT_TYPES, type ElementType } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import {
   STRIDE_PER_ELEMENT,

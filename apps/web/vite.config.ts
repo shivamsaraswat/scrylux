@@ -5,10 +5,10 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    // @specter/core is browser-safe (no Node built-ins) and is bundled from source, so the web
+    // @scrylux/core is browser-safe (no Node built-ins) and is bundled from source, so the web
     // build doesn't depend on core's dist.
     alias: {
-      '@specter/core': fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url)),
+      '@scrylux/core': fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url)),
     },
   },
   build: {

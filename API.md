@@ -224,35 +224,35 @@ curl -s "${H[@]}" -OJ "localhost:3000/api/v1/threat-models/$MODEL/report?format=
 - The answer is an attachment (`Content-Disposition`), named after the threat model and the day of the export in UTC, such as `payments-api-report-2026-10-10.md`. The name holds only lower-case letters, digits and hyphens. `Cache-Control: no-store`: nothing is to keep a copy.
 - Both documents hold the same things in the same order: the threat model's name, project, methodology and status and the time of the export (UTC); the risk summary, the same numbers as the summary on the Threats view; the diagram; every element, grouped by trust boundary, with its type, technology tags and security flags (a data flow also says what it joins and whether it crosses a trust boundary), and each of its threats with its risk, status, reason, origin, stale and missing-what-its-status-needs markers and its mitigations; and the threats not linked to an element. Threats come most serious first.
 - The **Markdown** draws the diagram as a Mermaid flowchart, which GitHub and many wikis show as a picture. A diagram too big for them (more than 400 flows, or a flowchart of more than 40,000 characters) is replaced by a note that says so, because they show an error in its place; the element sections give the same structure as text, and the HTML report draws all of it.
-- The **HTML** is one self-contained file. It opens and prints the same offline, with no Specter session and no network, and runs no script. Use the browser's *Print* and choose *Save as PDF* for a PDF. It draws the diagram where the editor shows it.
+- The **HTML** is one self-contained file. It opens and prints the same offline, with no Scrylux session and no network, and runs no script. Use the browser's *Print* and choose *Save as PDF* for a PDF. It draws the diagram where the editor shows it.
 - What was typed is shown as typed in both: a name, title or note that contains Markdown, HTML or a Mermaid keyword is text, not markup. A ticket is a link only if it is an `http` or `https` address.
 - The same unchanged threat model gives the same document each time, apart from the export time in its header, so a report kept in a repository shows what changed.
 - A report is read in one snapshot, so it never mixes two states of the threat model. It changes nothing, writes no log line, and holds no credential or account name. `404` if the threat model does not exist.
 
 ### Exporting and importing a threat model
 
-`GET /threat-models/{id}/export?format=specter` and `…?format=otm` answer with the whole threat model as a data file, to back it up, move it to another install, commit it, or open it in another tool. `format` is required and is one of `specter` or `otm`; anything else, a repeated `format` or any other parameter is a `400` (`format must be specter or otm`).
+`GET /threat-models/{id}/export?format=scrylux` and `…?format=otm` answer with the whole threat model as a data file, to back it up, move it to another install, commit it, or open it in another tool. `format` is required and is one of `scrylux` or `otm`; anything else, a repeated `format` or any other parameter is a `400` (`format must be scrylux or otm`).
 
-- **`specter`** is Specter's own file. It is **lossless**: importing it again gives the same diagram, the same threats in the same states, and the same mitigations. Its format and its published JSON Schema are in [docs/formats/specter-file.md](docs/formats/specter-file.md).
-- **`otm`** is [Open Threat Model](docs/formats/otm.md) 0.2.0. Other tools read its standard fields; Specter's own fields travel in `attributes.specter`, so Specter reads its own file back without loss.
-- The answer is an attachment (`Content-Disposition`), named after the threat model and the day in UTC, such as `payments-2026-10-10.specter.json`, with `Cache-Control: no-store`. It is read in one snapshot, changes nothing and writes no log line. The same unchanged threat model gives the same bytes, apart from the export time, so a file kept in a repository shows what changed. `404` if the threat model does not exist.
+- **`scrylux`** is Scrylux's own file. It is **lossless**: importing it again gives the same diagram, the same threats in the same states, and the same mitigations. Its format and its published JSON Schema are in [docs/formats/scrylux-file.md](docs/formats/scrylux-file.md).
+- **`otm`** is [Open Threat Model](docs/formats/otm.md) 0.2.0. Other tools read its standard fields; Scrylux's own fields travel in `attributes.scrylux`, so Scrylux reads its own file back without loss.
+- The answer is an attachment (`Content-Disposition`), named after the threat model and the day in UTC, such as `payments-2026-10-10.scrylux.json`, with `Cache-Control: no-store`. It is read in one snapshot, changes nothing and writes no log line. The same unchanged threat model gives the same bytes, apart from the export time, so a file kept in a repository shows what changed. `404` if the threat model does not exist.
 
-`POST /projects/{id}/imports` creates **new** threat models in a project from a file, in any of three formats: `specter`, `otm` (OTM 0.2.0 in JSON) and `threat-dragon` (OWASP Threat Dragon version 2; see [docs/formats/threat-dragon.md](docs/formats/threat-dragon.md)). It never changes an existing threat model. `POST /projects/{id}/imports/check` takes the **same body**, runs everything the import runs except the writing, and creates nothing: use it to show what an import would do before you do it.
+`POST /projects/{id}/imports` creates **new** threat models in a project from a file, in any of three formats: `scrylux`, `otm` (OTM 0.2.0 in JSON) and `threat-dragon` (OWASP Threat Dragon version 2; see [docs/formats/threat-dragon.md](docs/formats/threat-dragon.md)). It never changes an existing threat model. `POST /projects/{id}/imports/check` takes the **same body**, runs everything the import runs except the writing, and creates nothing: use it to show what an import would do before you do it.
 
 ```sh
 # Export, then check and import into another project.
-curl -s "${H[@]}" -o model.specter.json "localhost:3000/api/v1/threat-models/$MODEL/export?format=specter"
-jq -n --slurpfile f model.specter.json '{format:"specter", names:["Copy"], file:$f[0]}' > body.json
+curl -s "${H[@]}" -o model.scrylux.json "localhost:3000/api/v1/threat-models/$MODEL/export?format=scrylux"
+jq -n --slurpfile f model.scrylux.json '{format:"scrylux", names:["Copy"], file:$f[0]}' > body.json
 curl -s "${H[@]}" -H 'Content-Type: application/json' --data-binary @body.json "localhost:3000/api/v1/projects/$PROJECT/imports/check"
 curl -s "${H[@]}" -H 'Content-Type: application/json' --data-binary @body.json "localhost:3000/api/v1/projects/$PROJECT/imports"
 ```
 
 - **The body** is `{ "format", "names"?, "file" }`. `file` is the parsed file. `names` has one name per threat model the file creates, in file order (a Threat Dragon file creates one per diagram); without it each keeps the name its file gives it.
-- **The check answers `200`** with the summary: `{ "models": [{ "name", "name_issue", "status", "elements", "threats", "mitigations" }], "notes": [{ "path", "kind", "label"?, "detail"? }] }`. A name that is empty, over 200 characters, repeated in the file, or already used in the project is reported as `name_issue` (`empty`, `too_long`, `duplicate` or `taken`), not refused, so it can be fixed. `notes` lists everything in the file that was not carried over or was changed to fit, each with its place in the file (`path`) and what was done (`kind`). A Specter file imports with no notes.
+- **The check answers `200`** with the summary: `{ "models": [{ "name", "name_issue", "status", "elements", "threats", "mitigations" }], "notes": [{ "path", "kind", "label"?, "detail"? }] }`. A name that is empty, over 200 characters, repeated in the file, or already used in the project is reported as `name_issue` (`empty`, `too_long`, `duplicate` or `taken`), not refused, so it can be fixed. `notes` lists everything in the file that was not carried over or was changed to fit, each with its place in the file (`path`) and what was done (`kind`). A Scrylux file imports with no notes.
 - **The import answers `201`** with `{ "threat_models": […], "summary": … }`, the same summary the check gave. It is all or nothing, in one transaction. A name with an issue is refused: `409` when it is already used in the project (`names.0: a threat model with this name already exists in this project`), `400` otherwise.
 - **A refusal is a `400`** that names the rule and the place in the file, never a value from it, such as `file.threats.12.status_reason: can only be set on a threat that is accepted or not_applicable` or `file.format_version: must be 1`. A file nested more than 64 levels or holding more than 2,000,000 values is refused before it is read further.
 - **The same rules as creating the records by hand apply**, with one exception: a threat keeps the status it carries, even `mitigated` with no implemented mitigation or `accepted` without a reason, and is then shown as missing what its status needs. Generated threats keep their rule and stale mark, so *Generate threats* creates no duplicate afterwards. A threat marked AI-drafted is refused, and every threat from an OTM file from another tool or from Threat Dragon is imported as manual.
-- **Size.** A body may hold up to **64 MiB**, which holds the largest threat model Specter allows (1,000 elements, about 15,000 threats and 49,000 mitigations) with room to spare; a larger one is a `413`. The check and the import of that model take under two seconds.
+- **Size.** A body may hold up to **64 MiB**, which holds the largest threat model Scrylux allows (1,000 elements, about 15,000 threats and 49,000 mitigations) with room to spare; a larger one is a `413`. The check and the import of that model take under two seconds.
 
 ### Order of checks
 
@@ -295,7 +295,7 @@ Every one is a `POST` with a JSON body (`{}` where there is nothing to send), an
 
 | Path | Body | Answers |
 | --- | --- | --- |
-| `POST /api/session` | `{username, password}` | `200` `{access_token, expires_at, account: {id, username}}`, and sets the `specter_session` cookie. `400`, `401`, `429` as for `/api/login` |
+| `POST /api/session` | `{username, password}` | `200` `{access_token, expires_at, account: {id, username}}`, and sets the `scrylux_session` cookie. `400`, `401`, `429` as for `/api/login` |
 | `POST /api/session/refresh` | `{}` | `200`, the same body, with a rotated cookie; `401 Session ended` if there is no live session |
 | `POST /api/session/logout` | `{}` | `204`. Ends this browser's session and clears the cookie |
 | `POST /api/session/logout-all` | `{}` | `204`. Ends **every** session of the account (the web app's **Sign out everywhere**) |
@@ -319,7 +319,7 @@ curl -s -H "Authorization: Bearer $TOKEN" localhost:3000/api/v1/openapi.json
 It lists every operation with its parameters, request body, responses and error statuses. It is generated from the same definitions that validate requests, so it cannot describe a different API from the one that runs. A copy is committed as [`apps/api/openapi.json`](apps/api/openapi.json). A test fails if that copy is out of date; regenerate it with:
 
 ```sh
-pnpm --filter @specter/api openapi
+pnpm --filter @scrylux/api openapi
 ```
 
 ## What gets logged

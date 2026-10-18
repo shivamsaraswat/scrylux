@@ -22,7 +22,7 @@ import { moveElements } from './membership.js';
 import './diagram.css';
 import { sameEdge, sameNode, toFlowEdges, toFlowNodes, type DiagramNodeData, type FlowEdgeData } from './flow.js';
 import { edgeTypes, nodeTypes } from './nodes/node-types.js';
-import { resolveLayout } from '@specter/core';
+import { resolveLayout } from '@scrylux/core';
 
 // How the view is fitted, on opening and by the Fit to view button: never zoomed in past 1:1, or the first
 // element added would fill the screen and the next ones would land out of sight.

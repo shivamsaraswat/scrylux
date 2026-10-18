@@ -4,7 +4,7 @@
 
 // --- OTM -------------------------------------------------------------------------------------------------------
 
-// How an OTM component's `type` becomes a Specter node type (contracts/otm-mapping.md, "Component types"). Read in
+// How an OTM component's `type` becomes a Scrylux node type (contracts/otm-mapping.md, "Component types"). Read in
 // this order: an exact spelling, then an external-entity keyword, then a data-store keyword. Anything else is a
 // process, with a note.
 export const OTM_COMPONENT_TYPES = {
@@ -32,7 +32,7 @@ export const OTM_MITIGATION_STATES = {
   proposed: ['required', 'recommended', 'proposed', 'planned'],
 } as const;
 
-// What Specter's OTM export writes where OTM requires a value Specter doesn't have (contracts/otm-mapping.md,
+// What Scrylux's OTM export writes where OTM requires a value Scrylux doesn't have (contracts/otm-mapping.md,
 // "Export"). 50 is the middle of OTM's trust scale and 0 claims no risk reduction.
 export const OTM_EXPORT = {
   trustRating: 50,
@@ -41,7 +41,7 @@ export const OTM_EXPORT = {
   componentTypes: { external_entity: 'external-entity', process: 'process', data_store: 'data-store' },
   threatStates: { open: 'exposed', mitigated: 'mitigated', accepted: 'accepted', not_applicable: 'not-applicable' },
   mitigationStates: { proposed: 'required', implemented: 'implemented', verified: 'implemented' },
-  outsideZone: { id: 'specter-outside', name: 'Outside any trust boundary' },
+  outsideZone: { id: 'scrylux-outside', name: 'Outside any trust boundary' },
 } as const;
 
 // --- Threat Dragon ----------------------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ export const TD_SHAPES = {
 } as const;
 
 // A threat's `status`, as letters only (contracts/threat-dragon-mapping.md, "Threats"). The `unmapped` words are
-// statuses Specter has no equivalent for: they import as open, and the note names the original.
+// statuses Scrylux has no equivalent for: they import as open, and the note names the original.
 export const TD_STATUSES = {
   open: ['open'],
   mitigated: ['mitigated'],
@@ -72,7 +72,7 @@ export const TD_SEVERITIES = {
   unmapped: ['tba'],
 } as const;
 
-// `[shape, property, Specter flag]`: a `true` sets the flag; a `false` leaves it not assessed, because Threat Dragon
+// `[shape, property, Scrylux flag]`: a `true` sets the flag; a `false` leaves it not assessed, because Threat Dragon
 // can't tell "no" from "not considered" (contracts/threat-dragon-mapping.md, "Properties").
 export const TD_FLAG_PAIRS = [
   ['actor', 'providesAuthentication', 'authenticated'],

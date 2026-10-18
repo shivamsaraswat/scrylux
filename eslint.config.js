@@ -68,7 +68,7 @@ export default tseslint.config(
     },
   },
   {
-    // @specter/core must run in the browser too (spec FR-036), so it cannot reach for Node built-ins.
+    // @scrylux/core must run in the browser too (spec FR-036), so it cannot reach for Node built-ins.
     // Together with the Node-types-free `tsc` pass over src/ (packages/core/tsconfig.build.json),
     // this is checked on every PR by the existing typecheck and lint jobs.
     files: ['packages/core/src/**/*.ts'],
@@ -76,10 +76,10 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          patterns: [{ group: ['node:*'], message: '@specter/core must not depend on Node.js APIs.' }],
+          patterns: [{ group: ['node:*'], message: '@scrylux/core must not depend on Node.js APIs.' }],
           paths: builtinModules.map((name) => ({
             name,
-            message: '@specter/core must not depend on Node.js APIs.',
+            message: '@scrylux/core must not depend on Node.js APIs.',
           })),
         },
       ],

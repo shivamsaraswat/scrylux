@@ -12,7 +12,7 @@ import {
   TD_SHAPES,
   TD_STATUSES,
   TD_TAGS,
-} from '@specter/core';
+} from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 
 // docs/formats/otm.md and threat-dragon.md print the tables of packages/core/src/exchange/mappings.ts (research #21), and

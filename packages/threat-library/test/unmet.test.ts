@@ -1,4 +1,4 @@
-import { ELEMENT_FLAGS, NODE_TYPES as CORE_NODE_TYPES, RULE_ELEMENT_TYPES as CORE_RULE_ELEMENT_TYPES } from '@specter/core';
+import { ELEMENT_FLAGS, NODE_TYPES as CORE_NODE_TYPES, RULE_ELEMENT_TYPES as CORE_RULE_ELEMENT_TYPES } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import {
   LibraryInputError,

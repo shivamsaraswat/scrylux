@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
-import { SpecterFileV1, STRIDE_CATEGORIES } from '@specter/core';
-import { buildSpecterFile, serializeExport, type ExportedFile } from '../../src/exchange/specter-export.js';
+import { ScryluxFileV1, STRIDE_CATEGORIES } from '@scrylux/core';
+import { buildScryluxFile, serializeExport, type ExportedFile } from '../../src/exchange/scrylux-export.js';
 import { ajv2020 } from '../exchange/ajv.js';
 import { markdownInline } from '../../src/report/escape.js';
 import { canonical, snapshotOf, type ExchangeFile } from '../exchange/fixtures.js';
@@ -17,13 +17,13 @@ import { PATTERNS } from './patterns.js';
 // holds, so a failing pull request cannot echo something it should not.
 
 export const FOLDER = 'docs/threat-model';
-export const SPECTER_FILE = `${FOLDER}/threat-model.specter.json`;
+export const SCRYLUX_FILE = `${FOLDER}/threat-model.scrylux.json`;
 export const REPORT_FILE = `${FOLDER}/report.md`;
 export const README_FILE = `${FOLDER}/README.md`;
-export const FOLDER_NAMES: readonly string[] = ['README.md', 'report.md', 'threat-model.specter.json'];
+export const FOLDER_NAMES: readonly string[] = ['README.md', 'report.md', 'threat-model.scrylux.json'];
 
-export const PROJECT_NAME = 'Specter';
-export const MODEL_NAME = 'Specter application';
+export const PROJECT_NAME = 'Scrylux';
+export const MODEL_NAME = 'Scrylux application';
 
 const WHERE_TO_READ = 'See "Updating the model" in docs/threat-model/README.md.';
 
@@ -41,7 +41,7 @@ export function formatFinding({ file, check, message, fix }: Finding): string {
 
 // The line of a warning (check 6b): the build passes, and the reader is told how to catch the model up.
 export function formatWarning({ message }: Finding): string {
-  return `Specter's own threat model is behind its rules: ${message}. The build passes.\nUpdate docs/threat-model/ in this or a later change. ${WHERE_TO_READ}`;
+  return `Scrylux's own threat model is behind its rules: ${message}. The build passes.\nUpdate docs/threat-model/ in this or a later change. ${WHERE_TO_READ}`;
 }
 
 const finding = (check: string, file: string, message: string, fix: string): Finding => ({ check, file, message, fix });
@@ -51,10 +51,10 @@ const finding = (check: string, file: string, message: string, fix: string): Fin
 
 export type SchemaValidator = (value: unknown) => string[];
 
-// The published JSON Schema of the Specter file (draft 2020-12, as schema-current.test.ts reads it), as a function
+// The published JSON Schema of the Scrylux file (draft 2020-12, as schema-current.test.ts reads it), as a function
 // that returns where a value breaks it. The messages carry the place and the rule, never the value.
 export function publishedSchemaValidator(): SchemaValidator {
-  const path = fileURLToPath(new URL('../../../../docs/formats/specter-file-v1.schema.json', import.meta.url));
+  const path = fileURLToPath(new URL('../../../../docs/formats/scrylux-file-v1.schema.json', import.meta.url));
   const validate = ajv2020().compile(JSON.parse(readFileSync(path, 'utf8')) as object);
   return (value) => {
     if (validate(value)) return [];
@@ -63,7 +63,7 @@ export function publishedSchemaValidator(): SchemaValidator {
 }
 
 export function checkForm(file: string, text: string, validate: SchemaValidator): Finding[] {
-  const fix = 'export the Specter file again from Specter and save it unchanged';
+  const fix = 'export the Scrylux file again from Scrylux and save it unchanged';
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -73,23 +73,23 @@ export function checkForm(file: string, text: string, validate: SchemaValidator)
 
   const findings: Finding[] = [];
   for (const problem of validate(parsed)) findings.push(finding('form', file, `the file breaks the published schema at ${problem}`, fix));
-  if (findings.length === 0 && !SpecterFileV1.safeParse(parsed).success) {
-    findings.push(finding('form', file, 'the file breaks the Specter file schema of @specter/core', fix));
+  if (findings.length === 0 && !ScryluxFileV1.safeParse(parsed).success) {
+    findings.push(finding('form', file, 'the file breaks the Scrylux file schema of @scrylux/core', fix));
   }
   if (findings.length > 0) return findings;
 
-  // What Specter writes for this content: the file read back and written by the real exporter, which fixes the key
+  // What Scrylux writes for this content: the file read back and written by the real exporter, which fixes the key
   // order, the order of the records and the bytes. (Writing the parsed value again would not do: JSON.parse keeps the
   // order it was given, so a file with its keys shuffled would reproduce itself.)
   const data = parsed as ExchangeFile;
-  const written = serializeExport(buildSpecterFile(snapshotOf(data), new Date(data.exported_at)));
+  const written = serializeExport(buildScryluxFile(snapshotOf(data), new Date(data.exported_at)));
   if (written !== text) {
     const why = text.includes('\r\n')
       ? 'the line endings are not "\\n"'
       : !text.endsWith('\n')
         ? 'there is no final newline'
         : 'the key order, the order of the records or the spacing differs';
-    findings.push(finding('form', file, `the text is not what Specter writes: ${why}`, fix));
+    findings.push(finding('form', file, `the text is not what Scrylux writes: ${why}`, fix));
   }
   return findings;
 }
@@ -103,7 +103,7 @@ const typeWords = (type: string): string => type.replace('_', ' ');
 // An order that only an id could settle changes when an import gives every record a new id, so the round trip and the
 // report would differ for a reason that looks like noise (research #2). No two records may tie before the id.
 export function checkTies(file: string, data: ExportedFile): Finding[] {
-  const fix = 'rename one of them in Specter so that they differ, then export again';
+  const fix = 'rename one of them in Scrylux so that they differ, then export again';
   const findings: Finding[] = [];
 
   const named = new Map<string, string[]>();
@@ -153,7 +153,7 @@ export function checkTies(file: string, data: ExportedFile): Finding[] {
 const APPROVED_STATUSES: readonly string[] = ['in_review', 'approved'];
 
 export function checkShape(file: string, data: ExportedFile): Finding[] {
-  const fix = 'correct it in Specter and export both files again';
+  const fix = 'correct it in Scrylux and export both files again';
   const findings: Finding[] = [];
   const add = (message: string): void => {
     findings.push(finding('shape', file, message, fix));
@@ -189,7 +189,7 @@ export function checkShape(file: string, data: ExportedFile): Finding[] {
   return findings;
 }
 
-// The folder holds the Specter file, the report and the README, and nothing else (FR-012).
+// The folder holds the Scrylux file, the report and the README, and nothing else (FR-012).
 export function checkFolder(names: readonly string[]): Finding[] {
   const fix = 'keep exactly the three files of docs/threat-model/ and remove the others';
   const findings: Finding[] = [];
@@ -211,7 +211,7 @@ export function checkPatterns(file: string, text: string): Finding[] {
   text.split('\n').forEach((line, index) => {
     for (const { name, pattern, description } of PATTERNS) {
       if (pattern.test(line)) {
-        findings.push(finding('patterns', file, `line ${index + 1} holds ${description} (pattern ${name})`, 'reword it in Specter so that it holds no credential, personal data or deployment identifier'));
+        findings.push(finding('patterns', file, `line ${index + 1} holds ${description} (pattern ${name})`, 'reword it in Scrylux so that it holds no credential, personal data or deployment identifier'));
       }
     }
   });
@@ -231,7 +231,7 @@ export interface SummaryLike {
 // after the import is the committed one once ids are mapped to places (`canonical`, which also drops the export time
 // and the project name). `again` is the export of the imported model.
 export function checkRoundTrip(file: string, summary: SummaryLike, data: ExportedFile, again: ExportedFile): Finding[] {
-  const fix = 'import the file into Specter, correct what the import reports, and export it again';
+  const fix = 'import the file into Scrylux, correct what the import reports, and export it again';
   const findings: Finding[] = [];
   const add = (message: string): void => {
     findings.push(finding('round-trip', file, message, fix));
@@ -263,7 +263,7 @@ export function checkImportAnswer(file: string, answer: { status: number; body: 
   if (answer.status === 200) return [];
   const error = typeof answer.body === 'object' && answer.body !== null ? (answer.body as { error?: unknown }).error : undefined;
   const reason = typeof error === 'string' ? error.slice(0, 300) : `status ${answer.status}`;
-  return [finding('round-trip', file, `the import check refuses the file: ${reason}`, 'correct it in Specter and export it again')];
+  return [finding('round-trip', file, `the import check refuses the file: ${reason}`, 'correct it in Scrylux and export it again')];
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -301,8 +301,8 @@ const staleReason = (stale: unknown): string => {
 export function classifyRegeneration({ file, before, afterThreats, afterElements, skippedElements }: Regeneration): { stale: Finding[]; behind: Finding[] } {
   const stale: Finding[] = [];
   const behind: Finding[] = [];
-  const staleFix = 'import the file into Specter, run "Generate threats", review the stale threat, and export both files again';
-  const behindFix = 'import the file into Specter, run "Generate threats", triage the new threat, and export both files again';
+  const staleFix = 'import the file into Scrylux, run "Generate threats", review the stale threat, and export both files again';
+  const behindFix = 'import the file into Scrylux, run "Generate threats", triage the new threat, and export both files again';
 
   const beforeElement = new Map(before.elements.map((element) => [element.id, element]));
   const keyOf = (type: string, name: string, ref: string | null): string => `${type}\0${name}\0${ref ?? ''}`;
@@ -344,11 +344,11 @@ const PROJECT_LINE = '- **Project:** ';
 const EXPORTED_LINE = '- **Exported:** ';
 const isSetAside = (line: string): boolean => line.startsWith(PROJECT_LINE) || line.startsWith(EXPORTED_LINE);
 
-// The committed report against the one Specter builds for the imported model. The project line and the export time are
+// The committed report against the one Scrylux builds for the imported model. The project line and the export time are
 // set aside (spec FR-015, research #5); every other line must be equal. A difference is named by its line number, never
-// quoted. `data` is the committed Specter file: the report's title and project line must name what the file names.
+// quoted. `data` is the committed Scrylux file: the report's title and project line must name what the file names.
 export function compareReport(file: string, committed: string, built: string, data: ExportedFile): Finding[] {
-  const fix = 'export the report again from the same threat model as the Specter file, and save it unchanged';
+  const fix = 'export the report again from the same threat model as the Scrylux file, and save it unchanged';
   const findings: Finding[] = [];
   const add = (message: string): void => {
     findings.push(finding('report', file, message, fix));
@@ -357,17 +357,17 @@ export function compareReport(file: string, committed: string, built: string, da
   const a = committed.split('\n');
   const b = built.split('\n');
   if (a.length !== b.length) {
-    add(`the report has ${a.length} lines, and Specter builds ${b.length} for this file`);
+    add(`the report has ${a.length} lines, and Scrylux builds ${b.length} for this file`);
   } else {
     const differing = a.map((line, index) => (isSetAside(line) && isSetAside(b[index] ?? '') ? -1 : line === b[index] ? -1 : index)).filter((index) => index >= 0);
     if (differing.length > 0) {
-      add(`line ${(differing[0] ?? 0) + 1} differs from the report Specter builds for this file (${differing.length} line(s) differ)`);
+      add(`line ${(differing[0] ?? 0) + 1} differs from the report Scrylux builds for this file (${differing.length} line(s) differ)`);
     }
   }
 
-  if (a[0] !== `# Threat model report: ${markdownInline(data.threat_model.name)}`) add('the title does not name the threat model of the Specter file');
+  if (a[0] !== `# Threat model report: ${markdownInline(data.threat_model.name)}`) add('the title does not name the threat model of the Scrylux file');
   const project = a.find((line) => line.startsWith(PROJECT_LINE));
-  if (project !== `${PROJECT_LINE}${markdownInline(data.project.name)}`) add('the project line does not name the project of the Specter file');
+  if (project !== `${PROJECT_LINE}${markdownInline(data.project.name)}`) add('the project line does not name the project of the Scrylux file');
   if (!committed.includes('```mermaid\n')) add('there is no fenced mermaid diagram');
   return findings;
 }

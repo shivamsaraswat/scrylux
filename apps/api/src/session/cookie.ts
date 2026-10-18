@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 
-const COOKIE_NAME = 'specter_session';
+const COOKIE_NAME = 'scrylux_session';
 const COOKIE_PATH = '/api/session';
 const MAX_CREDENTIAL_LENGTH = 128;
 

@@ -4,7 +4,7 @@
 // All queries through this module MUST use parameterized `pg` calls or the typed Kysely builder —
 // never string-built or template-interpolated SQL (constitution Principle I, NON-NEGOTIABLE). The
 // domain tables (/api/v1) go through `kdb`; login, users and admin seeding stay on `db.query`.
-import type { Database } from '@specter/db';
+import type { Database } from '@scrylux/db';
 import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 import config from './config.js';

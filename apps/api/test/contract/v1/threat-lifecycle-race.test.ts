@@ -1,4 +1,4 @@
-import { MitigationRecord, ThreatRecord, lifecycleGap } from '@specter/core';
+import { MitigationRecord, ThreatRecord, lifecycleGap } from '@scrylux/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
 import db from '../../../src/db.js';

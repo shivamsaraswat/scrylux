@@ -1,5 +1,5 @@
-import { ELEMENT_FLAGS } from '@specter/core';
-import { shippedLibrary } from '@specter/threat-library';
+import { ELEMENT_FLAGS } from '@scrylux/core';
+import { shippedLibrary } from '@scrylux/threat-library';
 import { apiRequest, seedModel } from './fixtures.js';
 
 // The load Milestone 3 allows (1,000 elements, about 15,000 threats and 49,000 mitigations), shared by the specs that

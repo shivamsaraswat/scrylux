@@ -20,7 +20,7 @@ const SessionResponse = z.object({
 });
 
 const RENEW_MARGIN_MS = 60_000;
-const LOCK_NAME = 'specter-session-refresh';
+const LOCK_NAME = 'scrylux-session-refresh';
 
 let accessToken: string | null = null;
 let expiresAt = 0;

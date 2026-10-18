@@ -39,7 +39,7 @@ export function loadLibrary(rulesDirectory: string, options: ParseOptions = {}):
 }
 
 // The package's own rules/, resolved from this module and not from the working directory or the
-// environment, like the migrations in @specter/db. Loaded once; a failure is remembered and thrown
+// environment, like the migrations in @scrylux/db. Loaded once; a failure is remembered and thrown
 // again, so a broken catalog is never half-used.
 let shipped: { library: Library } | { error: unknown } | undefined;
 

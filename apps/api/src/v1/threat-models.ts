@@ -5,7 +5,7 @@ import {
   ThreatModelRecord,
   ThreatModelUpdateInput,
   ThreatRecord,
-} from '@specter/core';
+} from '@scrylux/core';
 import { kdb } from '../db.js';
 import { orNotFound } from './errors.js';
 import { LIST_ORDER_DESCRIPTION, defineOperation, type Operation } from './operation.js';

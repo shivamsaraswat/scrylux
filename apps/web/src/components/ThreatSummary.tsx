@@ -1,4 +1,4 @@
-import { RISK_LEVELS, THREAT_STATUSES, summarizeThreats, type ThreatRecord } from '@specter/core';
+import { RISK_LEVELS, THREAT_STATUSES, summarizeThreats, type ThreatRecord } from '@scrylux/core';
 import { useMemo } from 'react';
 
 const label = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1).replace('_', ' ');

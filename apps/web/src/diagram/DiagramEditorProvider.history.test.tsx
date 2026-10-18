@@ -1,4 +1,4 @@
-import type { ElementRecord } from '@specter/core';
+import type { ElementRecord } from '@scrylux/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { useEffect, useState } from 'react';

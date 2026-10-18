@@ -6,7 +6,7 @@ import { apiToken, expect, signInAsNewAccount, test } from './fixtures.js';
 // through threats stays quick at the size Milestone 3 allows (1,000 elements, about 15,000 threats and 49,000
 // mitigations), and on a typical model. This is a regression guard on a shared runner. The authoritative numbers
 // are taken against `docker compose`, and recorded in the pull request:
-//   PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @specter/web test:e2e threat-workflow-large
+//   PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @scrylux/web test:e2e threat-workflow-large
 test.use({ viewport: { width: 1400, height: 1500 } });
 
 const TYPE_LABELS: Record<NodeType, string> = { external_entity: 'External entity', process: 'Process', data_store: 'Data store' };

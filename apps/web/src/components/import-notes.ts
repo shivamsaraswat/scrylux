@@ -1,4 +1,4 @@
-import { MIN_BOUNDARY_SIZE, NOTE_KINDS, type ImportNote, type NotImportedField, type NoteKind } from '@specter/core';
+import { MIN_BOUNDARY_SIZE, NOTE_KINDS, type ImportNote, type NotImportedField, type NoteKind } from '@scrylux/core';
 
 // The words of the import summary (contracts/web-ui.md). Everything an import leaves out or changes is a note of one of
 // these kinds, and each has a fixed heading, so what the user is told does not depend on the file. Typed by core's list
@@ -14,14 +14,14 @@ export const NOTE_HEADINGS: Record<NoteKind, string> = {
   'not_imported.field': 'Fields with no place in a threat model (not imported)',
   'moved.model_level': 'Threats moved to the model, because their element was not imported',
   'moved.nearest_zone': 'Components inside components (placed in the nearest trust zone)',
-  'mapped.component_type': 'Components with a type Specter does not have (imported as process)',
-  'mapped.status': 'Statuses Specter does not have (imported with the default)',
+  'mapped.component_type': 'Components with a type Scrylux does not have (imported as process)',
+  'mapped.status': 'Statuses Scrylux does not have (imported with the default)',
   'mapped.severity': 'Severities or likelihoods that were missing or unknown (imported as Medium)',
   'mapped.risk_clamped': 'Risk values outside 0 to 100 (limited to that range)',
   'adjusted.shortened': 'Text shortened to fit',
   'adjusted.unnamed': 'Items with no name (given a placeholder name)',
   'adjusted.tags': 'Tags merged, shortened or limited',
-  'adjusted.layout': 'Positions Specter could not hold',
+  'adjusted.layout': 'Positions Scrylux could not hold',
 };
 
 // What a `not_imported.field` note's `detail` names, in words. Typed by core's list of fields, so a field an import can list
@@ -55,7 +55,7 @@ const FIELDS: Record<NotImportedField, string> = {
   isEncrypted: 'encrypted',
   storesCredentials: 'stores credentials',
   isWebApplication: 'web application',
-  categories: 'other categories (Specter keeps one STRIDE category)',
+  categories: 'other categories (Scrylux keeps one STRIDE category)',
 };
 
 const SHORTENED: Record<string, string> = { name: 'name', description: 'description', mitigation: 'mitigation text' };

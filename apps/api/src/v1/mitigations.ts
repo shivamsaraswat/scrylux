@@ -1,4 +1,4 @@
-import { MitigationCreateInput, MitigationRecord, MitigationUpdateInput } from '@specter/core';
+import { MitigationCreateInput, MitigationRecord, MitigationUpdateInput } from '@scrylux/core';
 import { kdb } from '../db.js';
 import { orNotFound } from './errors.js';
 import { defineOperation, type Operation } from './operation.js';

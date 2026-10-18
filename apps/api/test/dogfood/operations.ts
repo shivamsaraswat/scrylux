@@ -1,12 +1,12 @@
-import type { ExportedFile } from '../../src/exchange/specter-export.js';
+import type { ExportedFile } from '../../src/exchange/scrylux-export.js';
 import { client, uniqueName, type ApiRecord, type V1Client } from '../contract/v1/helpers.js';
-import { specterBody, type ExchangeFile } from '../exchange/fixtures.js';
+import { scryluxBody, type ExchangeFile } from '../exchange/fixtures.js';
 import type { Regeneration, SummaryLike } from './checks.js';
 
 // The calls the checks make to the app, and nothing else: each is an existing operation behind the sign-in, called as a
 // user's script would call it (contracts/checks.md, "What they read and what they call"). checks.ts stays free of I/O.
 // Nothing here writes a committed file: the models are scratch, made in a project of their own with a unique name (a
-// project cannot be called `Specter`: names are unique across the install, research #5), and the suite's teardown
+// project cannot be called `Scrylux`: names are unique across the install, research #5), and the suite's teardown
 // deletes every project created during the run.
 
 export interface Session {
@@ -22,7 +22,7 @@ export interface Answer {
   body: unknown;
 }
 
-const asBody = (data: ExportedFile, names?: string[]) => specterBody(data as unknown as ExchangeFile, names);
+const asBody = (data: ExportedFile, names?: string[]) => scryluxBody(data as unknown as ExchangeFile, names);
 
 export async function newProject(s: Session): Promise<string> {
   const made = await s.c.post<ApiRecord>('/projects', { name: uniqueName('Dogfood') });
@@ -48,9 +48,9 @@ export async function importModel(s: Session, projectId: string, data: ExportedF
 
 const authorized = (s: Session): RequestInit => ({ headers: { Authorization: `Bearer ${s.token}` } });
 
-// `GET /threat-models/{id}/export?format=specter`.
-export async function exportSpecter(s: Session, modelId: string): Promise<ExportedFile> {
-  const res = await fetch(`${s.baseUrl}/api/v1/threat-models/${modelId}/export?format=specter`, authorized(s));
+// `GET /threat-models/{id}/export?format=scrylux`.
+export async function exportScrylux(s: Session, modelId: string): Promise<ExportedFile> {
+  const res = await fetch(`${s.baseUrl}/api/v1/threat-models/${modelId}/export?format=scrylux`, authorized(s));
   if (res.status !== 200) throw new Error(`the export failed: ${res.status}`);
   return JSON.parse(await res.text()) as ExportedFile;
 }

@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in Specter doesn't work the way it should
+description: Something in Scrylux doesn't work the way it should
 labels: [bug]
 body:
   - type: markdown
@@ -9,7 +9,7 @@ body:
         anything you paste below. Issues here are public.
 
         **Found a security vulnerability?** Don't file it here. Report it privately, as described in
-        [SECURITY.md](https://github.com/shivamsaraswat/specter/blob/main/SECURITY.md).
+        [SECURITY.md](https://github.com/shivamsaraswat/scrylux/blob/main/SECURITY.md).
   - type: input
     id: version
     attributes:
@@ -18,7 +18,7 @@ body:
   - type: dropdown
     id: deployment
     attributes:
-      label: How are you running Specter?
+      label: How are you running Scrylux?
       options:
         - docker compose
         - Without Docker (pnpm)

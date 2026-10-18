@@ -1,4 +1,4 @@
-import { MAX_BATCH_OPERATIONS, openThreatCounts, type ElementRecord } from '@specter/core';
+import { MAX_BATCH_OPERATIONS, openThreatCounts, type ElementRecord } from '@scrylux/core';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { keys, useBatchElements, useElements, useThreats } from '../api/queries.js';

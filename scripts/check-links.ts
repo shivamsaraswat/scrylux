@@ -13,7 +13,7 @@ export const MAX_IMAGE_BYTES = 600 * 1024;
 export const MAX_IMAGES_BYTES = 3 * 1024 * 1024;
 
 const IMAGE_DIR = 'docs/images/';
-const RELEASES = 'https://github.com/shivamsaraswat/specter/releases';
+const RELEASES = 'https://github.com/shivamsaraswat/scrylux/releases';
 
 export interface LinkInputs {
   // Repository-relative path -> text, for the files of LINK_FILES that exist.

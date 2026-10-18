@@ -105,7 +105,7 @@ describe('GenerateThreats', () => {
   });
 
   const unknownOutcome =
-    'The connection was lost before Specter answered, so the threats may or may not have been generated. Generating again is safe: it never creates duplicates.';
+    'The connection was lost before Scrylux answered, so the threats may or may not have been generated. Generating again is safe: it never creates duplicates.';
 
   it.each([
     ['a network error', () => Promise.reject(new TypeError('network'))],

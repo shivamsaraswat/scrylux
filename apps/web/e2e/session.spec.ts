@@ -14,7 +14,7 @@ async function signInViaUi(page: Page, account: TestAccount): Promise<void> {
 }
 
 async function sessionCookie(context: BrowserContext) {
-  const cookie = (await context.cookies()).find((c) => c.name === 'specter_session');
+  const cookie = (await context.cookies()).find((c) => c.name === 'scrylux_session');
   if (!cookie) throw new Error('no session cookie');
   return cookie;
 }
@@ -87,7 +87,7 @@ test('logging out returns to sign-in and makes the old credential useless', asyn
   await expect(page.getByText(/session has ended/)).toHaveCount(0);
   // The replay carries the Origin and JSON headers, so it reaches the session check instead of 403 or 415.
   const replay = await request.post('/api/session/refresh', {
-    headers: { Origin: new URL(baseURL ?? '').origin, 'Content-Type': 'application/json', Cookie: `specter_session=${before.value}` },
+    headers: { Origin: new URL(baseURL ?? '').origin, 'Content-Type': 'application/json', Cookie: `scrylux_session=${before.value}` },
     data: {},
   });
   expect(replay.status()).toBe(401);

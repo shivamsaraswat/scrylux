@@ -1,4 +1,4 @@
-import { elementPropertiesSchema, type ElementType } from '@specter/core';
+import { elementPropertiesSchema, type ElementType } from '@scrylux/core';
 import { useState, type KeyboardEvent } from 'react';
 import { FormField } from '../components/FormField.js';
 

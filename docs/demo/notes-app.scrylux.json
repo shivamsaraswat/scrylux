@@ -1,9 +1,9 @@
 {
-  "format": "specter",
+  "format": "scrylux",
   "format_version": 1,
   "exported_at": "2026-10-12T07:08:40.396Z",
   "project": {
-    "name": "Specter demo (fictional)"
+    "name": "Scrylux demo (fictional)"
   },
   "threat_model": {
     "name": "Notes app (fictional demo)",

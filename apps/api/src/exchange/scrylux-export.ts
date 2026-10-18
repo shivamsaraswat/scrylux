@@ -1,8 +1,8 @@
-import { SPECTER_FORMAT_VERSION, type ElementRecord, type JsonValue, type MitigationRecord, type StaleReason, type ThreatModelRecord, type ThreatRecord } from '@specter/core';
+import { SCRYLUX_FORMAT_VERSION, type ElementRecord, type JsonValue, type MitigationRecord, type StaleReason, type ThreatModelRecord, type ThreatRecord } from '@scrylux/core';
 import type { Snapshot } from '../snapshot.js';
 import { sortElements, sortMitigations, sortThreats } from './order.js';
 
-// The Specter file an export writes (contracts/specter-file.md). It is built from one snapshot of the threat model, in
+// The Scrylux file an export writes (contracts/scrylux-file.md). It is built from one snapshot of the threat model, in
 // content order, with every key present and in a fixed order, so exporting an unchanged model twice gives bytes that
 // differ only in `exported_at` (FR-005). Nothing identifies an account, and nothing stored is dropped: an element kept
 // from before today's rules is exported as stored, and the import refuses it by name (spec, edge cases).
@@ -44,8 +44,8 @@ export interface ExportedMitigation {
 }
 
 export interface ExportedFile {
-  format: 'specter';
-  format_version: typeof SPECTER_FORMAT_VERSION;
+  format: 'scrylux';
+  format_version: typeof SCRYLUX_FORMAT_VERSION;
   exported_at: string;
   project: { name: string };
   threat_model: { name: string; methodology: ThreatModelRecord['methodology']; status: ThreatModelRecord['status'] };
@@ -76,13 +76,13 @@ function exportedProperties(stored: Json): Json {
   return { ...out, ...orderKeys(rest, []) };
 }
 
-export function buildSpecterFile(snapshot: Snapshot, exportedAt: Date): ExportedFile {
+export function buildScryluxFile(snapshot: Snapshot, exportedAt: Date): ExportedFile {
   const elements = sortElements(snapshot.elements);
   const threats = sortThreats(snapshot.threats, elements.position);
   const mitigations = sortMitigations(snapshot.mitigations, threats.position);
   return {
-    format: 'specter',
-    format_version: SPECTER_FORMAT_VERSION,
+    format: 'scrylux',
+    format_version: SCRYLUX_FORMAT_VERSION,
     exported_at: exportedAt.toISOString(),
     project: { name: snapshot.project.name },
     threat_model: { name: snapshot.model.name, methodology: snapshot.model.methodology, status: snapshot.model.status },

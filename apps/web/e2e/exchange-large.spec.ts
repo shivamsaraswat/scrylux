@@ -1,4 +1,4 @@
-import { IMPORT_MAX_BYTES } from '@specter/core';
+import { IMPORT_MAX_BYTES } from '@scrylux/core';
 import { busiest, seed } from './bound.js';
 import { apiToken, expect, seedModel, test } from './fixtures.js';
 
@@ -7,7 +7,7 @@ import { apiToken, expect, seedModel, test } from './fixtures.js';
 // and 49,000 mitigations), and the app answers other requests while a large import runs. This is a regression guard on a
 // shared runner. The per-stage times and the memory are measured in process by exchange-bound.test.ts, and the
 // authoritative figures are taken against `docker compose` and recorded in quickstart §5:
-//   PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @specter/web test:e2e exchange-large
+//   PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @scrylux/web test:e2e exchange-large
 
 const SECONDS = 1000;
 const megabytes = (bytes: number): string => `${(bytes / 1_000_000).toFixed(1)} MB`;
@@ -41,15 +41,15 @@ test('exports, checks and imports a typical threat model each within 5 seconds (
   const { modelId } = await seed(base, token, 'exchange-typical', 50, 'process', {});
   const { projectId } = await seedModel(base, token, 'exchange-typical-target');
 
-  let specter = '';
-  for (const format of ['specter', 'otm'] as const) {
+  let scrylux = '';
+  for (const format of ['scrylux', 'otm'] as const) {
     const exported = await api.get(`/api/v1/threat-models/${modelId}/export?format=${format}`);
     expect(exported.status).toBe(200);
     record('typical', `export ${format}`, exported.ms, exported.text.length);
     expect(exported.ms, `export ${format} took ${exported.ms} ms`).toBeLessThanOrEqual(5 * SECONDS);
-    if (format === 'specter') specter = exported.text;
+    if (format === 'scrylux') scrylux = exported.text;
   }
-  const body = JSON.stringify({ format: 'specter', file: JSON.parse(specter) as unknown });
+  const body = JSON.stringify({ format: 'scrylux', file: JSON.parse(scrylux) as unknown });
   const check = await api.post(`/api/v1/projects/${projectId}/imports/check`, body);
   expect(check.status).toBe(200);
   record('typical', 'check', check.ms);
@@ -72,18 +72,18 @@ test('exports, checks and imports the largest threat model each within 60 second
   expect(created).toBe(1000 * candidates);
   const { projectId } = await seedModel(base, token, 'exchange-large-target');
 
-  let specter = '';
-  for (const format of ['specter', 'otm'] as const) {
+  let scrylux = '';
+  for (const format of ['scrylux', 'otm'] as const) {
     const exported = await api.get(`/api/v1/threat-models/${modelId}/export?format=${format}`);
     expect(exported.status).toBe(200);
     record('large', `export ${format}`, exported.ms, exported.text.length);
     expect(exported.ms, `export ${format} took ${exported.ms} ms`).toBeLessThanOrEqual(60 * SECONDS);
-    if (format === 'specter') specter = exported.text;
+    if (format === 'scrylux') scrylux = exported.text;
   }
-  // The size limit leaves room: the largest model's Specter file is under two thirds of it (research #14).
-  expect(specter.length).toBeLessThan(IMPORT_MAX_BYTES / 1.5);
+  // The size limit leaves room: the largest model's Scrylux file is under two thirds of it (research #14).
+  expect(scrylux.length).toBeLessThan(IMPORT_MAX_BYTES / 1.5);
 
-  const body = JSON.stringify({ format: 'specter', file: JSON.parse(specter) as unknown });
+  const body = JSON.stringify({ format: 'scrylux', file: JSON.parse(scrylux) as unknown });
   const check = await api.post(`/api/v1/projects/${projectId}/imports/check`, body);
   expect(check.status).toBe(200);
   record('large', 'check', check.ms, body.length);

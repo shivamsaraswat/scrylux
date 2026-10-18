@@ -1,4 +1,4 @@
-import { ThreatGenerationInput, ThreatGenerationResult } from '@specter/core';
+import { ThreatGenerationInput, ThreatGenerationResult } from '@scrylux/core';
 import { runGeneration } from '../rule-engine/run.js';
 import { defineOperation, type Operation } from './operation.js';
 import { logGeneration } from './write-log.js';

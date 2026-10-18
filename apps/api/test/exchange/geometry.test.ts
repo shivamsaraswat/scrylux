@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { assignBoxes, placeBoundary, placeNode, relativeTo } from '../../src/exchange/import/geometry.js';
 
 // Positions from another tool's file (contracts/threat-dragon-mapping.md, "Geometry"): which trust boundary a drawn
-// element sits in, and whether Specter can hold what was drawn (FR-013, FR-008a).
+// element sits in, and whether Scrylux can hold what was drawn (FR-013, FR-008a).
 
 const box = (id: string, x: number, y: number, width: number, height: number) => ({ id, rect: { x, y, width, height } });
 const node = (id: string, x: number, y: number) => ({ id, point: { x, y } });

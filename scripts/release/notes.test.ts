@@ -25,7 +25,7 @@ const CHANGELOG = [
   '### Upgrading',
   'Back up first.',
   '',
-  '[0.1.0]: https://github.com/shivamsaraswat/specter/releases/tag/v0.1.0',
+  '[0.1.0]: https://github.com/shivamsaraswat/scrylux/releases/tag/v0.1.0',
 ].join('\n');
 
 const FINAL = [
@@ -38,7 +38,7 @@ const FINAL = [
   '### Upgrading',
   'Back up first.',
   '',
-  '[0.1.0]: https://github.com/shivamsaraswat/specter/releases/tag/v0.1.0',
+  '[0.1.0]: https://github.com/shivamsaraswat/scrylux/releases/tag/v0.1.0',
   '',
   '## Run it',
   '',
@@ -48,18 +48,18 @@ const FINAL = [
   'docker compose up -d',
   '```',
   '',
-  '- Image: `ghcr.io/shivamsaraswat/specter:0.1.0`',
+  '- Image: `ghcr.io/shivamsaraswat/scrylux:0.1.0`',
   `- Digest: \`${DIGEST}\``,
-  `- Pin it: \`ghcr.io/shivamsaraswat/specter@${DIGEST}\``,
+  `- Pin it: \`ghcr.io/shivamsaraswat/scrylux@${DIGEST}\``,
   '',
   'This image is **not signed** and carries no build attestation or SBOM in this release, so pin it by its digest. Verifiable release images are planned for Phase 6 (`plan.md`).',
   '',
-  "Open risks are recorded in Specter's own threat model: [`docs/threat-model/`](https://github.com/shivamsaraswat/specter/tree/v0.1.0/docs/threat-model). To report a vulnerability, follow [`SECURITY.md`](https://github.com/shivamsaraswat/specter/blob/v0.1.0/SECURITY.md) and report it privately; never open a public issue.",
+  "Open risks are recorded in Scrylux's own threat model: [`docs/threat-model/`](https://github.com/shivamsaraswat/scrylux/tree/v0.1.0/docs/threat-model). To report a vulnerability, follow [`SECURITY.md`](https://github.com/shivamsaraswat/scrylux/blob/v0.1.0/SECURITY.md) and report it privately; never open a public issue.",
   '',
   '## Attached',
   '',
   '- `docker-compose.yml`: the file the quickstart downloads; it starts this version.',
-  '- `notes-app.specter.json`: a fictional demo threat model; load it with **Import threat model**.',
+  '- `notes-app.scrylux.json`: a fictional demo threat model; load it with **Import threat model**.',
   '',
 ].join('\n');
 
@@ -78,7 +78,7 @@ describe('buildNotes', () => {
     const notes = buildNotes({ changelog: CHANGELOG, version: '0.1.0', core: '0.1.0', digest: DIGEST, prerelease: false });
     expect(notes).toMatch(/not signed/);
     expect(notes).toMatch(/no build attestation or SBOM/);
-    expect(notes).toContain(`ghcr.io/shivamsaraswat/specter@${DIGEST}`);
+    expect(notes).toContain(`ghcr.io/shivamsaraswat/scrylux@${DIGEST}`);
   });
 
   it('links the threat model and SECURITY.md and says not to open a public issue (FR-034)', () => {
@@ -91,7 +91,7 @@ describe('buildNotes', () => {
   it('names the two attachments by the names the pipeline uploads', () => {
     const notes = buildNotes({ changelog: CHANGELOG, version: '0.1.0', core: '0.1.0', digest: DIGEST, prerelease: false });
     expect(notes).toContain('`docker-compose.yml`');
-    expect(notes).toContain('`notes-app.specter.json`');
+    expect(notes).toContain('`notes-app.scrylux.json`');
   });
 
   it('does not call the version secure (FR-034)', () => {
@@ -102,7 +102,7 @@ describe('buildNotes', () => {
   it('starts a release candidate with its own sentence, names its own tag and uses the core version entry', () => {
     const notes = buildNotes({ changelog: CHANGELOG, version: '0.1.0-rc.1', core: '0.1.0', digest: DIGEST, prerelease: true });
     expect(notes.startsWith('This is a release candidate.\n\n### What you can do')).toBe(true);
-    expect(notes).toContain('- Image: `ghcr.io/shivamsaraswat/specter:0.1.0-rc.1`');
+    expect(notes).toContain('- Image: `ghcr.io/shivamsaraswat/scrylux:0.1.0-rc.1`');
     expect(notes).toContain('/tree/v0.1.0-rc.1/docs/threat-model');
   });
 
@@ -126,7 +126,7 @@ describe('the command line', () => {
     const changelog = path.join(dir, 'CHANGELOG.md');
     const compose = path.join(dir, 'docker-compose.release.yml');
     writeFileSync(changelog, CHANGELOG);
-    writeFileSync(compose, 'image: ghcr.io/shivamsaraswat/specter:${SPECTER_VERSION:-0.1.0}\n');
+    writeFileSync(compose, 'image: ghcr.io/shivamsaraswat/scrylux:${SCRYLUX_VERSION:-0.1.0}\n');
     const out = path.join(dir, 'out');
     const result = spawnSync('pnpm', ['--silent', 'exec', 'tsx', path.resolve(import.meta.dirname, 'notes.ts'), changelog, compose, ...args, out], {
       encoding: 'utf8',
@@ -139,13 +139,13 @@ describe('the command line', () => {
     const { out, result } = run(['0.1.0-rc.1', DIGEST, 'true']);
     expect(result.status).toBe(0);
     expect(readFileSync(path.join(out, 'notes.md'), 'utf8')).toContain('This is a release candidate.');
-    expect(readFileSync(path.join(out, 'docker-compose.yml'), 'utf8')).toContain('${SPECTER_VERSION:-0.1.0-rc.1}');
+    expect(readFileSync(path.join(out, 'docker-compose.yml'), 'utf8')).toContain('${SCRYLUX_VERSION:-0.1.0-rc.1}');
   });
 
   it('writes the compose file as committed for a final release', () => {
     const { out, result } = run(['0.1.0', DIGEST, 'false']);
     expect(result.status).toBe(0);
-    expect(readFileSync(path.join(out, 'docker-compose.yml'), 'utf8')).toBe('image: ghcr.io/shivamsaraswat/specter:${SPECTER_VERSION:-0.1.0}\n');
+    expect(readFileSync(path.join(out, 'docker-compose.yml'), 'utf8')).toBe('image: ghcr.io/shivamsaraswat/scrylux:${SCRYLUX_VERSION:-0.1.0}\n');
   });
 
   it('refuses when the pre-release flag does not match the version', () => {

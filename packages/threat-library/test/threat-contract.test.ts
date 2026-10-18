@@ -1,4 +1,4 @@
-import { MitigationCreateInput, ThreatCreateInput } from '@specter/core';
+import { MitigationCreateInput, ThreatCreateInput } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { shippedLibrary, type ElementInput, type Rule } from '../src/index.js';
 

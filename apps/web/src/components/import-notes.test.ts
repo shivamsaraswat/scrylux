@@ -1,4 +1,4 @@
-import { NOTE_KINDS, NOT_IMPORTED_FIELDS } from '@specter/core';
+import { NOTE_KINDS, NOT_IMPORTED_FIELDS } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { NOTE_HEADINGS, groupNotes, noteDetail } from './import-notes.js';
 

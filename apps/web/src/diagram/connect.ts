@@ -1,4 +1,4 @@
-import type { ElementRecord, ElementType } from '@specter/core';
+import type { ElementRecord, ElementType } from '@scrylux/core';
 import { newElementId, type DiagramAction } from './operations.js';
 
 // What a data flow may join (spec FR-003): two different external entities, processes or data stores.

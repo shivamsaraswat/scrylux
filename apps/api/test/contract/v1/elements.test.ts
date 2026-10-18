@@ -1,4 +1,4 @@
-import { ElementRecord } from '@specter/core';
+import { ElementRecord } from '@scrylux/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
 import db from '../../../src/db.js';

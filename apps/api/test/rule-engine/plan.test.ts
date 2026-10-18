@@ -1,5 +1,5 @@
-import type { StaleReason } from '@specter/core';
-import { shippedLibrary } from '@specter/threat-library';
+import type { StaleReason } from '@scrylux/core';
+import { shippedLibrary } from '@scrylux/threat-library';
 import { describe, expect, it } from 'vitest';
 import { planGeneration, type ExistingRuleThreat } from '../../src/rule-engine/plan.js';
 import { counterIds, element, flow, libraryOf, rule } from './fixtures.js';

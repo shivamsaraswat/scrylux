@@ -33,6 +33,6 @@ export * from './exchange/names.js';
 export * from './exchange/bounds.js';
 export * from './exchange/detect.js';
 export * from './exchange/mappings.js';
-export * from './exchange/specter-file.js';
+export * from './exchange/scrylux-file.js';
 export * from './exchange/otm-file.js';
 export * from './exchange/threat-dragon-file.js';

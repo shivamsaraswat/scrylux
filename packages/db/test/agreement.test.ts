@@ -14,7 +14,7 @@ import {
   THREAT_STATUSES,
   URL_MAX_LENGTH,
   deriveRisk,
-} from '@specter/core';
+} from '@scrylux/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   closePool,

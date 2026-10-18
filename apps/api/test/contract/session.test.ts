@@ -50,7 +50,7 @@ describe('POST /api/session (sign in)', () => {
     expect(res.body.account.username).toBe(account.username);
     expect(Number.isInteger(res.body.account.id)).toBe(true);
     const claims = jwt.decode(res.body.access_token) as Record<string, unknown>;
-    expect(claims).toMatchObject({ sub: String(res.body.account.id), aud: 'specter-ui' });
+    expect(claims).toMatchObject({ sub: String(res.body.account.id), aud: 'scrylux-ui' });
     expect(typeof claims.sid).toBe('string');
     expect((claims.exp as number) - (claims.iat as number)).toBe(300);
     const secondsAhead = (new Date(res.body.expires_at).getTime() - Date.now()) / 1000;
@@ -63,7 +63,7 @@ describe('POST /api/session (sign in)', () => {
     const res = await sessionRequest(server.baseUrl, '', { body: account });
     const cookie = res.setCookie;
 
-    expect(cookie?.name).toBe('specter_session');
+    expect(cookie?.name).toBe('scrylux_session');
     expect(cookie?.value).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(cookie?.attributes.httponly).toBe(true);
     expect(cookie?.attributes.samesite).toBe('Strict');

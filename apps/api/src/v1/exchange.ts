@@ -4,9 +4,9 @@ import {
   ImportInput,
   ImportResult,
   ImportSummary,
-} from '@specter/core';
+} from '@scrylux/core';
 import { buildOtmFile } from '../exchange/otm-export.js';
-import { buildSpecterFile, serializeExport } from '../exchange/specter-export.js';
+import { buildScryluxFile, serializeExport } from '../exchange/scrylux-export.js';
 import { exchangeFilename } from '../exchange/filename.js';
 import { planImport } from '../exchange/import/parse.js';
 import { checkImport, runImport } from '../exchange/import/write.js';
@@ -26,7 +26,7 @@ export const exchangeOperations: Operation<unknown>[] = [
     summary: 'Download a threat model as a file',
     description:
       'The whole threat model as one JSON file, lossless: its diagram, threats and mitigations, with every status, reason, origin and stale mark, in a fixed order. ' +
-      '`format` chooses the file: `specter` (described by the published schema `docs/formats/specter-file-v1.schema.json`) or `otm` (Open Threat Model 0.2.0, with Specter\'s own fields in `attributes.specter` so Specter reads it back without loss). ' +
+      '`format` chooses the file: `scrylux` (described by the published schema `docs/formats/scrylux-file-v1.schema.json`) or `otm` (Open Threat Model 0.2.0, with Scrylux\'s own fields in `attributes.scrylux` so Scrylux reads it back without loss). ' +
       'It is sent as an attachment, named after the threat model and the export date, and nothing may keep a copy of it (Cache-Control: no-store). ' +
       'The threat model is read in one snapshot. Two exports of an unchanged threat model differ only in the export time. The file holds no account name, account id or credential.',
     query: { name: 'ExportQuery', schema: ExportQuery },
@@ -38,7 +38,7 @@ export const exchangeOperations: Operation<unknown>[] = [
       // One instant for the file and its name, so they cannot disagree near midnight.
       const exportedAt = new Date();
       return {
-        body: serializeExport(query.format === 'otm' ? buildOtmFile(snapshot, exportedAt) : buildSpecterFile(snapshot, exportedAt)),
+        body: serializeExport(query.format === 'otm' ? buildOtmFile(snapshot, exportedAt) : buildScryluxFile(snapshot, exportedAt)),
         contentType: 'application/json; charset=utf-8',
         filename: exchangeFilename(snapshot.model.name, query.format, exportedAt),
         csp: DOWNLOAD_CSP,

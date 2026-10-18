@@ -1,4 +1,4 @@
-import { MIN_BOUNDARY_SIZE } from '@specter/core';
+import { MIN_BOUNDARY_SIZE } from '@scrylux/core';
 import { NodeResizer, type Node, type NodeProps } from '@xyflow/react';
 import { useDiagramEditor } from '../DiagramEditorProvider.js';
 import { openThreatsText, type DiagramNodeData } from '../flow.js';

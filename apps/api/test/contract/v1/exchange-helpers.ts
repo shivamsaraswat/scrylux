@@ -1,5 +1,5 @@
-import { ELEMENT_FLAGS } from '@specter/core';
-import { shippedLibrary } from '@specter/threat-library';
+import { ELEMENT_FLAGS } from '@scrylux/core';
+import { shippedLibrary } from '@scrylux/threat-library';
 import db from '../../../src/db.js';
 import { uniqueName, type ApiRecord, type V1Client } from './helpers.js';
 

@@ -7,7 +7,7 @@ import { findChangelogEntry, IMAGE_SOURCE, parseTag, pinComposeVersion } from '.
 // FR-034, FR-037). `buildNotes` is a pure function of its arguments. The command line is what the pipeline's read-only `notes`
 // job runs: it needs the workspace's dependencies to run, which is why no job that holds a write permission does.
 
-const IMAGE = 'ghcr.io/shivamsaraswat/specter';
+const IMAGE = 'ghcr.io/shivamsaraswat/scrylux';
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 
 export interface NotesInput {
@@ -43,12 +43,12 @@ export function buildNotes({ changelog, version, core, digest, prerelease }: Not
     '',
     'This image is **not signed** and carries no build attestation or SBOM in this release, so pin it by its digest. Verifiable release images are planned for Phase 6 (`plan.md`).',
     '',
-    `Open risks are recorded in Specter's own threat model: [\`docs/threat-model/\`](${IMAGE_SOURCE}/tree/${tag}/docs/threat-model). To report a vulnerability, follow [\`SECURITY.md\`](${IMAGE_SOURCE}/blob/${tag}/SECURITY.md) and report it privately; never open a public issue.`,
+    `Open risks are recorded in Scrylux's own threat model: [\`docs/threat-model/\`](${IMAGE_SOURCE}/tree/${tag}/docs/threat-model). To report a vulnerability, follow [\`SECURITY.md\`](${IMAGE_SOURCE}/blob/${tag}/SECURITY.md) and report it privately; never open a public issue.`,
     '',
     '## Attached',
     '',
     '- `docker-compose.yml`: the file the quickstart downloads; it starts this version.',
-    '- `notes-app.specter.json`: a fictional demo threat model; load it with **Import threat model**.',
+    '- `notes-app.scrylux.json`: a fictional demo threat model; load it with **Import threat model**.',
     '',
   ];
   return lines.join('\n');

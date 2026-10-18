@@ -1,6 +1,6 @@
-import type { ThreatGenerationResult } from '@specter/core';
+import type { ThreatGenerationResult } from '@scrylux/core';
 import { sql } from 'kysely';
-import { shippedLibrary } from '@specter/threat-library';
+import { shippedLibrary } from '@scrylux/threat-library';
 import { kdb } from '../db.js';
 import { lockModel } from '../v1/element-writes.js';
 import { HttpError } from '../v1/errors.js';

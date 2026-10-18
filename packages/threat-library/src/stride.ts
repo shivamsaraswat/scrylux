@@ -1,4 +1,4 @@
-import { STRIDE_CATEGORIES, type ElementType, type StrideCategory } from '@specter/core';
+import { STRIDE_CATEGORIES, type ElementType, type StrideCategory } from '@scrylux/core';
 
 // The element types a rule can be written for. Trust boundaries carry no flags and STRIDE-per-element
 // gives them no threats of their own (spec FR-002).

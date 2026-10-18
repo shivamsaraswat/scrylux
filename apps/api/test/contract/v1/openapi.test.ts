@@ -203,7 +203,7 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
         ['id', 'path', true],
         ['format', 'query', true],
       ]);
-      expect(op?.parameters?.[1]?.schema).toMatchObject({ type: 'string', enum: ['specter', 'otm'] });
+      expect(op?.parameters?.[1]?.schema).toMatchObject({ type: 'string', enum: ['scrylux', 'otm'] });
       expect(Object.keys(op?.responses ?? {}).sort()).toEqual(['200', '400', '401', '404', '500']);
       expect(op?.responses['200']?.content).toEqual({ 'application/json': { schema: { type: 'string' } } });
       expect(op?.description).toContain('attachment');
@@ -304,7 +304,7 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
 
   it('matches the committed apps/api/openapi.json', () => {
     const committed: unknown = JSON.parse(readFileSync(new URL('../../../openapi.json', import.meta.url), 'utf8'));
-    expect(committed, 'apps/api/openapi.json is out of date. Run: pnpm --filter @specter/api openapi').toEqual(doc());
+    expect(committed, 'apps/api/openapi.json is out of date. Run: pnpm --filter @scrylux/api openapi').toEqual(doc());
   });
 });
 

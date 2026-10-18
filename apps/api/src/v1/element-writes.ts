@@ -1,6 +1,6 @@
-import { ElementShape, formatValidationError, type ElementBatchOperation, type ElementUpdateInput } from '@specter/core';
+import { ElementShape, formatValidationError, type ElementBatchOperation, type ElementUpdateInput } from '@scrylux/core';
 import type { Transaction } from 'kysely';
-import type { Database } from '@specter/db';
+import type { Database } from '@scrylux/db';
 import { HttpError } from './errors.js';
 
 // Element writes that run inside a transaction the caller owns. The single-record endpoints and the

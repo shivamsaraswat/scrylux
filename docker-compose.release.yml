@@ -1,4 +1,4 @@
-# Specter, the released image and its database. This is the file a release attaches as `docker-compose.yml`
+# Scrylux, the released image and its database. This is the file a release attaches as `docker-compose.yml`
 # (`docker compose up -d`). It is not the contributor's file: `docker-compose.yml` builds from source and publishes the
 # database port for tests.
 #
@@ -8,7 +8,7 @@
 #   - the app is published on 127.0.0.1 only, and it does not terminate TLS: put a proxy that does in front of it, and set
 #     TRUST_PROXY (see the README);
 #   - the database publishes no port, and must keep publishing none.
-# The README's quickstart says the same. SPECTER_VERSION chooses the image's version; this file's default is the version of
+# The README's quickstart says the same. SCRYLUX_VERSION chooses the image's version; this file's default is the version of
 # the release it is attached to.
 services:
   db:
@@ -26,7 +26,7 @@ services:
       retries: 10
 
   app:
-    image: ghcr.io/shivamsaraswat/specter:${SPECTER_VERSION:-0.1.0}
+    image: ghcr.io/shivamsaraswat/scrylux:${SCRYLUX_VERSION:-0.1.0}
     ports:
       - "127.0.0.1:${PORT:-3000}:3000"
     environment:

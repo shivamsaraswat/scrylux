@@ -7,9 +7,9 @@ import { client, seedChain, uniqueName, type ApiRecord, type Chain, type V1Clien
 
 // The smallest request an import operation accepts, so a test can see what comes after validation.
 const EMPTY_IMPORT = {
-  format: 'specter',
+  format: 'scrylux',
   file: {
-    format: 'specter',
+    format: 'scrylux',
     format_version: 1,
     exported_at: '2026-10-10T00:00:00.000Z',
     project: { name: 'P' },
@@ -136,7 +136,7 @@ describe('rejecting invalid requests (FR-005, FR-006, FR-007, FR-009, FR-010, FR
       for (const op of resourceOperations.filter((o) => o.path.includes(':id') && o.operationId !== 'batchElements')) {
         const key = resourceOf(op.path);
         // The report and the export are asked for in a format; the id and the format are checked before the threat model is looked up.
-        const formats: Record<string, string> = { getThreatModelReport: '?format=markdown', exportThreatModel: '?format=specter' };
+        const formats: Record<string, string> = { getThreatModelReport: '?format=markdown', exportThreatModel: '?format=scrylux' };
         const path = `${withId(op.path, randomUUID())}${formats[op.operationId] ?? ''}`;
         // An import is checked, file included, before the project is looked up, so it needs a file that is valid.
         const isImport = op.operationId === 'checkImport' || op.operationId === 'importThreatModel';

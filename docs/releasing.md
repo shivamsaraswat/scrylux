@@ -1,6 +1,6 @@
-# Releasing Specter
+# Releasing Scrylux
 
-How a version of Specter is published, by whom, and what to do when it goes wrong. The pipeline is
+How a version of Scrylux is published, by whom, and what to do when it goes wrong. The pipeline is
 [`release.yml`](../.github/workflows/release.yml); how it is built, and how every setting behind it is configured, is in
 [`ci.md`](ci.md#release-pipeline). The design is in
 [`specs/phase-2/milestone-8-release-v0-1/`](../specs/phase-2/milestone-8-release-v0-1/).
@@ -9,7 +9,7 @@ How a version of Specter is published, by whom, and what to do when it goes wron
 machine. The pipeline refuses a tag it should not release, builds the image from the tagged commit, proves it on both
 platforms, publishes the tested image, proves it can be pulled with no login, and only then creates the GitHub release.
 
-- The image is `ghcr.io/shivamsaraswat/specter`, tagged with its exact version (`0.1.0`), and `latest` for a final release that
+- The image is `ghcr.io/shivamsaraswat/scrylux`, tagged with its exact version (`0.1.0`), and `latest` for a final release that
   no higher final release outranks. A published version is **never replaced**.
 - A release candidate (`v0.1.0-rc.1`) is published for real and marked as a pre-release. It never becomes `latest`, and it stays
   in the registry.
@@ -18,33 +18,31 @@ platforms, publishes the tested image, proves it can be pulled with no login, an
 
 ## Before the first release only: the name check
 
-`plan.md` lists as an open decision that the name "Specter" is to be checked for trademark and project-name
-collisions before v0.1. **The tag is not created until this record is filled in**, and `plan.md`'s "Name" moves to *Decided* with
-its outcome. The pipeline cannot check it. A collision is the maintainers' decision.
-
-Search at least: the USPTO and EUIPO trademark databases for "Specter" in software and security classes; GitHub and the package
-registries for projects of that name; the web for products, companies and tools in the same field (a security company named
-SpecterOps exists; the unrelated `v1.0.0` tag that a clone may carry says "Open Specter"). A search engine is not a trademark
-search.
+The project was first called Specter. The name check for v0.1 found it taken, so the project is named **Scrylux**. The record below is
+the check. It is a screen against public registers and registries, **not legal clearance or a legal opinion**; the pipeline cannot check
+a name, and a collision is the maintainer's decision.
 
 | Field | Record |
 |---|---|
-| Searched (databases, queries) | |
-| Date | |
-| Found | |
-| Decision | |
-| Decided by | |
+| Searched (databases, queries) | 2026-10-18. US: the USPTO trademark search API, `SCRYLUX` exact, fuzzy (`~2`) and prefix (`SCRY*`). International: TMview (EUIPO, WIPO and about 75 offices), word and fuzzy. Registries: GitHub users, repositories and code; npm, PyPI, Docker Hub and crates.io. Domains: `.dev`, `.io`, `.ai` and `.com`. Web search for `Scrylux`. |
+| Date | 2026-10-18 |
+| Found | No trademark for `SCRYLUX` in the USPTO or in TMview. The nearest marks are `ACRYLUX` (US 7526419, roofing coatings and sealants, Class 2) and `SCRYBELEX` (US 6492508, business consulting, Class 35), different goods and different words. No repository, package, image, crate or product uses the name; the only other use found is a player handle in a game-tournament data file on GitHub. `scrylux` is free on npm, PyPI, Docker Hub, crates.io and as a GitHub user, and `scrylux.dev`, `.io`, `.ai` and `.com` were unregistered. |
+| Decision | Use **Scrylux** for v0.1. "Specter" was dropped: SPECTER is a registered word mark of Specter, Inc. in Classes 9 and 42 (USPTO 8415311) for software for perimeter protection and monitoring, Pentest-Tools.com sells an autonomous pentest engine called Specter, and SpecterOps is a long-established security company. |
+| Decided by | The maintainer, 2026-10-18. Obtain qualified trademark advice before any commercial use of the name. |
+
+Claim the name once, before the first tag: register `scrylux.dev`, `scrylux.io` and `scrylux.ai`, and reserve `scrylux` on npm,
+PyPI, Docker Hub and crates.io. The searches above show it free at the time they ran; they do not hold it.
 
 ## Readiness: confirm each before tagging
 
-- [ ] The name check above is filled in, and `plan.md`'s "Name" is *Decided*.
+- [ ] The name check above is filled in, and the `scrylux` names are claimed.
 - [ ] `main` has green `typecheck`, `lint`, `test` and `docker-build` on the commit to tag (the pipeline checks this too).
-- [ ] The five `package.json` versions and the default of `SPECTER_VERSION` in `docker-compose.release.yml` all say the version
+- [ ] The five `package.json` versions and the default of `SCRYLUX_VERSION` in `docker-compose.release.yml` all say the version
       (for a candidate, the version it is a candidate for), and `CHANGELOG.md` has a dated entry for it.
 - [ ] Every capability the README, the changelog and the release notes claim has been tried on a running image.
 - [ ] Someone who did not write the quickstart has followed it from a machine with Docker and no clone of the repository, and the
       times and findings are recorded in the pull request (spec FR-030): signed in within 5 minutes, the demo explored within 10.
-- [ ] Specter's own threat model and the constitution's Threat Model section are up to date, and the committed model is `approved`
+- [ ] Scrylux's own threat model and the constitution's Threat Model section are up to date, and the committed model is `approved`
       ([`threat-model/`](threat-model/)).
 - [ ] The pins that nothing refreshes for you are current (see [Refreshing the pins](#refreshing-the-pins)).
 - [ ] You know what you are pushing: `git tag --list 'v*'` shows only tags you expect (see
@@ -66,14 +64,14 @@ Two rulesets over `refs/tags/v*`, kept as definitions in [`.github/rulesets/`](.
 Recreate them if they are ever deleted:
 
 ```sh
-gh api -X POST repos/shivamsaraswat/specter/rulesets --input .github/rulesets/release-tags.json
-gh api -X POST repos/shivamsaraswat/specter/rulesets --input .github/rulesets/release-tags-immutable.json
+gh api -X POST repos/shivamsaraswat/scrylux/rulesets --input .github/rulesets/release-tags.json
+gh api -X POST repos/shivamsaraswat/scrylux/rulesets --input .github/rulesets/release-tags-immutable.json
 ```
 
 Verify that they are active:
 
 ```sh
-gh api repos/shivamsaraswat/specter/rulesets --jq '.[] | "\(.id) \(.name) \(.target) \(.enforcement)"'
+gh api repos/shivamsaraswat/scrylux/rulesets --jq '.[] | "\(.id) \(.name) \(.target) \(.enforcement)"'
 ```
 
 Prove the rules with a disposable tag (no release workflow starts for a tag whose name the gate refuses, and this one is deleted
@@ -91,16 +89,16 @@ account was available); that rests on GitHub's documentation of the `creation` r
 **A caveat that a ruleset cannot remove.** A tag push runs the workflow as defined **at the tagged commit**. The gate cannot guard
 against a commit whose gate was edited, so what protects the pipeline is who may create a tag. Whoever can create a version tag can
 already change the workflow and the rulesets, so the tag adds no power an owner lacks; this is recorded as an accepted risk in
-Specter's threat model until Phase 6 gives the project roles.
+Scrylux's threat model until Phase 6 gives the project roles.
 
 ### The package is public (after the first publication, once)
 
 A package published to a user account starts **private**. Anonymous pulls, and the pipeline's `verify-public` job, need it public.
 
-1. Let the pipeline make the package: **do not create or push `ghcr.io/shivamsaraswat/specter` by hand first.** A package made by
+1. Let the pipeline make the package: **do not create or push `ghcr.io/shivamsaraswat/scrylux` by hand first.** A package made by
    another credential is not connected to the repository, and the run's token cannot push to it.
 2. After the first publication (a release candidate is the first), open the package's page from your profile → *Packages* →
-   *specter* → *Package settings* → *Change visibility* → *Public*. Check that the package is linked to the repository
+   *scrylux* → *Package settings* → *Change visibility* → *Public*. Check that the package is linked to the repository
    (*Connect repository*, if it is not).
 3. Re-run the failed `verify-public` jobs of that run. No second image is published, because the version already exists; the run
    completes the release.
@@ -108,7 +106,7 @@ A package published to a user account starts **private**. Anonymous pulls, and t
 Verify it, with no credentials:
 
 ```sh
-DOCKER_CONFIG="$(mktemp -d)" docker pull ghcr.io/shivamsaraswat/specter:0.1.0-rc.1
+DOCKER_CONFIG="$(mktemp -d)" docker pull ghcr.io/shivamsaraswat/scrylux:0.1.0-rc.1
 ```
 
 ## Rehearse with a candidate
@@ -119,8 +117,8 @@ platforms' smoke runs, the push, the anonymous pull and the release. It stays in
 1. Confirm the commit on `main`, then tag it **by name**: `git tag v0.1.0-rc.1 <commit>` and `git push origin v0.1.0-rc.1`.
 2. Watch the seven jobs: `gate`, `build`, `smoke` ×2, `publish-image`, `verify-public` ×2, `notes`, `release`.
 3. Check: the release is marked **Pre-release** and is not the repository's latest; both assets are attached, and the attached
-   `docker-compose.yml` names `${SPECTER_VERSION:-0.1.0-rc.1}`; the anonymous pull works (above) on an `amd64` and an `arm64`
-   machine; `ghcr.io/shivamsaraswat/specter:latest` does not exist or has not moved.
+   `docker-compose.yml` names `${SCRYLUX_VERSION:-0.1.0-rc.1}`; the anonymous pull works (above) on an `amd64` and an `arm64`
+   machine; `ghcr.io/shivamsaraswat/scrylux:latest` does not exist or has not moved.
 4. Try a refusal on a disposable tag, then delete it (the owner may): `v0.1` (not a version), a tag on a commit that is not on
    `main`, `v0.2.0` while the packages say `0.1.0`. Each run must stop at `gate` with its message and publish nothing.
 
@@ -136,9 +134,8 @@ If a candidate fails in a way a check should have caught, the fix includes the m
 ### Never push all tags
 
 Push the one tag, by name. **Never `git push --tags`** (or `--follow-tags` with unexpected tags): a clone can carry local tags
-the remote does not have. This repository's history has one: a local-only `v1.0.0` ("initial public release of Open Specter")
-that belongs to a different history, is not an ancestor of `main`, and is not on the remote. The pipeline would refuse it (G2: not
-on `main`), but it should never be pushed.
+the remote does not have. A tag from an unrelated history, which is not an ancestor
+of `main`, would be refused by the pipeline (G2: not on `main`), but it should never be pushed.
 
 ## If a run fails
 

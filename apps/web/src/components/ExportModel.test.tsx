@@ -10,9 +10,9 @@ import { ExportModel } from './ExportModel.js';
 // contracts/web-ui.md: the export buttons on the threat model page.
 
 const EXPORT = 'GET /api/v1/threat-models/:id/export';
-const FILE = '{\n  "format": "specter"\n}\n';
+const FILE = '{\n  "format": "scrylux"\n}\n';
 
-function file(body: string, name = 'payments-2026-10-10.specter.json'): Response {
+function file(body: string, name = 'payments-2026-10-10.scrylux.json'): Response {
   return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"` } });
 }
 
@@ -46,25 +46,25 @@ function setup(handlers: Parameters<typeof installFakeApi>[0], editor = fakeEdit
   return { api, editor };
 }
 
-const specterButton = () => screen.getByRole('button', { name: 'Download Specter file' });
+const scryluxButton = () => screen.getByRole('button', { name: 'Download Scrylux file' });
 const status = () => screen.getByRole('status');
 const requestedUrls = (api: ReturnType<typeof installFakeApi>): string[] =>
   api.fetchMock.mock.calls.map(([input]) => (typeof input === 'string' ? input : '')).filter((url) => url.includes('/export'));
 
 describe('ExportModel', () => {
-  it('has a group named Export holding the Specter file and OTM file buttons, and an empty status', () => {
+  it('has a group named Export holding the Scrylux file and OTM file buttons, and an empty status', () => {
     setup({});
     const group = screen.getByRole('group', { name: 'Export' });
-    expect(within(group).getByRole('button', { name: 'Download Specter file' })).toBeTruthy();
+    expect(within(group).getByRole('button', { name: 'Download Scrylux file' })).toBeTruthy();
     expect(within(group).getByRole('button', { name: 'Download OTM file' })).toBeTruthy();
     expect(status().textContent).toBe('');
   });
 
-  it('asks the API for the Specter file of this threat model, with the bearer token only', async () => {
+  it('asks the API for the Scrylux file of this threat model, with the bearer token only', async () => {
     const { api } = setup({ [EXPORT]: () => file(FILE) });
-    await userEvent.click(specterButton());
+    await userEvent.click(scryluxButton());
     await waitFor(() => expect(status().textContent).toBe('Export downloaded.'));
-    expect(requestedUrls(api)).toEqual([`/api/v1/threat-models/${MODEL}/export?format=specter`]);
+    expect(requestedUrls(api)).toEqual([`/api/v1/threat-models/${MODEL}/export?format=scrylux`]);
     const asked = api.fetchMock.mock.calls.find(([input]) => typeof input === 'string' && input.includes('/export'));
     expect(new Headers(asked?.[1]?.headers).get('Authorization')).toBe('Bearer test-token');
   });
@@ -80,25 +80,25 @@ describe('ExportModel', () => {
   it('is disabled and says the export is being prepared while the request is open', async () => {
     let release: (response: Response) => void = () => undefined;
     setup({ [EXPORT]: () => new Promise<Response>((resolve) => (release = resolve)) });
-    await userEvent.click(specterButton());
-    expect((specterButton() as HTMLButtonElement).disabled).toBe(true);
+    await userEvent.click(scryluxButton());
+    expect((scryluxButton() as HTMLButtonElement).disabled).toBe(true);
     expect(status().textContent).toBe('Preparing export…');
     release(file(FILE));
-    await waitFor(() => expect((specterButton() as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() => expect((scryluxButton() as HTMLButtonElement).disabled).toBe(false));
   });
 
   it('saves the body under the name the server gave, and falls back to a name of its own', async () => {
-    setup({ [EXPORT]: () => file(FILE, 'my-model-2026-10-10.specter.json') });
-    await userEvent.click(specterButton());
+    setup({ [EXPORT]: () => file(FILE, 'my-model-2026-10-10.scrylux.json') });
+    await userEvent.click(scryluxButton());
     await waitFor(() => expect(clicked).toHaveLength(1));
-    expect(clicked[0]?.download).toBe('my-model-2026-10-10.specter.json');
+    expect(clicked[0]?.download).toBe('my-model-2026-10-10.scrylux.json');
   });
 
   it('falls back to a name of its own if the server gave none', async () => {
     setup({ [EXPORT]: () => new Response(FILE, { status: 200 }) });
-    await userEvent.click(specterButton());
+    await userEvent.click(scryluxButton());
     await waitFor(() => expect(clicked).toHaveLength(1));
-    expect(clicked[0]?.download).toMatch(/^threat-model-\d{4}-\d{2}-\d{2}\.specter\.json$/);
+    expect(clicked[0]?.download).toMatch(/^threat-model-\d{4}-\d{2}-\d{2}\.scrylux\.json$/);
   });
 
   describe('with diagram changes that are not saved', () => {
@@ -106,7 +106,7 @@ describe('ExportModel', () => {
 
     it('asks first, with the contract’s message, and downloads nothing on Cancel', async () => {
       const { api } = setup({ [EXPORT]: () => file(FILE) }, unsaved());
-      await userEvent.click(specterButton());
+      await userEvent.click(scryluxButton());
       const dialog = document.querySelector('dialog') as HTMLElement;
       expect(dialog.textContent).toContain('Download export?');
       expect(dialog.textContent).toContain("Some diagram changes aren't saved yet. The export holds only what is saved.");
@@ -116,7 +116,7 @@ describe('ExportModel', () => {
 
     it('downloads on "Download anyway"', async () => {
       setup({ [EXPORT]: () => file(FILE) }, unsaved());
-      await userEvent.click(specterButton());
+      await userEvent.click(scryluxButton());
       const dialog = document.querySelector('dialog') as HTMLElement;
       await userEvent.click(within(dialog).getByRole('button', { name: 'Download anyway' }));
       await waitFor(() => expect(status().textContent).toBe('Export downloaded.'));
@@ -126,21 +126,21 @@ describe('ExportModel', () => {
   describe('when the export fails', () => {
     it('says the threat model is gone for a 404', async () => {
       setup({ [EXPORT]: () => json(404, { error: 'Threat model not found' }) });
-      await userEvent.click(specterButton());
+      await userEvent.click(scryluxButton());
       await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('This threat model no longer exists.'));
       expect(clicked).toEqual([]);
-      expect((specterButton() as HTMLButtonElement).disabled).toBe(false);
+      expect((scryluxButton() as HTMLButtonElement).disabled).toBe(false);
     });
 
     it('shows the server’s message for another API error', async () => {
-      setup({ [EXPORT]: () => json(400, { error: 'format must be specter' }) });
-      await userEvent.click(specterButton());
-      await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('format must be specter'));
+      setup({ [EXPORT]: () => json(400, { error: 'format must be scrylux' }) });
+      await userEvent.click(scryluxButton());
+      await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('format must be scrylux'));
     });
 
     it('says to try again for a failure that is not an API error', async () => {
       setup({ [EXPORT]: () => Promise.reject(new TypeError('network')) });
-      await userEvent.click(specterButton());
+      await userEvent.click(scryluxButton());
       await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('The export could not be downloaded. Try again.'));
     });
   });

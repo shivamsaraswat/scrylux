@@ -1,4 +1,4 @@
-import type { MitigationRecord } from '@specter/core';
+import type { MitigationRecord } from '@scrylux/core';
 import { useState } from 'react';
 import { writeErrorMessage } from '../api/errors.js';
 import { useCreateMitigation, useDeleteMitigation, useUpdateMitigation } from '../api/queries.js';

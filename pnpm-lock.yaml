@@ -50,13 +50,13 @@ importers:
       '@aws-sdk/client-secrets-manager':
         specifier: ^3.1148.0
         version: 3.1148.0
-      '@specter/core':
+      '@scrylux/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@specter/db':
+      '@scrylux/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@specter/threat-library':
+      '@scrylux/threat-library':
         specifier: workspace:*
         version: link:../../packages/threat-library
       bcryptjs:
@@ -102,7 +102,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@specter/core':
+      '@scrylux/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@tanstack/react-query':
@@ -127,7 +127,7 @@ importers:
       '@playwright/test':
         specifier: ^1.64.0
         version: 1.64.0
-      '@specter/threat-library':
+      '@scrylux/threat-library':
         specifier: workspace:*
         version: link:../../packages/threat-library
       '@testing-library/react':
@@ -163,7 +163,7 @@ importers:
 
   packages/db:
     dependencies:
-      '@specter/core':
+      '@scrylux/core':
         specifier: workspace:*
         version: link:../core
       kysely:
@@ -179,7 +179,7 @@ importers:
 
   packages/threat-library:
     dependencies:
-      '@specter/core':
+      '@scrylux/core':
         specifier: workspace:*
         version: link:../core
       yaml:

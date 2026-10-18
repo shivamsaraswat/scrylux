@@ -1,17 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { IMPORT_MAX_BYTES, SpecterFileV1 } from '@specter/core';
+import { IMPORT_MAX_BYTES, ScryluxFileV1 } from '@scrylux/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
-import { buildSpecterFile } from '../../../src/exchange/specter-export.js';
+import { buildScryluxFile } from '../../../src/exchange/scrylux-export.js';
 import { ajvDraft07 } from '../../exchange/ajv.js';
-import { canonical, hostile, snapshotOf, specterBody, us1Model, type ExchangeFile } from '../../exchange/fixtures.js';
+import { canonical, hostile, snapshotOf, scryluxBody, us1Model, type ExchangeFile } from '../../exchange/fixtures.js';
 import { login, startTestServer, type TestServer } from '../helpers.js';
 import { seedUs1Model, type SeededUs1 } from './exchange-helpers.js';
 import { captureWriteLog, client, uniqueName, type ApiRecord, type V1Client } from './helpers.js';
 
-// contracts/exchange-api.md: the export, check and import operations, for the Specter file (US1).
+// contracts/exchange-api.md: the export, check and import operations, for the Scrylux file (US1).
 
 interface Summary {
   models: { name: string; name_issue: string | null; status: string; elements: number; threats: number; mitigations: number }[];
@@ -22,13 +22,13 @@ interface ImportResultBody {
   summary: Summary;
 }
 
-describe('exporting and importing a threat model (Specter file)', () => {
+describe('exporting and importing a threat model (Scrylux file)', () => {
   let server: TestServer;
   let token: string;
   let c: V1Client;
   let seeded: SeededUs1;
 
-  const exportOf = (id: string, query = '?format=specter', bearer: string | null = token) =>
+  const exportOf = (id: string, query = '?format=scrylux', bearer: string | null = token) =>
     fetch(`${server.baseUrl}/api/v1/threat-models/${id}/export${query}`, { headers: bearer === null ? {} : { Authorization: `Bearer ${bearer}` } });
   const exportFile = async (id: string): Promise<ExchangeFile> => (await (await exportOf(id)).json()) as ExchangeFile;
   const check = (projectId: string, body: unknown) => c.post<Summary>(`/projects/${projectId}/imports/check`, body);
@@ -48,16 +48,16 @@ describe('exporting and importing a threat model (Specter file)', () => {
   });
 
   describe('GET /threat-models/{id}/export', () => {
-    it('sends the Specter file as a no-store attachment named after the model and the date', async () => {
+    it('sends the Scrylux file as a no-store attachment named after the model and the date', async () => {
       const res = await exportOf(seeded.modelId);
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toBe('application/json; charset=utf-8');
       expect(res.headers.get('cache-control')).toBe('no-store');
       expect(res.headers.get('content-security-policy')).toBe("sandbox; default-src 'none'");
-      expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="[a-z0-9-]+-\d{4}-\d{2}-\d{2}\.specter\.json"$/);
+      expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="[a-z0-9-]+-\d{4}-\d{2}-\d{2}\.scrylux\.json"$/);
       const text = await res.text();
       expect(text.endsWith('}\n')).toBe(true);
-      expect(SpecterFileV1.safeParse(JSON.parse(text)).success).toBe(true);
+      expect(ScryluxFileV1.safeParse(JSON.parse(text)).success).toBe(true);
     });
 
     it('holds no account name, account id or credential', async () => {
@@ -69,7 +69,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
     it('answers 400 for another format, naming the formats there are, and 404 for a missing model', async () => {
       const bad = await exportOf(seeded.modelId, '?format=xml');
       expect(bad.status).toBe(400);
-      expect(await bad.json()).toEqual({ error: 'format must be specter or otm' });
+      expect(await bad.json()).toEqual({ error: 'format must be scrylux or otm' });
       const missing = await exportOf(randomUUID());
       expect(missing.status).toBe(404);
       expect(await missing.json()).toEqual({ error: 'Threat model not found' });
@@ -77,11 +77,11 @@ describe('exporting and importing a threat model (Specter file)', () => {
 
     it('checks the id, then the format, then whether the model exists', async () => {
       expect(await (await exportOf('not-a-uuid', '?format=bad')).json()).toEqual({ error: 'Invalid id' });
-      expect(await (await exportOf(randomUUID(), '?format=bad')).json()).toEqual({ error: 'format must be specter or otm' });
+      expect(await (await exportOf(randomUUID(), '?format=bad')).json()).toEqual({ error: 'format must be scrylux or otm' });
     });
 
     it('needs a token', async () => {
-      expect((await exportOf(seeded.modelId, '?format=specter', null)).status).toBe(401);
+      expect((await exportOf(seeded.modelId, '?format=scrylux', null)).status).toBe(401);
     });
 
     it('is the same file twice, apart from the export time (FR-005)', async () => {
@@ -97,7 +97,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
     it('gives the same file back once ids are mapped, and generation then creates nothing', async () => {
       const original = await exportFile(seeded.modelId);
       const target = await newProject();
-      const imported = await importInto(target, specterBody(original));
+      const imported = await importInto(target, scryluxBody(original));
       expect(imported.status).toBe(201);
       const created = imported.body.threat_models[0]?.id as string;
       const again = await exportFile(created);
@@ -108,7 +108,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
 
     it('keeps every status, including an accepted threat with no reason and a mitigated one with no implemented mitigation (FR-009)', async () => {
       const original = await exportFile(seeded.modelId);
-      const imported = await importInto(await newProject(), specterBody(original));
+      const imported = await importInto(await newProject(), scryluxBody(original));
       const threats = (await c.get<ApiRecord[]>(`/threat-models/${imported.body.threat_models[0]?.id as string}/threats`)).body;
       const by = (title: string) => threats.find((threat) => threat.title === title);
       expect(by('Over-privileged DB account')).toMatchObject({ status: 'accepted', status_reason: null });
@@ -121,8 +121,8 @@ describe('exporting and importing a threat model (Specter file)', () => {
     it('makes independent models of the same file imported twice', async () => {
       const original = await exportFile(seeded.modelId);
       const target = await newProject();
-      const first = await importInto(target, specterBody(original, ['One']));
-      const second = await importInto(target, specterBody(original, ['Two']));
+      const first = await importInto(target, scryluxBody(original, ['One']));
+      const second = await importInto(target, scryluxBody(original, ['Two']));
       expect([first.status, second.status]).toEqual([201, 201]);
       const [a, b] = [first.body.threat_models[0]?.id as string, second.body.threat_models[0]?.id as string];
       const threatsA = (await c.get<ApiRecord[]>(`/threat-models/${a}/threats`)).body;
@@ -136,7 +136,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
     it('answers the check with the summary, creates nothing, and gives the import the same summary', async () => {
       const original = await exportFile(seeded.modelId);
       const target = await newProject();
-      const checked = await check(target, specterBody(original));
+      const checked = await check(target, scryluxBody(original));
       expect(checked.status).toBe(200);
       expect(checked.body).toEqual({
         models: [
@@ -152,7 +152,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
         notes: [],
       });
       expect(await modelsOf(target)).toEqual([]);
-      const imported = await importInto(target, specterBody(original));
+      const imported = await importInto(target, scryluxBody(original));
       expect(imported.status).toBe(201);
       expect(imported.body.summary).toEqual(checked.body);
       expect((await modelsOf(target)).map((model) => model.name)).toEqual([original.threat_model.name]);
@@ -160,22 +160,22 @@ describe('exporting and importing a threat model (Specter file)', () => {
 
     it('reports a name already used in the project, and the import then answers 409 until the name is changed (spec US1 scenario 6)', async () => {
       const original = await exportFile(seeded.modelId);
-      const same = await check(seeded.projectId, specterBody(original));
+      const same = await check(seeded.projectId, scryluxBody(original));
       expect(same.status).toBe(200);
       expect(same.body.models[0]?.name_issue).toBe('taken');
-      const refused = await importInto(seeded.projectId, specterBody(original));
+      const refused = await importInto(seeded.projectId, scryluxBody(original));
       expect(refused.status).toBe(409);
       expect(refused.body).toEqual({ error: 'threat_model.name: a threat model with this name already exists in this project' });
-      const renamed = await importInto(seeded.projectId, specterBody(original, [uniqueName('Copy')]));
+      const renamed = await importInto(seeded.projectId, scryluxBody(original, [uniqueName('Copy')]));
       expect(renamed.status).toBe(201);
     });
 
     it('refuses names of the wrong count, an empty name and two equal names', async () => {
       const original = await exportFile(seeded.modelId);
       const target = await newProject();
-      expect((await importInto(target, specterBody(original, ['A', 'B']))).body).toEqual({ error: 'names: must have 1 entry, one per threat model in the file' });
-      expect((await importInto(target, specterBody(original, ['  ']))).body).toEqual({ error: 'names.0: must not be empty' });
-      expect((await check(target, specterBody(original, ['  ']))).body.models[0]?.name_issue).toBe('empty');
+      expect((await importInto(target, scryluxBody(original, ['A', 'B']))).body).toEqual({ error: 'names: must have 1 entry, one per threat model in the file' });
+      expect((await importInto(target, scryluxBody(original, ['  ']))).body).toEqual({ error: 'names.0: must not be empty' });
+      expect((await check(target, scryluxBody(original, ['  ']))).body.models[0]?.name_issue).toBe('empty');
     });
   });
 
@@ -186,7 +186,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
       const last = broken.mitigations.length - 1;
       (broken.mitigations[last] as { external_ref: string | null }).external_ref = 'ftp://x';
       const target = await newProject();
-      const res = await importInto(target, specterBody(broken));
+      const res = await importInto(target, scryluxBody(broken));
       expect(res.status).toBe(400);
       expect((res.body as unknown as { error: string }).error).toMatch(new RegExp(`^file\\.mitigations\\.${last}\\.external_ref: `));
       expect(await modelsOf(target)).toEqual([]);
@@ -197,14 +197,14 @@ describe('exporting and importing a threat model (Specter file)', () => {
       const dangling = JSON.parse(JSON.stringify(original)) as ExchangeFile;
       (dangling.elements.find((element) => element.type === 'data_flow') as { source_element_id: string | null }).source_element_id = 'nope';
       const flow = dangling.elements.findIndex((element) => element.type === 'data_flow');
-      const res = await check(await newProject(), specterBody(dangling));
+      const res = await check(await newProject(), scryluxBody(dangling));
       expect(res.status).toBe(400);
       expect((res.body as unknown as { error: string }).error).toBe(`file.elements.${flow}.source_element_id: must refer to an external entity, process or data store in this file`);
 
       const reason = JSON.parse(JSON.stringify(original)) as ExchangeFile;
       const open = reason.threats.findIndex((threat) => threat.status === 'open');
       (reason.threats[open] as { status_reason: string | null }).status_reason = 'why';
-      const res2 = await importInto(await newProject(), specterBody(reason));
+      const res2 = await importInto(await newProject(), scryluxBody(reason));
       expect((res2.body as unknown as { error: string }).error).toBe(`file.threats.${open}.status_reason: can only be set on a threat that is accepted or not_applicable`);
     });
 
@@ -214,7 +214,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
       (ai.threats[0] as { origin: string }).origin = 'ai';
       const target = await newProject();
       for (const operation of [check, importInto]) {
-        const res = await operation(target, specterBody(ai));
+        const res = await operation(target, scryluxBody(ai));
         expect(res.status).toBe(400);
         expect((res.body as unknown as { error: string }).error).toBe('file.threats.0.origin: AI-drafted threats cannot be imported yet');
       }
@@ -224,19 +224,19 @@ describe('exporting and importing a threat model (Specter file)', () => {
     it('answers 404 for a project that is gone, between the check and the import', async () => {
       const original = await exportFile(seeded.modelId);
       const target = await newProject();
-      expect((await check(target, specterBody(original))).status).toBe(200);
+      expect((await check(target, scryluxBody(original))).status).toBe(200);
       await c.del(`/projects/${target}`);
-      const res = await importInto(target, specterBody(original));
+      const res = await importInto(target, scryluxBody(original));
       expect(res.status).toBe(404);
       expect(res.body).toEqual({ error: 'Project not found' });
     });
 
     it('answers 400 for a file in the wrong format, and refuses a file of another version', async () => {
       const target = await newProject();
-      const wrong = await check(target, { format: 'specter', file: { hello: 1 } });
+      const wrong = await check(target, { format: 'scrylux', file: { hello: 1 } });
       expect(wrong.status).toBe(400);
       const original = await exportFile(seeded.modelId);
-      const version = await check(target, specterBody({ ...original, format_version: 2 } as unknown as ExchangeFile));
+      const version = await check(target, scryluxBody({ ...original, format_version: 2 } as unknown as ExchangeFile));
       expect((version.body as unknown as { error: string }).error).toBe('file.format_version: must be 1; this file is version 2');
     });
   });
@@ -246,9 +246,9 @@ describe('exporting and importing a threat model (Specter file)', () => {
       const target = await newProject();
       let deep: unknown = 1;
       for (let level = 0; level < 65; level += 1) deep = { next: deep };
-      const tooDeep = await check(target, { format: 'specter', file: deep });
+      const tooDeep = await check(target, { format: 'scrylux', file: deep });
       expect(tooDeep).toEqual({ status: 400, body: { error: 'file: nested more than 64 levels deep' } });
-      const tooMany = await check(target, { format: 'specter', file: { values: new Array<number>(2_000_001).fill(0) } });
+      const tooMany = await check(target, { format: 'scrylux', file: { values: new Array<number>(2_000_001).fill(0) } });
       expect(tooMany).toEqual({ status: 400, body: { error: 'file: has more than 2,000,000 values' } });
     });
 
@@ -277,9 +277,9 @@ describe('exporting and importing a threat model (Specter file)', () => {
       const log = captureWriteLog();
       try {
         await exportOf(seeded.modelId);
-        await check(target, specterBody(original));
+        await check(target, scryluxBody(original));
         expect(log.raw().filter((line) => line.includes('"event":"import"'))).toEqual([]);
-        const imported = await importInto(target, specterBody(original, [SECRET]));
+        const imported = await importInto(target, scryluxBody(original, [SECRET]));
         const lines = log.raw().filter((line) => line.includes('"event":"import"'));
         expect(lines).toHaveLength(1);
         expect(JSON.parse(lines[0] as string)).toEqual({
@@ -305,7 +305,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
     it('is stored exactly as written, and a report of it holds no live markup', async () => {
       const file = hostile();
       const target = await newProject();
-      const imported = await importInto(target, specterBody(file));
+      const imported = await importInto(target, scryluxBody(file));
       expect(imported.status).toBe(201);
       const id = imported.body.threat_models[0]?.id as string;
       const threats = (await c.get<ApiRecord[]>(`/threat-models/${id}/threats`)).body;
@@ -319,8 +319,8 @@ describe('exporting and importing a threat model (Specter file)', () => {
 
     it('comes back whole: every name, tag, description, reason, ticket and the model name as written (FR-018, SC-001)', async () => {
       // What the API stores is the file with its text trimmed, as every create trims it, so that is what must come back.
-      const expected = SpecterFileV1.parse(buildSpecterFile(snapshotOf(hostile()), new Date('2026-10-10T00:00:00.000Z')));
-      const imported = await importInto(await newProject(), specterBody(hostile()));
+      const expected = ScryluxFileV1.parse(buildScryluxFile(snapshotOf(hostile()), new Date('2026-10-10T00:00:00.000Z')));
+      const imported = await importInto(await newProject(), scryluxBody(hostile()));
       expect(imported.status).toBe(201);
       const again = await exportFile(imported.body.threat_models[0]?.id as string);
       expect(canonical(again)).toEqual(canonical(expected));
@@ -334,12 +334,12 @@ describe('exporting and importing a threat model (Specter file)', () => {
     it('imports a model with nothing in it, and exports it again as the same empty model (edge case "Empty model")', async () => {
       const empty: ExchangeFile = { ...us1Model(), elements: [], threats: [], mitigations: [] };
       const target = await newProject();
-      const checked = await check(target, specterBody(empty));
+      const checked = await check(target, scryluxBody(empty));
       expect(checked).toEqual({
         status: 200,
         body: { models: [{ name: empty.threat_model.name, name_issue: null, status: 'in_review', elements: 0, threats: 0, mitigations: 0 }], notes: [] },
       });
-      const imported = await importInto(target, specterBody(empty));
+      const imported = await importInto(target, scryluxBody(empty));
       expect(imported.status).toBe(201);
       const again = await exportFile(imported.body.threat_models[0]?.id as string);
       expect([again.elements, again.threats, again.mitigations]).toEqual([[], [], []]);
@@ -354,7 +354,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
       ];
       file.threats = file.threats.slice(0, 2).map((threat, index) => ({ ...threat, id: `t${index}`, element_id: `w${index + 1}`, origin: 'manual', library_ref: null, stale: null }));
       file.mitigations = [];
-      const imported = await importInto(await newProject(), specterBody(file));
+      const imported = await importInto(await newProject(), scryluxBody(file));
       expect(imported.status).toBe(201);
       const id = imported.body.threat_models[0]?.id as string;
       const elements = (await c.get<ApiRecord[]>(`/threat-models/${id}/elements`)).body;
@@ -368,7 +368,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
       const file = us1Model();
       const unknown = file.threats.find((threat) => threat.id === 't-rule-1');
       expect(unknown).toMatchObject({ origin: 'rule', library_ref: 'process-spoofing', stale: null });
-      const imported = await importInto(await newProject(), specterBody(file));
+      const imported = await importInto(await newProject(), scryluxBody(file));
       expect(imported.status).toBe(201);
       const id = imported.body.threat_models[0]?.id as string;
       const before = (await c.get<ApiRecord[]>(`/threat-models/${id}/threats`)).body.find((threat) => threat.title === 'Spoofing of API');
@@ -439,12 +439,12 @@ describe('exporting and importing a threat model (Specter file)', () => {
       const target = await newProject();
       const old = await check(target, otmBody(fixture('mobile-cloud.otm.json')));
       expect(old).toEqual({ status: 400, body: { error: 'file: not an OTM 0.2.0 file' } });
-      const other = await check(target, otmBody({ format: 'specter' }));
+      const other = await check(target, otmBody({ format: 'scrylux' }));
       expect(other).toEqual({ status: 400, body: { error: 'file: not an OTM 0.2.0 file' } });
       expect(await modelsOf(target)).toEqual([]);
     });
 
-    it('holds an edited Specter OTM file to the strict rules until it stops claiming to be Specter’s', async () => {
+    it('holds an edited Scrylux OTM file to the strict rules until it stops claiming to be Scrylux’s', async () => {
       const otm = await exportOtm(seeded.modelId);
       const edited = JSON.parse(JSON.stringify(otm)) as { components: { attributes?: unknown }[]; project: { attributes?: unknown } };
       delete edited.components[0]?.attributes;
@@ -452,7 +452,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
       const strict = await check(target, otmBody(edited));
       expect(strict.status).toBe(400);
       expect((strict.body as unknown as { error: string }).error).toBe(
-        "file.components.0.attributes.specter: missing; this file was changed outside Specter (remove project.attributes.specter to import it as another tool's file)",
+        "file.components.0.attributes.scrylux: missing; this file was changed outside Scrylux (remove project.attributes.scrylux to import it as another tool's file)",
       );
       delete edited.project.attributes;
       const adapted = await check(target, otmBody(edited));
@@ -534,7 +534,7 @@ describe('exporting and importing a threat model (Specter file)', () => {
       const target = await newProject();
       const v1 = await check(target, tdBody({ version: '1.0', detail: { diagrams: [{ diagramJson: {} }] } }));
       expect(v1).toEqual({ status: 400, body: { error: 'file: Threat Dragon version 1 files are not supported; open and save the model in Threat Dragon 2 first' } });
-      const other = await check(target, tdBody({ format: 'specter' }));
+      const other = await check(target, tdBody({ format: 'scrylux' }));
       expect(other).toEqual({ status: 400, body: { error: 'file: not a Threat Dragon version 2 file' } });
       expect(await modelsOf(target)).toEqual([]);
     });

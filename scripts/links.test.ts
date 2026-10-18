@@ -14,18 +14,18 @@ const IMAGES = ['diagram-editor', 'threats-for-element', 'report', 'import-expor
 // A set of files that satisfies every clause: the README embeds four images and links everything required.
 function good(): LinkInputs {
   const readme = [
-    '# Specter',
+    '# Scrylux',
     ...IMAGES.map((p, i) => `![Screenshot ${i + 1} of the demo](${p})`),
-    'See the [changelog](CHANGELOG.md), the [releases](https://github.com/shivamsaraswat/specter/releases), the [demo](docs/demo/),',
+    'See the [changelog](CHANGELOG.md), the [releases](https://github.com/shivamsaraswat/scrylux/releases), the [demo](docs/demo/),',
     'the [threat model](docs/threat-model/), [contributing](CONTRIBUTING.md) and [security](SECURITY.md).',
   ].join('\n');
   const files: Record<string, string> = {
     'README.md': readme,
-    'CHANGELOG.md': '# Changelog\n[0.1.0]: https://github.com/shivamsaraswat/specter/releases/tag/v0.1.0',
+    'CHANGELOG.md': '# Changelog\n[0.1.0]: https://github.com/shivamsaraswat/scrylux/releases/tag/v0.1.0',
     'docs/releasing.md': 'See the [README](../README.md).',
     'docs/demo/README.md': 'Back to the [README](../../README.md).',
   };
-  const onDisk = new Set([...Object.keys(files), ...IMAGES, 'CONTRIBUTING.md', 'SECURITY.md', 'docs/demo/notes-app.specter.json', 'docs/threat-model/README.md']);
+  const onDisk = new Set([...Object.keys(files), ...IMAGES, 'CONTRIBUTING.md', 'SECURITY.md', 'docs/demo/notes-app.scrylux.json', 'docs/threat-model/README.md']);
   return { files, exists: (p) => onDisk.has(p.replace(/\/$/, '')) || [...onDisk].some((f) => f.startsWith(p.endsWith('/') ? p : `${p}/`)), images: IMAGES.map((p) => ({ path: p, bytes: 100_000 })) };
 }
 
@@ -48,10 +48,10 @@ describe('links and images that point nowhere', () => {
 
   it('resolves a link from the folder of the file that holds it', () => {
     const input = good();
-    input.files['docs/demo/README.md'] = 'See [the file](notes-app.specter.json) and [the same, wrongly](docs/demo/notes-app.specter.json).';
+    input.files['docs/demo/README.md'] = 'See [the file](notes-app.scrylux.json) and [the same, wrongly](docs/demo/notes-app.scrylux.json).';
     const text = said(input);
-    expect(text).not.toContain('docs/demo/notes-app.specter.json:');
-    expect(text).toContain('docs/demo/docs/demo/notes-app.specter.json');
+    expect(text).not.toContain('docs/demo/notes-app.scrylux.json:');
+    expect(text).toContain('docs/demo/docs/demo/notes-app.scrylux.json');
   });
 
   it('names an image that is not there', () => {
@@ -68,7 +68,7 @@ describe('links and images that point nowhere', () => {
 
   it('checks a link written as a reference definition, and ignores one that is external', () => {
     const input = good();
-    input.files['CHANGELOG.md'] = '# Changelog\n[0.1.0]: https://github.com/shivamsaraswat/specter/releases/tag/v0.1.0\n[local]: nowhere.md';
+    input.files['CHANGELOG.md'] = '# Changelog\n[0.1.0]: https://github.com/shivamsaraswat/scrylux/releases/tag/v0.1.0\n[local]: nowhere.md';
     const text = said(input);
     expect(text).toContain('nowhere.md');
     expect(text).not.toContain('releases/tag');
@@ -105,7 +105,7 @@ describe('images (FR-020)', () => {
     const input = good();
     input.files['README.md'] = (input.files['README.md'] ?? '').replace(IMAGES[3] ?? '', IMAGES[0] ?? '');
     expect(said(input)).toMatch(/3 image/);
-    input.files['README.md'] = (input.files['README.md'] ?? '').replace(IMAGES[2] ?? '', 'docs/demo/notes-app.specter.json');
+    input.files['README.md'] = (input.files['README.md'] ?? '').replace(IMAGES[2] ?? '', 'docs/demo/notes-app.scrylux.json');
     expect(said(input)).toMatch(/2 image/);
   });
 
@@ -136,7 +136,7 @@ describe('images (FR-020)', () => {
 describe('where a visitor goes next (FR-021)', () => {
   it.each([
     ['the changelog', '[changelog](CHANGELOG.md)'],
-    ['the releases page', '[releases](https://github.com/shivamsaraswat/specter/releases)'],
+    ['the releases page', '[releases](https://github.com/shivamsaraswat/scrylux/releases)'],
     ['the demo', '[demo](docs/demo/)'],
     ['the threat model', '[threat model](docs/threat-model/)'],
     ['the contribution guide', '[contributing](CONTRIBUTING.md)'],

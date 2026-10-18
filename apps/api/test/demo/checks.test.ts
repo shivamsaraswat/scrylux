@@ -1,6 +1,6 @@
-import { STRIDE_CATEGORIES } from '@specter/core';
+import { STRIDE_CATEGORIES } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
-import type { ExportedFile, ExportedMitigation, ExportedThreat } from '../../src/exchange/specter-export.js';
+import type { ExportedFile, ExportedMitigation, ExportedThreat } from '../../src/exchange/scrylux-export.js';
 import { checkPatterns } from '../dogfood/checks.js';
 import { checkDemoFolder, checkDemoShape, DEMO_FILE, formatDemoFinding, withoutLoopback } from './checks.js';
 
@@ -35,10 +35,10 @@ function mitigation(id: string, threatId: string, status: ExportedMitigation['st
 // One file that satisfies every clause of FR-024 and is as small as it can be.
 function valid(): ExportedFile {
   return {
-    format: 'specter',
+    format: 'scrylux',
     format_version: 1,
     exported_at: '2026-10-12T00:00:00.000Z',
-    project: { name: 'Specter demo (fictional)' },
+    project: { name: 'Scrylux demo (fictional)' },
     threat_model: { name: 'Notes app (fictional demo)', methodology: 'STRIDE', status: 'in_review' },
     elements: [
       { id: 'zone', type: 'trust_boundary', name: 'Cloud account', properties: {}, layout: null, parent_boundary_id: null, source_element_id: null, target_element_id: null },
@@ -160,7 +160,7 @@ describe('checkDemoShape names what is missing', () => {
 
   it('a project name that does not say the demo is fictional', () => {
     const data = valid();
-    data.project = { name: 'Specter demo' };
+    data.project = { name: 'Scrylux demo' };
     expect(messages(data).join('\n')).toContain('the project name does not say that the demo is fictional');
   });
 
@@ -201,11 +201,11 @@ describe('what a finding says', () => {
 
 describe('checkDemoFolder (D6)', () => {
   it('accepts the two files', () => {
-    expect(checkDemoFolder(['README.md', 'notes-app.specter.json'])).toEqual([]);
+    expect(checkDemoFolder(['README.md', 'notes-app.scrylux.json'])).toEqual([]);
   });
 
   it('refuses a third file, naming it', () => {
-    const found = checkDemoFolder(['README.md', 'notes-app.specter.json', 'report.md']);
+    const found = checkDemoFolder(['README.md', 'notes-app.scrylux.json', 'report.md']);
     expect(found).toHaveLength(1);
     expect(found[0]?.message).toContain('report.md');
   });
@@ -213,7 +213,7 @@ describe('checkDemoFolder (D6)', () => {
   it('refuses a missing file, naming it', () => {
     const found = checkDemoFolder(['README.md']);
     expect(found).toHaveLength(1);
-    expect(found[0]?.message).toContain('notes-app.specter.json');
+    expect(found[0]?.message).toContain('notes-app.scrylux.json');
   });
 });
 

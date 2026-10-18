@@ -1,5 +1,5 @@
 {
-  "name": "specter",
+  "name": "scrylux",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
@@ -12,7 +12,7 @@
     "lint": "pnpm -r run lint && eslint scripts && tsx scripts/check-licenses.ts",
     "test": "pnpm -r run test && vitest run --root scripts",
     "build": "pnpm -r run build",
-    "test:e2e": "pnpm --filter @specter/web test:e2e"
+    "test:e2e": "pnpm --filter @scrylux/web test:e2e"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

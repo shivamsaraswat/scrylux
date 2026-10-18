@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../src/app.js';
-import { buildSpecterFile, serializeExport, type ExportedFile } from '../../src/exchange/specter-export.js';
+import { buildScryluxFile, serializeExport, type ExportedFile } from '../../src/exchange/scrylux-export.js';
 import { renderMarkdown } from '../../src/report/markdown.js';
 import { buildReport } from '../../src/report/model.js';
 import { login, startTestServer, type TestServer } from '../contract/helpers.js';
@@ -22,7 +22,7 @@ import {
 } from './checks.js';
 import {
   checkImport,
-  exportSpecter,
+  exportScrylux,
   importModel,
   importTwice,
   newProject,
@@ -36,18 +36,18 @@ import { PATTERNS } from './patterns.js';
 // The checks of contracts/checks.md as pure functions, each shown to fail on an input made to break it. They read no
 // committed file and call no operation: the operations are in the second half of this file and in threat-model.test.ts.
 
-const FILE = 'docs/threat-model/threat-model.specter.json';
+const FILE = 'docs/threat-model/threat-model.scrylux.json';
 const AT = new Date('2026-10-11T09:30:00.000Z');
 
-const exported = (file: ExchangeFile): ExportedFile => buildSpecterFile(snapshotOf(file), AT);
+const exported = (file: ExchangeFile): ExportedFile => buildScryluxFile(snapshotOf(file), AT);
 const textOf = (file: ExchangeFile): string => serializeExport(exported(file));
 
 // A file that satisfies every rule of check 4, made from Milestone 6's seeded model: the two threats a user could not
 // create (an accepted one with no reason, a mitigated one with no implemented mitigation) are completed.
 function goodFile(): ExchangeFile {
   const file = us1Model();
-  file.project.name = 'Specter';
-  file.threat_model.name = 'Specter application';
+  file.project.name = 'Scrylux';
+  file.threat_model.name = 'Scrylux application';
   file.threats = file.threats.map((threat) => {
     if (threat.id === 't-man-acc-noreason') return { ...threat, status_reason: 'Accepted until the roles of Phase 6' };
     if (threat.id === 't-rule-2') return { ...threat, stale: null };
@@ -61,9 +61,9 @@ const checks = (findings: Finding[]): string[] => findings.map((finding) => find
 
 describe('formatFinding', () => {
   it('writes two lines: the file, the check and what is wrong, then the fix and where to read about it', () => {
-    const text = formatFinding({ check: 'ties', file: FILE, message: 'two processes are both named "API"', fix: 'rename one of them in Specter' });
+    const text = formatFinding({ check: 'ties', file: FILE, message: 'two processes are both named "API"', fix: 'rename one of them in Scrylux' });
     expect(text).toBe(
-      `${FILE}: ties: two processes are both named "API".\nFix: rename one of them in Specter. See "Updating the model" in docs/threat-model/README.md.`,
+      `${FILE}: ties: two processes are both named "API".\nFix: rename one of them in Scrylux. See "Updating the model" in docs/threat-model/README.md.`,
     );
   });
 });
@@ -71,7 +71,7 @@ describe('formatFinding', () => {
 describe('check 1, form', () => {
   const validate = publishedSchemaValidator();
 
-  it('passes the text Specter writes', () => {
+  it('passes the text Scrylux writes', () => {
     expect(checkForm(FILE, textOf(goodFile()), validate)).toEqual([]);
   });
 
@@ -86,7 +86,7 @@ describe('check 1, form', () => {
     const reordered = { threat_model: file.threat_model, format: file.format, format_version: file.format_version, exported_at: file.exported_at, project: file.project, elements: file.elements, threats: file.threats, mitigations: file.mitigations };
     const findings = checkForm(FILE, serializeExport(reordered), validate);
     expect(checks(findings)).toEqual(['form']);
-    expect(findings[0]?.message).toContain('not what Specter writes');
+    expect(findings[0]?.message).toContain('not what Scrylux writes');
   });
 
   it('fails Windows line endings', () => {
@@ -164,7 +164,7 @@ describe('check 4, shape', () => {
     expect(checkShape(FILE, exported(goodFile()))).toEqual([]);
   });
 
-  it('fails a project that is not named Specter, and a threat model that is not named Specter application', () => {
+  it('fails a project that is not named Scrylux, and a threat model that is not named Scrylux application', () => {
     expect(problems((file) => (file.project.name = 'Payments')).join('\n')).toContain('project');
     expect(problems((file) => (file.threat_model.name = 'Checkout')).join('\n')).toContain('threat model is named');
   });
@@ -234,7 +234,7 @@ describe('check 4, shape', () => {
 });
 
 describe('check 4, folder', () => {
-  const THREE = ['README.md', 'report.md', 'threat-model.specter.json'];
+  const THREE = ['README.md', 'report.md', 'threat-model.scrylux.json'];
 
   it('passes exactly the three files, in any order', () => {
     expect(checkFolder([...THREE].reverse())).toEqual([]);
@@ -256,7 +256,7 @@ describe('check 4, folder', () => {
 // One sample that must match and one near-miss that must not, for every pattern, written as text of the JSON file.
 // The table is checked both ways, so a pattern added without a sample fails here, and a sample with no pattern too.
 const SAMPLES: Record<string, { hit: string; miss: string }> = {
-  email: { hit: '"description": "Write to someone@example.org about it"', miss: '"description": "The @specter/api package"' },
+  email: { hit: '"description": "Write to someone@example.org about it"', miss: '"description": "The @scrylux/api package"' },
   ipv4: { hit: '"title": "Reaches 10.0.12.34 inside"', miss: '"title": "Node.js 22.1.0 or newer"' },
   'account-id': { hit: '"title": "Account 123456789012 owns the role"', miss: '"id": "0b9c4a1e-7d2f-4c3a-8e5b-123456789012"' },
   'aws-access-key': { hit: '"description": "Key AKIAIOSFODNN7EXAMPLE leaked"', miss: '"description": "Keys begin with AKIA and are 20 characters"' },
@@ -287,7 +287,7 @@ describe('check 5, patterns', () => {
     expect(findings[0]?.message).not.toContain('someone@example.org');
   });
 
-  it('does not match the file Specter writes for a model with ids that end in twelve digits', () => {
+  it('does not match the file Scrylux writes for a model with ids that end in twelve digits', () => {
     const file = goodFile();
     file.elements[0] = { ...(file.elements[0] as ExchangeFile['elements'][number]), id: '0b9c4a1e-7d2f-4c3a-8e5b-123456789012' };
     file.threats = file.threats.map((threat) => (threat.element_id === 'b-internal' ? { ...threat, element_id: '0b9c4a1e-7d2f-4c3a-8e5b-123456789012' } : threat));
@@ -442,7 +442,7 @@ describe('check 7, compareReport', () => {
     expect(findings.map((f) => f.message).join('\n')).toContain('lines');
   });
 
-  it('fails a committed report whose project line names another project than the Specter file', () => {
+  it('fails a committed report whose project line names another project than the Scrylux file', () => {
     const other = reportOf({ ...goodFile(), project: { name: 'Another project' } }, T1);
     const findings = compareReport(FILE, other, built, data);
     expect(findings.map((f) => f.message).join('\n')).toContain('project line');
@@ -521,7 +521,7 @@ describe('the checks through the operations', () => {
 
   describe('check 6, stale and behind the rules', () => {
     it('blocks a committed file that carries a stale mark (the seeded model has one)', async () => {
-      const data = await exportSpecter(s, seededModelId);
+      const data = await exportScrylux(s, seededModelId);
       expect(data.threats.some((threat) => threat.stale !== null)).toBe(true);
       const { stale } = classifyRegeneration({ file: FILE, before: data, ...(await regenerationOf(data)) });
       expect(stale.length).toBeGreaterThan(0);
@@ -529,7 +529,7 @@ describe('the checks through the operations', () => {
     });
 
     it('warns, and does not block, when the diagram has no generated threats yet', async () => {
-      const data = withoutRuleThreats(await exportSpecter(s, seededModelId));
+      const data = withoutRuleThreats(await exportScrylux(s, seededModelId));
       const { stale, behind } = classifyRegeneration({ file: FILE, before: data, ...(await regenerationOf(data)) });
       expect(stale).toEqual([]);
       expect(behind.length).toBeGreaterThan(0);
@@ -537,7 +537,7 @@ describe('the checks through the operations', () => {
     });
 
     it('says nothing about a model that was generated and is unchanged', async () => {
-      const exportedModel = await exportSpecter(s, seededModelId);
+      const exportedModel = await exportScrylux(s, seededModelId);
       const data = { ...exportedModel, threats: exportedModel.threats.map((threat) => ({ ...threat, stale: null })) };
       expect(classifyRegeneration({ file: FILE, before: data, ...(await regenerationOf(data)) })).toEqual({ stale: [], behind: [] });
     });
@@ -548,15 +548,15 @@ describe('the checks through the operations', () => {
   // on B. Run on one shared model the same case would fail checks 2 and 7, which is why the arrangement is a requirement.
   describe('checks 2, 6b and 7 together', () => {
     it('pass on model A and warn on model B when the model is behind the rules', async () => {
-      const seeded = withoutRuleThreats(await exportSpecter(s, seededModelId));
+      const seeded = withoutRuleThreats(await exportScrylux(s, seededModelId));
       const x = await importModel(s, await newProject(s), seeded);
       // What a committed pair would be: the export and the report of one model, taken back to back.
-      const committed = await exportSpecter(s, x);
+      const committed = await exportScrylux(s, x);
       const committedReport = await reportMarkdown(s, x);
 
       const two = await importTwice(s, committed);
       expect(two.summary.models).toHaveLength(1);
-      expect(checkRoundTrip(FILE, two.summary, committed, await exportSpecter(s, two.a))).toEqual([]);
+      expect(checkRoundTrip(FILE, two.summary, committed, await exportScrylux(s, two.a))).toEqual([]);
       expect(compareReport(FILE, committedReport, await reportMarkdown(s, two.a), committed)).toEqual([]);
 
       const { stale, behind } = classifyRegeneration({ file: FILE, before: committed, ...(await regenerate(s, two.b)) });
@@ -565,7 +565,7 @@ describe('the checks through the operations', () => {
 
       // On one shared model the same case fails check 2: generation put its threats in the export.
       await regenerate(s, two.a);
-      expect(checkRoundTrip(FILE, two.summary, committed, await exportSpecter(s, two.a)).length).toBeGreaterThan(0);
+      expect(checkRoundTrip(FILE, two.summary, committed, await exportScrylux(s, two.a)).length).toBeGreaterThan(0);
     });
   });
 });

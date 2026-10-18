@@ -2,20 +2,20 @@
 
 // The formats an export can produce and an import can read. The lists grow story by story; every place that
 // switches on a format is typed by them, so a format without a handler is a type error.
-export const EXPORT_FORMATS = ['specter', 'otm'] as const;
+export const EXPORT_FORMATS = ['scrylux', 'otm'] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
-export const IMPORT_FORMATS = ['specter', 'otm', 'threat-dragon'] as const;
+export const IMPORT_FORMATS = ['scrylux', 'otm', 'threat-dragon'] as const;
 export type ImportFormat = (typeof IMPORT_FORMATS)[number];
 
-// Raised with every change to the Specter file's shape (contracts/specter-file.md, "Versioning").
-export const SPECTER_FORMAT_VERSION = 1;
+// Raised with every change to the Scrylux file's shape (contracts/scrylux-file.md, "Versioning").
+export const SCRYLUX_FORMAT_VERSION = 1;
 
 // What a file of another version is told: the version this install reads, and the file's own, so a file from a newer
-// Specter says what it is. The file's version is repeated only when it is a whole number from 1 to 999: nothing else from a
+// Scrylux says what it is. The file's version is repeated only when it is a whole number from 1 to 999: nothing else from a
 // file is ever echoed back.
 export function formatVersionMessage(found: unknown): string {
-  const reads = `must be ${SPECTER_FORMAT_VERSION}`;
+  const reads = `must be ${SCRYLUX_FORMAT_VERSION}`;
   return typeof found === 'number' && Number.isInteger(found) && found >= 1 && found <= 999 ? `${reads}; this file is version ${found}` : reads;
 }
 

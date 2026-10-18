@@ -1,4 +1,4 @@
-import { ReportQuery, type ReportFormat } from '@specter/core';
+import { ReportQuery, type ReportFormat } from '@scrylux/core';
 import { buildReport, type Report } from '../report/model.js';
 import { reportFilename } from '../report/filename.js';
 import { renderHtml } from '../report/html.js';

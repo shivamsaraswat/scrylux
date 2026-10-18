@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { IGNORED_PRESENTATION, NOT_IMPORTED_FIELDS, NOTE_KINDS, OtmFile, TD_STATUSES, ThreatDragonFile, type ImportNote } from '@specter/core';
+import { IGNORED_PRESENTATION, NOT_IMPORTED_FIELDS, NOTE_KINDS, OtmFile, TD_STATUSES, ThreatDragonFile, type ImportNote } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { planOtm } from '../../src/exchange/import/otm.js';
 import { planThreatDragon } from '../../src/exchange/import/threat-dragon.js';

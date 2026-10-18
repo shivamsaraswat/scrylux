@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Specter API",
+    "title": "Scrylux API",
     "version": "1"
   },
   "security": [
@@ -2006,7 +2006,7 @@
       "get": {
         "operationId": "exportThreatModel",
         "summary": "Download a threat model as a file",
-        "description": "The whole threat model as one JSON file, lossless: its diagram, threats and mitigations, with every status, reason, origin and stale mark, in a fixed order. `format` chooses the file: `specter` (described by the published schema `docs/formats/specter-file-v1.schema.json`) or `otm` (Open Threat Model 0.2.0, with Specter's own fields in `attributes.specter` so Specter reads it back without loss). It is sent as an attachment, named after the threat model and the export date, and nothing may keep a copy of it (Cache-Control: no-store). The threat model is read in one snapshot. Two exports of an unchanged threat model differ only in the export time. The file holds no account name, account id or credential.",
+        "description": "The whole threat model as one JSON file, lossless: its diagram, threats and mitigations, with every status, reason, origin and stale mark, in a fixed order. `format` chooses the file: `scrylux` (described by the published schema `docs/formats/scrylux-file-v1.schema.json`) or `otm` (Open Threat Model 0.2.0, with Scrylux's own fields in `attributes.scrylux` so Scrylux reads it back without loss). It is sent as an attachment, named after the threat model and the export date, and nothing may keep a copy of it (Cache-Control: no-store). The threat model is read in one snapshot. Two exports of an unchanged threat model differ only in the export time. The file holds no account name, account id or credential.",
         "parameters": [
           {
             "name": "id",
@@ -2024,7 +2024,7 @@
             "schema": {
               "type": "string",
               "enum": [
-                "specter",
+                "scrylux",
                 "otm"
               ]
             }
@@ -3332,7 +3332,7 @@
           "format": {
             "type": "string",
             "enum": [
-              "specter",
+              "scrylux",
               "otm",
               "threat-dragon"
             ]

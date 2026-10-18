@@ -1,5 +1,5 @@
-import { ELEMENT_FLAGS } from '@specter/core';
-import { shippedLibrary } from '@specter/threat-library';
+import { ELEMENT_FLAGS } from '@scrylux/core';
+import { shippedLibrary } from '@scrylux/threat-library';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
 import db from '../../../src/db.js';

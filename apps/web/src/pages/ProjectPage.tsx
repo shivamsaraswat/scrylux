@@ -1,4 +1,4 @@
-import { uuid } from '@specter/core';
+import { uuid } from '@scrylux/core';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {

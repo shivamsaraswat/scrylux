@@ -1,4 +1,4 @@
-import { TYPE_LABELS, absoluteRects, resolveLayout, type ElementRecord, type Rect, type Resolved } from '@specter/core';
+import { TYPE_LABELS, absoluteRects, resolveLayout, type ElementRecord, type Rect, type Resolved } from '@scrylux/core';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 
 // Turns a threat model's elements into what React Flow draws. Elements keep their positions relative

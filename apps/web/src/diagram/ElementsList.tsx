@@ -1,4 +1,4 @@
-import { TYPE_LABELS, type ElementRecord } from '@specter/core';
+import { TYPE_LABELS, type ElementRecord } from '@scrylux/core';
 import { useDiagramEditor } from './DiagramEditorProvider.js';
 
 const GROUP = { trust_boundary: 0, data_flow: 2 } as const;

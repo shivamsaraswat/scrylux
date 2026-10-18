@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { migrate as runMigrations } from '@specter/db';
+import { migrate as runMigrations } from '@scrylux/db';
 import db from './db.js';
 import config from './config.js';
 

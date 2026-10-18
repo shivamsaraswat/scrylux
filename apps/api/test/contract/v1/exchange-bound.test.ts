@@ -1,9 +1,9 @@
-import { IMPORT_MAX_BYTES, SpecterFileV1, checkBounds } from '@specter/core';
+import { IMPORT_MAX_BYTES, ScryluxFileV1, checkBounds } from '@scrylux/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
 import { parseFile } from '../../../src/exchange/import/parse.js';
 import { checkPlan } from '../../../src/exchange/import/plan.js';
-import { planSpecter } from '../../../src/exchange/import/specter.js';
+import { planScrylux } from '../../../src/exchange/import/scrylux.js';
 import { runImport } from '../../../src/exchange/import/write.js';
 import { login, startTestServer, type TestServer } from '../helpers.js';
 import { seedBound } from './exchange-helpers.js';
@@ -59,9 +59,9 @@ describe('the largest threat model and the size limit (FR-021, SC-006)', () => {
     await server.close();
   });
 
-  it('exports both formats, checks and imports the Specter file, each within 60 seconds, and reports each stage', async () => {
+  it('exports both formats, checks and imports the Scrylux file, each within 60 seconds, and reports each stage', async () => {
     const exported = await Promise.all(
-      (['specter', 'otm'] as const).map(async (format) => {
+      (['scrylux', 'otm'] as const).map(async (format) => {
         const run = await sampled(async () => (await fetch(`${server.baseUrl}/api/v1/threat-models/${modelId}/export?format=${format}`, { headers: { Authorization: `Bearer ${await login(server.baseUrl)}` } })).text());
         return { format, ...run };
       }),
@@ -76,12 +76,12 @@ describe('the largest threat model and the size limit (FR-021, SC-006)', () => {
     // The stages, one by one: this is where the time and the memory go.
     const parsed = timed(() => JSON.parse(text) as Record<string, unknown>);
     const bounds = timed(() => checkBounds(parsed.result));
-    const schema = timed(() => parseFile('specter', parsed.result));
-    const planned = timed(() => planSpecter(SpecterFileV1.parse(parsed.result)));
+    const schema = timed(() => parseFile('scrylux', parsed.result));
+    const planned = timed(() => planScrylux(ScryluxFileV1.parse(parsed.result)));
     const checked = timed(() => checkPlan(planned.result, { existingNames: [] }));
     report('bound stages', { jsonParse: parsed.ms, checkBounds: bounds.ms, schema: schema.ms, plan: planned.ms, checkPlan: checked.ms });
 
-    const body = JSON.stringify({ format: 'specter', file: parsed.result });
+    const body = JSON.stringify({ format: 'scrylux', file: parsed.result });
     const post = async (path: string): Promise<Response> =>
       fetch(`${server.baseUrl}/api/v1${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await login(server.baseUrl)}` }, body });
     const target = await newProject();
@@ -94,13 +94,13 @@ describe('the largest threat model and the size limit (FR-021, SC-006)', () => {
     expect(imported.result.status).toBe(201);
     report('bound import', { ms: imported.ms, peakMb: imported.peakMb, grewMb: imported.grewMb });
     expect(imported.ms).toBeLessThan(60 * SECONDS);
-    const write = await sampled(async () => runImport(await newProject(), planSpecter(SpecterFileV1.parse(parsed.result)), ['Write timing']));
+    const write = await sampled(async () => runImport(await newProject(), planScrylux(ScryluxFileV1.parse(parsed.result)), ['Write timing']));
     report('bound write', { ms: write.ms, peakMb: write.peakMb, grewMb: write.grewMb });
   }, 600 * SECONDS);
 
   it('imports a file of exactly the size limit within 60 seconds, and reports its time and memory', async () => {
     const file = JSON.parse(text) as { threats: { description: string }[] };
-    const wrapper = (): string => JSON.stringify({ format: 'specter', file });
+    const wrapper = (): string => JSON.stringify({ format: 'scrylux', file });
     // Every threat's description is lengthened (at most 10,000 characters each) until the request body is exactly the
     // limit, which the parser accepts and one byte more it refuses.
     let missing = IMPORT_MAX_BYTES - wrapper().length;

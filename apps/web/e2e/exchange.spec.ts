@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
 import { apiRequest, apiToken, expect, seedElements, seedModel, signInAsNewAccount, test } from './fixtures.js';
 
 // Phase 2 / Milestone 6 in a real browser against the built app and a real database (quickstart §1): export a threat
-// model as a Specter file, import it into another project through the preview, and find everything there (US1). The
+// model as a Scrylux file, import it into another project through the preview, and find everything there (US1). The
 // diagram is seeded through the batch endpoint and the statuses through the API, as report.spec.ts does; the states the
 // API refuses to create (an accepted threat with no reason, a stale one) are covered by the contract tests, which can
 // reach the database.
@@ -55,8 +55,8 @@ async function seed(base: string, token: string, label: string): Promise<{ proje
   return seeded;
 }
 
-async function downloadSpecter(page: Page): Promise<{ file: ExportedFile & Record<string, unknown>; name: string; path: string }> {
-  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download Specter file' }).click()]);
+async function downloadScrylux(page: Page): Promise<{ file: ExportedFile & Record<string, unknown>; name: string; path: string }> {
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download Scrylux file' }).click()]);
   const saved = await download.path();
   return { file: JSON.parse(readFileSync(saved, 'utf8')) as ExportedFile & Record<string, unknown>, name: download.suggestedFilename(), path: saved };
 }
@@ -68,7 +68,7 @@ async function importFile(page: Page, projectId: string, path: string): Promise<
   await expect(page.getByRole('heading', { name: 'Ready to import' })).toBeVisible();
 }
 
-test('exports a threat model as a Specter file and imports it into another project without losing anything (US1, SC-001, SC-005)', async ({ page, baseURL }, testInfo) => {
+test('exports a threat model as a Scrylux file and imports it into another project without losing anything (US1, SC-001, SC-005)', async ({ page, baseURL }, testInfo) => {
   const base = baseURL ?? '';
   const token = await apiToken(base);
   const source = await seed(base, token, 'exchange');
@@ -79,11 +79,11 @@ test('exports a threat model as a Specter file and imports it into another proje
 
   // 1. Export, from the Threats view. The file is named after the model and the date.
   const exportStarted = Date.now();
-  const exported = await downloadSpecter(page);
+  const exported = await downloadScrylux(page);
   const exportSeconds = (Date.now() - exportStarted) / 1000;
   testInfo.annotations.push({ type: 'export seconds (SC-005)', description: exportSeconds.toFixed(2) });
   expect(exportSeconds).toBeLessThan(60);
-  expect(exported.name).toMatch(/^exchange-\d+-[0-9a-f]{6}-\d{4}-\d{2}-\d{2}\.specter\.json$/);
+  expect(exported.name).toMatch(/^exchange-\d+-[0-9a-f]{6}-\d{4}-\d{2}-\d{2}\.scrylux\.json$/);
   expect(exported.file.elements).toHaveLength(6);
 
   // 2. Import it into the other project, through the preview, which lists everything and says nothing is lost.
@@ -110,7 +110,7 @@ test('exports a threat model as a Specter file and imports it into another proje
   await expect(page.getByRole('region', { name: 'Threat summary' })).toBeVisible();
 
   // 4. Exported again, it is the same file once ids are mapped, and generating threats finds nothing to add.
-  const again = await downloadSpecter(page);
+  const again = await downloadScrylux(page);
   expect(canonical(again.file)).toEqual(canonical(exported.file));
   await page.getByRole('link', { name: 'Diagram' }).click();
   await page.getByRole('button', { name: 'Generate threats' }).click();
@@ -123,7 +123,7 @@ test('says a name is taken in the preview, and imports once it is changed (US1 s
   const source = await seed(base, token, 'twice');
   await signInAsNewAccount(page, base);
   await page.goto(`/threat-models/${source.modelId}`);
-  const exported = await downloadSpecter(page);
+  const exported = await downloadScrylux(page);
 
   // Back into the project it came from: the default name is taken.
   await importFile(page, source.projectId, exported.path);
@@ -229,7 +229,7 @@ async function chooseFile(page: Page, projectId: string, path: string): Promise<
   await page.getByLabel('File to import').setInputFiles(path);
 }
 
-const READS = 'Specter imports Specter files (version 1), OTM 0.2.0 files in JSON, and Threat Dragon version 2 files.';
+const READS = 'Scrylux imports Scrylux files (version 1), OTM 0.2.0 files in JSON, and Threat Dragon version 2 files.';
 
 test('refuses a file that cannot be imported, saying why, and leaves nothing behind (US4, SC-004)', async ({ page, baseURL }, testInfo) => {
   const base = baseURL ?? '';
@@ -258,7 +258,7 @@ test('refuses a file that cannot be imported, saying why, and leaves nothing beh
   });
   const flow = 2;
   const brokenFile = {
-    format: 'specter',
+    format: 'scrylux',
     format_version: 1,
     exported_at: '2026-10-10T09:30:00.000Z',
     project: { name: 'Payments' },
@@ -284,14 +284,14 @@ test('refuses a file that cannot be imported, saying why, and leaves nothing beh
   writeFileSync(huge, Buffer.alloc(64 * 1024 * 1024 + 1, 0x20));
   const sentBefore = imports.length;
   await page.getByLabel('File to import').setInputFiles(huge);
-  await expect(page.getByText('This file is larger than 64 MiB, the most Specter can import.')).toBeVisible();
+  await expect(page.getByText('This file is larger than 64 MiB, the most Scrylux can import.')).toBeVisible();
   expect(imports).toHaveLength(sentBefore);
 
-  // 3. A file that is JSON but not in a format Specter reads, and one that is not JSON at all.
+  // 3. A file that is JSON but not in a format Scrylux reads, and one that is not JSON at all.
   const unknown = testInfo.outputPath('unknown.json');
   writeFileSync(unknown, JSON.stringify({ hello: 1 }));
   await page.getByLabel('File to import').setInputFiles(unknown);
-  await expect(page.getByText(`This file isn't in a format Specter reads. ${READS}`)).toBeVisible();
+  await expect(page.getByText(`This file isn't in a format Scrylux reads. ${READS}`)).toBeVisible();
   const notJson = testInfo.outputPath('notjson.json');
   writeFileSync(notJson, 'this is not json');
   await page.getByLabel('File to import').setInputFiles(notJson);

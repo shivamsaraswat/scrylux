@@ -8,7 +8,7 @@ import {
   IMPORT_MAX_VALUES,
   NAME_ISSUES,
   NOTE_KINDS,
-  SPECTER_FORMAT_VERSION,
+  SCRYLUX_FORMAT_VERSION,
   ExportQuery,
   ImportInput,
   ImportResult,
@@ -24,12 +24,12 @@ describe('the shared vocabulary', () => {
     expect(IMPORT_MAX_BYTES).toBe(64 * 1024 * 1024);
     expect(IMPORT_MAX_DEPTH).toBe(64);
     expect(IMPORT_MAX_VALUES).toBe(2_000_000);
-    expect(SPECTER_FORMAT_VERSION).toBe(1);
+    expect(SCRYLUX_FORMAT_VERSION).toBe(1);
   });
 
   it('lists the formats and name issues', () => {
-    expect([...EXPORT_FORMATS]).toEqual(['specter', 'otm']);
-    expect([...IMPORT_FORMATS]).toEqual(['specter', 'otm', 'threat-dragon']);
+    expect([...EXPORT_FORMATS]).toEqual(['scrylux', 'otm']);
+    expect([...IMPORT_FORMATS]).toEqual(['scrylux', 'otm', 'threat-dragon']);
     expect([...NAME_ISSUES]).toEqual(['empty', 'too_long', 'duplicate', 'taken']);
   });
 
@@ -48,10 +48,10 @@ describe('ExportQuery', () => {
     ['nothing', {}],
     ['an unknown format', { format: 'xml' }],
     ['an empty format', { format: '' }],
-    ['a repeated parameter (an array)', { format: ['specter', 'specter'] }],
+    ['a repeated parameter (an array)', { format: ['scrylux', 'scrylux'] }],
     ['a format that is only imported', { format: 'threat-dragon' }],
     ['a non-string', { format: 1 }],
-    ['an extra key', { format: 'specter', extra: '1' }],
+    ['an extra key', { format: 'scrylux', extra: '1' }],
   ])('refuses %s with the one message, never echoing the value', (_label, query) => {
     const result = ExportQuery.safeParse(query);
     expect(result.success).toBe(false);
@@ -61,21 +61,21 @@ describe('ExportQuery', () => {
 });
 
 describe('ImportInput', () => {
-  const file = { format: 'specter' };
+  const file = { format: 'scrylux' };
 
   it('accepts a format, optional names and a file object', () => {
-    expect(ImportInput.parse({ format: 'specter', file })).toEqual({ format: 'specter', file });
-    expect(ImportInput.parse({ format: 'specter', names: ['A', ' '], file }).names).toEqual(['A', ' ']);
+    expect(ImportInput.parse({ format: 'scrylux', file })).toEqual({ format: 'scrylux', file });
+    expect(ImportInput.parse({ format: 'scrylux', names: ['A', ' '], file }).names).toEqual(['A', ' ']);
   });
 
   it('does not trim or check names: a name issue is reported, never refused here', () => {
-    expect(ImportInput.safeParse({ format: 'specter', names: ['', 'x'.repeat(500)], file }).success).toBe(true);
+    expect(ImportInput.safeParse({ format: 'scrylux', names: ['', 'x'.repeat(500)], file }).success).toBe(true);
   });
 
   it('does not walk into the file', () => {
     let deep: unknown[] = [];
     for (let level = 0; level < 10_000; level += 1) deep = [deep];
-    const parsed = ImportInput.parse({ format: 'specter', file: { deep } });
+    const parsed = ImportInput.parse({ format: 'scrylux', file: { deep } });
     expect(parsed.file.deep).toBe(deep);
   });
 
@@ -85,13 +85,13 @@ describe('ImportInput', () => {
     ['null', null],
     ['a number', 1],
   ])('refuses %s as the file', (_label, bad) => {
-    expect(ImportInput.safeParse({ format: 'specter', file: bad }).success).toBe(false);
+    expect(ImportInput.safeParse({ format: 'scrylux', file: bad }).success).toBe(false);
   });
 
   it('refuses an unknown format, a missing file and unknown top-level keys', () => {
     expect(ImportInput.safeParse({ format: 'xml', file }).success).toBe(false);
-    expect(ImportInput.safeParse({ format: 'specter' }).success).toBe(false);
-    expect(ImportInput.safeParse({ format: 'specter', file, extra: 1 }).success).toBe(false);
+    expect(ImportInput.safeParse({ format: 'scrylux' }).success).toBe(false);
+    expect(ImportInput.safeParse({ format: 'scrylux', file, extra: 1 }).success).toBe(false);
   });
 });
 

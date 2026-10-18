@@ -1,4 +1,4 @@
-import { absoluteRects, deriveRisk, describeStale, ELEMENT_FLAGS, FLAG_LABELS, lifecycleGap, resolveLayout, STRIDE_CATEGORIES, summarizeThreats, type ElementRecord } from '@specter/core';
+import { absoluteRects, deriveRisk, describeStale, ELEMENT_FLAGS, FLAG_LABELS, lifecycleGap, resolveLayout, STRIDE_CATEGORIES, summarizeThreats, type ElementRecord } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { computeFlowContexts } from '../../src/rule-engine/flow-context.js';
 import { buildReport, type BoundaryGroup, type Report } from '../../src/report/model.js';

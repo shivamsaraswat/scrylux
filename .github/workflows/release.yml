@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE: ghcr.io/shivamsaraswat/specter
+  IMAGE: ghcr.io/shivamsaraswat/scrylux
 
 jobs:
   gate:
@@ -89,7 +89,7 @@ jobs:
             if [ -n "$line" ]; then args+=(--label "$line"); fi
           done <<< "$LABELS"
           docker buildx build --builder release --platform linux/amd64,linux/arm64 "${args[@]}" \
-            --annotation "index:org.opencontainers.image.source=https://github.com/shivamsaraswat/specter" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/shivamsaraswat/scrylux" \
             --provenance=false --sbom=false \
             --output type=oci,dest=image.tar .
       - name: Check that the archive holds exactly the two platforms
@@ -121,7 +121,7 @@ jobs:
             os: ubuntu-24.04-arm
     env:
       VERSION: ${{ needs.gate.outputs.version }}
-      SPECTER_VERSION: ${{ needs.gate.outputs.version }}
+      SCRYLUX_VERSION: ${{ needs.gate.outputs.version }}
       ARCH: ${{ matrix.arch }}
       COMMIT: ${{ github.sha }}
     steps:
@@ -138,7 +138,7 @@ jobs:
       - name: Start the release compose file
         run: docker compose -f docker-compose.release.yml up -d
       - name: Smoke
-        run: pnpm exec tsx scripts/release/smoke.ts http://127.0.0.1:3000 docs/demo/notes-app.specter.json "$VERSION" "$COMMIT" "${IMAGE}:${VERSION}"
+        run: pnpm exec tsx scripts/release/smoke.ts http://127.0.0.1:3000 docs/demo/notes-app.scrylux.json "$VERSION" "$COMMIT" "${IMAGE}:${VERSION}"
       - name: Logs of a failed run
         if: failure()
         run: docker compose -f docker-compose.release.yml logs --no-color --tail 200
@@ -215,7 +215,7 @@ jobs:
             os: ubuntu-24.04-arm
     env:
       VERSION: ${{ needs.gate.outputs.version }}
-      SPECTER_VERSION: ${{ needs.gate.outputs.version }}
+      SCRYLUX_VERSION: ${{ needs.gate.outputs.version }}
       DIGEST: ${{ needs.publish-image.outputs.digest || needs.gate.outputs.image_digest }}
       COMMIT: ${{ github.sha }}
     steps:
@@ -242,7 +242,7 @@ jobs:
       - name: Start the release compose file with the pulled image
         run: docker compose -f docker-compose.release.yml up -d --pull never
       - name: Run the smoke checks against it
-        run: pnpm exec tsx scripts/release/smoke.ts http://127.0.0.1:3000 docs/demo/notes-app.specter.json "$VERSION" "$COMMIT" "${IMAGE}:${VERSION}"
+        run: pnpm exec tsx scripts/release/smoke.ts http://127.0.0.1:3000 docs/demo/notes-app.scrylux.json "$VERSION" "$COMMIT" "${IMAGE}:${VERSION}"
       - name: Logs of a failed run
         if: failure()
         run: docker compose -f docker-compose.release.yml logs --no-color --tail 200
@@ -310,4 +310,4 @@ jobs:
           if ! gh release view "$TAG" > /dev/null 2>&1; then
             gh release create "$TAG" --verify-tag --title "$TAG" --notes-file release-files/notes.md "${flags[@]}"
           fi
-          gh release upload "$TAG" release-files/docker-compose.yml docs/demo/notes-app.specter.json --clobber
+          gh release upload "$TAG" release-files/docker-compose.yml docs/demo/notes-app.scrylux.json --clobber

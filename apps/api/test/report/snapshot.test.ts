@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ElementRecord, MitigationRecord, ThreatModelRecord, ThreatRecord } from '@specter/core';
+import { ElementRecord, MitigationRecord, ThreatModelRecord, ThreatRecord } from '@scrylux/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../src/app.js';

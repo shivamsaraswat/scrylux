@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "specter-file-v1.schema.json",
-  "title": "Specter file, format version 1",
-  "description": "One threat model with its diagram, threats and mitigations, exported by Specter and importable into any Specter install.",
+  "$id": "scrylux-file-v1.schema.json",
+  "title": "Scrylux file, format version 1",
+  "description": "One threat model with its diagram, threats and mitigations, exported by Scrylux and importable into any Scrylux install.",
   "type": "object",
   "properties": {
     "format": {
       "type": "string",
-      "const": "specter"
+      "const": "scrylux"
     },
     "format_version": {
       "type": "number",

@@ -2,7 +2,7 @@
 // sniffs, it is told the format and refuses a file that isn't in it (research #17).
 
 export type Detected =
-  | { format: 'specter' | 'otm' | 'threat-dragon' }
+  | { format: 'scrylux' | 'otm' | 'threat-dragon' }
   | { format: null; reason: 'threat-dragon-v1' | 'unknown' };
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -19,7 +19,7 @@ function diagramsOf(file: Record<string, unknown>): Record<string, unknown>[] {
 // `diagramJson`.
 export function detectFormat(value: unknown): Detected {
   if (!isObject(value)) return { format: null, reason: 'unknown' };
-  if (value.format === 'specter') return { format: 'specter' };
+  if (value.format === 'scrylux') return { format: 'scrylux' };
   if (typeof value.otmVersion === 'string') return { format: 'otm' };
   const diagrams = diagramsOf(value);
   if (diagrams.some((diagram) => 'diagramJson' in diagram)) return { format: null, reason: 'threat-dragon-v1' };

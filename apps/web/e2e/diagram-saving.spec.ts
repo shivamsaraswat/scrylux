@@ -51,7 +51,7 @@ test('keeps a change that could not be saved, warns before leaving, and saves it
   expect((await stored(base, token, modelId)).byName.get('Worker')?.layout).toEqual({ x: 0, y: 0 });
 
   // Leaving the threat model asks first; staying keeps everything.
-  await page.getByRole('link', { name: 'Specter' }).click();
+  await page.getByRole('link', { name: 'Scrylux' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading')).toHaveText('Leave without saving?');
   await dialog.getByRole('button', { name: 'Stay' }).click();

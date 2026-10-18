@@ -1,12 +1,12 @@
 {
-  "name": "@specter/threat-library",
+  "name": "@scrylux/threat-library",
   "private": true,
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
-      "@specter/source": "./src/index.ts",
+      "@scrylux/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
@@ -25,7 +25,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@specter/core": "workspace:*",
+    "@scrylux/core": "workspace:*",
     "yaml": "^2.9.1",
     "zod": "^4.6.5"
   }

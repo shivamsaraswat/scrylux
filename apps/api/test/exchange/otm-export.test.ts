@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildOtmFile } from '../../src/exchange/otm-export.js';
-import { serializeExport } from '../../src/exchange/specter-export.js';
+import { serializeExport } from '../../src/exchange/scrylux-export.js';
 import { ajvDraft07 } from './ajv.js';
 import { hostile, snapshotOf, us1Model, type ExchangeFile } from './fixtures.js';
 
 // The OTM 0.2.0 file an export writes (contracts/otm-mapping.md, "Export"): standard fields that describe the model in
-// OTM's terms, and everything else in `attributes.specter` (FR-011, SC-002).
+// OTM's terms, and everything else in `attributes.scrylux` (FR-011, SC-002).
 
 const at = new Date('2026-10-10T09:30:00.000Z');
 const build = (file: ExchangeFile = us1Model()) => buildOtmFile(snapshotOf(file), at);
@@ -16,7 +16,7 @@ const schema = JSON.parse(readFileSync(fileURLToPath(new URL('./fixtures/otm/otm
 const find = (list: unknown, name: string): Obj => (list as Obj[]).find((item) => item.name === name) as Obj;
 
 describe('buildOtmFile header', () => {
-  it('marks the file as written by Specter, in OTM’s own fields', () => {
+  it('marks the file as written by Scrylux, in OTM’s own fields', () => {
     const file = build() as unknown as Obj;
     expect(Object.keys(file)).toEqual(['otmVersion', 'project', 'representations', 'trustZones', 'components', 'dataflows', 'threats', 'mitigations']);
     expect(file.otmVersion).toBe('0.2.0');
@@ -24,7 +24,7 @@ describe('buildOtmFile header', () => {
       name: 'Checkout',
       id: snapshotOf(us1Model()).model.id,
       description: null,
-      attributes: { specter: { format_version: 1, exported_at: '2026-10-10T09:30:00.000Z', status: 'in_review', methodology: 'STRIDE' } },
+      attributes: { scrylux: { format_version: 1, exported_at: '2026-10-10T09:30:00.000Z', status: 'in_review', methodology: 'STRIDE' } },
     });
     expect(file.representations).toEqual([{ name: 'Diagram', id: 'diagram', type: 'diagram' }]);
   });
@@ -41,21 +41,21 @@ describe('trust zones', () => {
       type: 'trust-boundary',
       risk: { trustRating: 50 },
       representations: [{ representation: 'diagram', id: 'b-internal-shape', position: { x: 40, y: 40 }, size: { width: 700, height: 420 } }],
-      attributes: { specter: { layout: { x: 40, y: 40, width: 700, height: 420 }, parent_boundary_id: null } },
+      attributes: { scrylux: { layout: { x: 40, y: 40, width: 700, height: 420 }, parent_boundary_id: null } },
     });
     const nested = find(zones(), 'DB zone');
     expect(nested.parent).toEqual({ trustZone: 'b-internal' });
-    expect((nested.attributes as Obj).specter).toEqual({ layout: { x: 400, y: 120, width: 260, height: 240 }, parent_boundary_id: 'b-internal' });
+    expect((nested.attributes as Obj).scrylux).toEqual({ layout: { x: 400, y: 120, width: 260, height: 240 }, parent_boundary_id: 'b-internal' });
   });
 
   it('adds the outside zone, last, because nodes sit outside every boundary', () => {
     const list = zones();
     expect(list.at(-1)).toEqual({
-      id: 'specter-outside',
+      id: 'scrylux-outside',
       name: 'Outside any trust boundary',
       type: 'trust-boundary',
       risk: { trustRating: 50 },
-      attributes: { specter: { outside: true } },
+      attributes: { scrylux: { outside: true } },
     });
     expect(list).toHaveLength(3);
   });
@@ -65,7 +65,7 @@ describe('trust zones', () => {
     for (const element of file.elements) {
       if (element.type === 'external_entity' || element.id === 'p-batch') element.parent_boundary_id = 'b-internal';
     }
-    expect(((build(file) as unknown as Obj).trustZones as Obj[]).map((zone) => zone.id)).not.toContain('specter-outside');
+    expect(((build(file) as unknown as Obj).trustZones as Obj[]).map((zone) => zone.id)).not.toContain('scrylux-outside');
   });
 
   it('writes a boundary that was never placed without a representation', () => {
@@ -78,12 +78,12 @@ describe('trust zones', () => {
 describe('components', () => {
   const components = () => (build() as unknown as Obj).components as Obj[];
 
-  it('maps the node types, puts each in its zone, and keeps flags and layout in attributes.specter', () => {
+  it('maps the node types, puts each in its zone, and keeps flags and layout in attributes.scrylux', () => {
     expect(components().map((component) => component.type)).toEqual(['external-entity', 'process', 'process', 'data-store']);
     const api = find(components(), 'API');
     expect(api.parent).toEqual({ trustZone: 'b-internal' });
     expect(api.tags).toEqual(['Node.js', 'Express']);
-    expect((api.attributes as Obj).specter).toEqual({
+    expect((api.attributes as Obj).scrylux).toEqual({
       type: 'process',
       flags: { handles_sensitive_data: false, internet_facing: true, requires_authentication: true },
       layout: { x: 60, y: 120 },
@@ -94,10 +94,10 @@ describe('components', () => {
 
   it('puts a node outside every boundary in the outside zone, and writes no tags or representation it does not have', () => {
     const batch = find(components(), 'Batch');
-    expect(batch.parent).toEqual({ trustZone: 'specter-outside' });
+    expect(batch.parent).toEqual({ trustZone: 'scrylux-outside' });
     expect(batch.tags).toBeUndefined();
     expect(batch.representations).toBeUndefined();
-    expect(((batch.attributes as Obj).specter as Obj).layout).toBeNull();
+    expect(((batch.attributes as Obj).scrylux as Obj).layout).toBeNull();
   });
 
   it('refers to each threat of the node, with its state, and to that threat’s mitigations', () => {
@@ -127,7 +127,7 @@ describe('data flows', () => {
       source: 'e-browser',
       destination: 'p-api',
       tags: ['HTTPS'],
-      attributes: { specter: { flags: { authenticated: true, encrypted_in_transit: true } } },
+      attributes: { scrylux: { flags: { authenticated: true, encrypted_in_transit: true } } },
     });
     expect((find(flows, 'HTTPS request').threats as Obj[]).map((reference) => reference.threat)).toEqual(['t-rule-3']);
     expect(find(flows, 'SQL').tags).toBeUndefined();
@@ -137,7 +137,7 @@ describe('data flows', () => {
 describe('threats and mitigations', () => {
   const threats = () => (build() as unknown as Obj).threats as Obj[];
 
-  it('writes the title, the category and the numeric risk, and keeps every Specter field in attributes.specter', () => {
+  it('writes the title, the category and the numeric risk, and keeps every Scrylux field in attributes.scrylux', () => {
     const spoofing = threats().find((threat) => threat.id === 't-rule-1') as Obj;
     expect(spoofing).toMatchObject({
       name: 'Spoofing of API',
@@ -145,7 +145,7 @@ describe('threats and mitigations', () => {
       categories: ['Spoofing'],
       risk: { likelihood: 50, impact: 75 },
     });
-    expect((spoofing.attributes as Obj).specter).toEqual({
+    expect((spoofing.attributes as Obj).scrylux).toEqual({
       element_id: 'p-api',
       likelihood: 'Medium',
       impact: 'High',
@@ -156,7 +156,7 @@ describe('threats and mitigations', () => {
       stale: null,
     });
     expect(threats().find((threat) => threat.id === 't-rule-3')).toMatchObject({ risk: { likelihood: 25, impact: 25 } });
-    expect(((threats().find((threat) => threat.id === 't-rule-2') as Obj).attributes as Obj).specter).toMatchObject({ stale: { reason: 'rule_unknown' } });
+    expect(((threats().find((threat) => threat.id === 't-rule-2') as Obj).attributes as Obj).scrylux).toMatchObject({ stale: { reason: 'rule_unknown' } });
   });
 
   it('maps each threat status to an OTM state on the reference', () => {
@@ -176,8 +176,8 @@ describe('threats and mitigations', () => {
     );
     expect(referenced.has('t-boundary')).toBe(false);
     expect(referenced.has('t-model-1')).toBe(false);
-    expect((((threats().find((threat) => threat.id === 't-boundary') as Obj).attributes as Obj).specter as Obj).element_id).toBe('b-internal');
-    expect((((threats().find((threat) => threat.id === 't-model-1') as Obj).attributes as Obj).specter as Obj).element_id).toBeNull();
+    expect((((threats().find((threat) => threat.id === 't-boundary') as Obj).attributes as Obj).scrylux as Obj).element_id).toBe('b-internal');
+    expect((((threats().find((threat) => threat.id === 't-model-1') as Obj).attributes as Obj).scrylux as Obj).element_id).toBeNull();
   });
 
   it('writes a mitigation with the risk reduction constant, a name from its first line, and its status and ticket in attributes', () => {
@@ -190,7 +190,7 @@ describe('threats and mitigations', () => {
       name: 'Require MFA',
       description: 'Require MFA',
       riskReduction: 0,
-      attributes: { specter: { threat_id: 't-rule-1', status: 'implemented', external_ref: 'https://tracker.example/SEC-1' } },
+      attributes: { scrylux: { threat_id: 't-rule-1', status: 'implemented', external_ref: 'https://tracker.example/SEC-1' } },
     });
     const long = mitigations.find((item) => item.id === 'm-2') as Obj;
     expect([...(long.name as string)]).toHaveLength(200);
@@ -200,7 +200,7 @@ describe('threats and mitigations', () => {
 });
 
 describe('order, bytes and validity', () => {
-  it('orders records as the Specter file does, whatever the snapshot’s order', () => {
+  it('orders records as the Scrylux file does, whatever the snapshot’s order', () => {
     const forward = snapshotOf(us1Model());
     const backward = snapshotOf(us1Model());
     backward.elements.reverse();

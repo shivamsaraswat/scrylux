@@ -124,20 +124,20 @@ describe('findChangelogEntry', () => {
 });
 
 describe('composeDefaultVersion', () => {
-  const compose = ['services:', '  app:', '    image: ghcr.io/shivamsaraswat/specter:${SPECTER_VERSION:-0.1.0}'].join('\n');
+  const compose = ['services:', '  app:', '    image: ghcr.io/shivamsaraswat/scrylux:${SCRYLUX_VERSION:-0.1.0}'].join('\n');
 
-  it('reads the default of SPECTER_VERSION', () => {
+  it('reads the default of SCRYLUX_VERSION', () => {
     expect(composeDefaultVersion(compose)).toBe('0.1.0');
   });
 
   it('reads a pre-release default too', () => {
-    expect(composeDefaultVersion('image: x:${SPECTER_VERSION:-0.1.0-rc.1}')).toBe('0.1.0-rc.1');
+    expect(composeDefaultVersion('image: x:${SCRYLUX_VERSION:-0.1.0-rc.1}')).toBe('0.1.0-rc.1');
   });
 
   it('returns nothing for a file with no such default', () => {
     expect(composeDefaultVersion('services: {}')).toBeNull();
     expect(composeDefaultVersion('image: x:${OTHER:-0.1.0}')).toBeNull();
-    expect(composeDefaultVersion('image: x:${SPECTER_VERSION}')).toBeNull();
+    expect(composeDefaultVersion('image: x:${SCRYLUX_VERSION}')).toBeNull();
   });
 });
 
@@ -166,13 +166,13 @@ describe('pinComposeVersion', () => {
   const compose = [
     'services:',
     '  app:',
-    '    image: ghcr.io/shivamsaraswat/specter:${SPECTER_VERSION:-0.1.0}',
+    '    image: ghcr.io/shivamsaraswat/scrylux:${SCRYLUX_VERSION:-0.1.0}',
     '    ports: ["127.0.0.1:${PORT:-3000}:3000"]',
   ].join('\n');
 
   it('replaces the default for a pre-release and changes nothing else', () => {
     const pinned = pinComposeVersion(compose, '0.1.0-rc.1');
-    expect(pinned).toBe(compose.replace('${SPECTER_VERSION:-0.1.0}', '${SPECTER_VERSION:-0.1.0-rc.1}'));
+    expect(pinned).toBe(compose.replace('${SCRYLUX_VERSION:-0.1.0}', '${SCRYLUX_VERSION:-0.1.0-rc.1}'));
     expect(pinned).toContain('${PORT:-3000}');
   });
 
@@ -181,8 +181,8 @@ describe('pinComposeVersion', () => {
   });
 
   it('throws on a file with no default to replace', () => {
-    expect(() => pinComposeVersion('services: {}', '0.1.0-rc.1')).toThrow(/SPECTER_VERSION/);
-    expect(() => pinComposeVersion('services: {}', '0.1.0')).toThrow(/SPECTER_VERSION/);
+    expect(() => pinComposeVersion('services: {}', '0.1.0-rc.1')).toThrow(/SCRYLUX_VERSION/);
+    expect(() => pinComposeVersion('services: {}', '0.1.0')).toThrow(/SCRYLUX_VERSION/);
   });
 });
 
@@ -199,11 +199,11 @@ describe('labels', () => {
       'org.opencontainers.image.title',
       'org.opencontainers.image.version',
     ]);
-    expect(labels['org.opencontainers.image.source']).toBe('https://github.com/shivamsaraswat/specter');
+    expect(labels['org.opencontainers.image.source']).toBe('https://github.com/shivamsaraswat/scrylux');
     expect(labels['org.opencontainers.image.version']).toBe('0.1.0');
     expect(labels['org.opencontainers.image.revision']).toBe(sha);
     expect(labels['org.opencontainers.image.licenses']).toBe('Apache-2.0');
-    expect(labels['org.opencontainers.image.title']).toBe('Specter');
+    expect(labels['org.opencontainers.image.title']).toBe('Scrylux');
     expect(labels['org.opencontainers.image.description']?.trim()).toBeTruthy();
   });
 
@@ -282,7 +282,7 @@ describe('checkVersions', () => {
   it('names the compose file when its default differs or is missing', () => {
     expect(said({ composeDefault: '0.2.0' })).toContain('docker-compose.release.yml');
     expect(said({ composeDefault: '0.2.0' })).toContain('0.2.0');
-    expect(said({ composeDefault: null })).toMatch(/no SPECTER_VERSION default/);
+    expect(said({ composeDefault: null })).toMatch(/no SCRYLUX_VERSION default/);
   });
 
   it('names the heading expected when the changelog has no dated entry for the version', () => {

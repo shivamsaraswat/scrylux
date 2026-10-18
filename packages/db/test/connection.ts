@@ -2,7 +2,7 @@ import pg from 'pg';
 
 // The database dedicated to this package's tests. global-setup.ts drops and recreates it on every
 // run, so edits to unmerged migration files are always re-applied (research.md #14).
-export const TEST_DB = 'specter_db_test';
+export const TEST_DB = 'scrylux_db_test';
 
 // SQL identifiers (table, column and database names) cannot be query parameters. Wherever one is
 // built into a statement it is a constant, checked against a fixed list or strict pattern, and always

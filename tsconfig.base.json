@@ -12,7 +12,7 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "declaration": false,
-    "customConditions": ["@specter/source"],
+    "customConditions": ["@scrylux/source"],
     "sourceMap": true
   }
 }

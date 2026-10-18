@@ -1,4 +1,4 @@
-import { ThreatModelRecord, type ImportSummary } from '@specter/core';
+import { ThreatModelRecord, type ImportSummary } from '@scrylux/core';
 import { kdb } from '../../db.js';
 import { orNotFound } from '../../v1/errors.js';
 import { checkPlan, requireUsableNames, summarize, type ImportPlan, type PlanElement } from './plan.js';

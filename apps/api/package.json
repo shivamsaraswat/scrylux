@@ -1,5 +1,5 @@
 {
-  "name": "@specter/api",
+  "name": "@scrylux/api",
   "private": true,
   "version": "0.1.0",
   "license": "Apache-2.0",
@@ -7,13 +7,13 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "dev": "tsx watch --conditions=@specter/source src/server.ts",
+    "dev": "tsx watch --conditions=@scrylux/source src/server.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "migrate": "tsx --conditions=@specter/source src/migrate.ts",
-    "openapi": "tsx --conditions=@specter/source src/v1/openapi.ts",
-    "formats": "tsx --conditions=@specter/source src/exchange/schema.ts",
+    "migrate": "tsx --conditions=@scrylux/source src/migrate.ts",
+    "openapi": "tsx --conditions=@scrylux/source src/v1/openapi.ts",
+    "formats": "tsx --conditions=@scrylux/source src/exchange/schema.ts",
     "start": "node dist/server.js"
   },
   "engines": {
@@ -21,9 +21,9 @@
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.1148.0",
-    "@specter/core": "workspace:*",
-    "@specter/db": "workspace:*",
-    "@specter/threat-library": "workspace:*",
+    "@scrylux/core": "workspace:*",
+    "@scrylux/db": "workspace:*",
+    "@scrylux/threat-library": "workspace:*",
     "bcryptjs": "^3.0.3",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",

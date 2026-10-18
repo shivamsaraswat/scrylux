@@ -1,4 +1,4 @@
-import { FLAG_HINTS, flagLabel } from '@specter/core';
+import { FLAG_HINTS, flagLabel } from '@scrylux/core';
 import type { FlagState } from './properties-model.js';
 
 const OPTIONS: readonly { value: FlagState; text: string }[] = [

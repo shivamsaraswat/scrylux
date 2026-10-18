@@ -1,4 +1,4 @@
-import { RISK_LEVELS, THREAT_STATUSES, compareByRisk, uuid, type RiskLevel, type ThreatRecord, type ThreatStatus } from '@specter/core';
+import { RISK_LEVELS, THREAT_STATUSES, compareByRisk, uuid, type RiskLevel, type ThreatRecord, type ThreatStatus } from '@scrylux/core';
 
 // The threat list's filters and order, carried in the page's address so a filtered list survives a reload and can
 // be shared as a link (spec FR-019, FR-020; data-model.md §5). Nothing here is stored on the server. The address

@@ -13,7 +13,7 @@ import {
   type StrideCategory,
   type ThreatRecord,
   type ThreatStatus,
-} from '@specter/core';
+} from '@scrylux/core';
 import { useState, type FormEvent } from 'react';
 import { zodFieldErrors } from '../api/errors.js';
 import { ElementOptions } from './ElementOptions.js';

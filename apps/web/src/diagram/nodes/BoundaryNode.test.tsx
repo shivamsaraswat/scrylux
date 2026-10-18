@@ -1,4 +1,4 @@
-import { MIN_BOUNDARY_SIZE } from '@specter/core';
+import { MIN_BOUNDARY_SIZE } from '@scrylux/core';
 import { ReactFlow, ReactFlowProvider, type Node } from '@xyflow/react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';

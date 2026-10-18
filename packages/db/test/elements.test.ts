@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { MAX_ELEMENTS } from '@specter/core';
+import { MAX_ELEMENTS } from '@scrylux/core';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -351,7 +351,7 @@ describe('elements: the limit per threat model (FR-001a, 013)', () => {
     await expect(insertOne()).resolves.toBeDefined();
   });
 
-  it('keeps the limit in the migration equal to MAX_ELEMENTS in @specter/core', async () => {
+  it('keeps the limit in the migration equal to MAX_ELEMENTS in @scrylux/core', async () => {
     const sql = await readFile(new URL('../migrations/013_element_limit.sql', import.meta.url), 'utf8');
     const match = /max_elements\s+CONSTANT\s+integer\s*:=\s*(\d+)/i.exec(sql);
     expect(match, 'the migration must declare max_elements CONSTANT integer := <n>').not.toBeNull();

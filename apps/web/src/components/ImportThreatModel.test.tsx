@@ -1,4 +1,4 @@
-import { IMPORT_MAX_BYTES } from '@specter/core';
+import { IMPORT_MAX_BYTES } from '@scrylux/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -20,8 +20,8 @@ const IMPORT = 'POST /api/v1/projects/:id/imports';
 const LIST = 'GET /api/v1/projects/:id/threat-models';
 const NEW_ID = '55555555-5555-4555-8555-555555555555';
 
-const specterFile = (name = 'Checkout') => ({
-  format: 'specter',
+const scryluxFile = (name = 'Checkout') => ({
+  format: 'scrylux',
   format_version: 1,
   exported_at: '2026-10-10T09:30:00.000Z',
   project: { name: 'Payments' },
@@ -88,17 +88,17 @@ describe('ImportThreatModel', () => {
     Object.defineProperty(big, 'size', { value: IMPORT_MAX_BYTES + 1 });
     const read = vi.spyOn(big, 'text');
     await userEvent.upload(screen.getByLabelText('File to import'), big);
-    expect(await screen.findByText('This file is larger than 64 MiB, the most Specter can import.')).toBeTruthy();
+    expect(await screen.findByText('This file is larger than 64 MiB, the most Scrylux can import.')).toBeTruthy();
     expect(read).not.toHaveBeenCalled();
     expect(checks(api)).toHaveLength(0);
   });
 
-  const READS = 'Specter imports Specter files (version 1), OTM 0.2.0 files in JSON, and Threat Dragon version 2 files.';
+  const READS = 'Scrylux imports Scrylux files (version 1), OTM 0.2.0 files in JSON, and Threat Dragon version 2 files.';
   it.each([
     ['not JSON', 'this is not json', `This file isn't JSON. ${READS}`],
-    ['JSON of no format Specter reads', { hello: 1 }, `This file isn't in a format Specter reads. ${READS}`],
-    ['a JSON array', [], `This file isn't in a format Specter reads. ${READS}`],
-  ])('says which files Specter imports for %s, and sends nothing', async (_label, body, message) => {
+    ['JSON of no format Scrylux reads', { hello: 1 }, `This file isn't in a format Scrylux reads. ${READS}`],
+    ['a JSON array', [], `This file isn't in a format Scrylux reads. ${READS}`],
+  ])('says which files Scrylux imports for %s, and sends nothing', async (_label, body, message) => {
     const api = setup({});
     await open();
     await upload(body);
@@ -114,28 +114,28 @@ describe('ImportThreatModel', () => {
     expect(checks(api)).toHaveLength(0);
   });
 
-  describe('a Specter file', () => {
+  describe('a Scrylux file', () => {
     it('is checked, and the preview names the format, the model, its status and its counts', async () => {
       const api = setup({ [CHECK]: () => json(200, summary()) });
       await open();
-      await upload(specterFile());
+      await upload(scryluxFile());
       const heading = await screen.findByRole('heading', { name: 'Ready to import' });
       expect(document.activeElement).toBe(heading);
-      expect(screen.getByText(/Specter file/)).toBeTruthy();
+      expect(screen.getByText(/Scrylux file/)).toBeTruthy();
       expect(screen.getByLabelText<HTMLInputElement>('Name of threat model 1').value).toBe('Checkout');
       expect(screen.getByText(/in review/)).toBeTruthy();
       expect(screen.getByText(/8 elements, 10 threats, 4 mitigations/)).toBeTruthy();
       expect(screen.getByText('Everything in this file will be imported.')).toBeTruthy();
       expect(checks(api)).toHaveLength(1);
-      expect(checks(api)[0]?.body).toEqual({ format: 'specter', file: specterFile() });
+      expect(checks(api)[0]?.body).toEqual({ format: 'scrylux', file: scryluxFile() });
     });
 
     it('says what it is doing while the check runs', async () => {
       let release: (response: Response) => void = () => undefined;
       setup({ [CHECK]: () => new Promise<Response>((resolve) => (release = resolve)) });
       await open();
-      await upload(specterFile());
-      expect((await screen.findByRole('status')).textContent).toBe('Checking Specter file…');
+      await upload(scryluxFile());
+      expect((await screen.findByRole('status')).textContent).toBe('Checking Scrylux file…');
       expect(screen.getByLabelText<HTMLInputElement>('File to import').disabled).toBe(true);
       release(json(200, summary()));
       await screen.findByRole('heading', { name: 'Ready to import' });
@@ -144,7 +144,7 @@ describe('ImportThreatModel', () => {
     it('shows a refusal from the check, with the message, and offers another file', async () => {
       setup({ [CHECK]: () => json(400, { error: 'file.threats.3.origin: AI-drafted threats cannot be imported yet' }) });
       await open();
-      await upload(specterFile());
+      await upload(scryluxFile());
       expect(await screen.findByText("This file can't be imported")).toBeTruthy();
       expect(screen.getByText('file.threats.3.origin: AI-drafted threats cannot be imported yet')).toBeTruthy();
       await userEvent.click(screen.getByRole('button', { name: 'Choose another file' }));
@@ -268,7 +268,7 @@ describe('ImportThreatModel', () => {
     it('shows "taken" on the field and disables Import', async () => {
       setup({ [CHECK]: () => json(200, summary({ name: 'Existing model', name_issue: 'taken' })) });
       await open();
-      await upload(specterFile('Existing model'));
+      await upload(scryluxFile('Existing model'));
       expect(await screen.findByText('A threat model with this name already exists in this project.')).toBeTruthy();
       expect(importButton().disabled).toBe(true);
       expect(screen.getByLabelText('Name of threat model 1').getAttribute('aria-invalid')).toBe('true');
@@ -277,7 +277,7 @@ describe('ImportThreatModel', () => {
     it('is worked out in the browser while the name is edited: no request is sent, and Import is enabled once it is usable', async () => {
       const api = setup({ [CHECK]: () => json(200, summary({ name: 'Existing model', name_issue: 'taken' })) });
       await open();
-      await upload(specterFile('Existing model'));
+      await upload(scryluxFile('Existing model'));
       await screen.findByText('A threat model with this name already exists in this project.');
       const field = screen.getByLabelText('Name of threat model 1');
       await userEvent.clear(field);
@@ -301,20 +301,20 @@ describe('ImportThreatModel', () => {
         [IMPORT]: () => json(201, { threat_models: [created()], summary: summary() }),
       });
       await open();
-      await upload(specterFile());
+      await upload(scryluxFile());
       await screen.findByRole('heading', { name: 'Ready to import' });
       await userEvent.click(importButton());
       expect(await screen.findByText('Imported model page')).toBeTruthy();
       const sent = api.callsTo('POST', `/api/v1/projects/${PROJECT_ID}/imports`);
       expect(sent).toHaveLength(1);
-      expect(sent[0]?.body).toEqual({ format: 'specter', names: ['Checkout'], file: specterFile() });
+      expect(sent[0]?.body).toEqual({ format: 'scrylux', names: ['Checkout'], file: scryluxFile() });
     });
 
     it('says it is importing, and disables both buttons meanwhile', async () => {
       let release: (response: Response) => void = () => undefined;
       setup({ [CHECK]: () => json(200, summary()), [IMPORT]: () => new Promise<Response>((resolve) => (release = resolve)) });
       await open();
-      await upload(specterFile());
+      await upload(scryluxFile());
       await screen.findByRole('heading', { name: 'Ready to import' });
       await userEvent.click(importButton());
       expect(screen.getByRole('status').textContent).toBe('Importing…');
@@ -330,7 +330,7 @@ describe('ImportThreatModel', () => {
         [IMPORT]: () => json(409, { error: 'names.0: a threat model with this name already exists in this project' }),
       });
       await open();
-      await upload(specterFile());
+      await upload(scryluxFile());
       await screen.findByRole('heading', { name: 'Ready to import' });
       const field = screen.getByLabelText('Name of threat model 1');
       await userEvent.clear(field);
@@ -344,7 +344,7 @@ describe('ImportThreatModel', () => {
     it('shows another failure as a message, and stays on the preview', async () => {
       setup({ [CHECK]: () => json(200, summary()), [IMPORT]: () => json(404, { error: 'Project not found' }) });
       await open();
-      await upload(specterFile());
+      await upload(scryluxFile());
       await screen.findByRole('heading', { name: 'Ready to import' });
       await userEvent.click(importButton());
       expect((await screen.findByRole('alert')).textContent).toContain('This project no longer exists.');
@@ -365,7 +365,7 @@ describe('ImportThreatModel', () => {
     const importedOne = async (notes: unknown[]) => {
       setup({ [CHECK]: () => json(200, one(previewNotes)), [IMPORT]: () => answered(notes) });
       await open();
-      await upload(specterFile('Shop'));
+      await upload(scryluxFile('Shop'));
       await screen.findByRole('heading', { name: 'Ready to import' });
       await userEvent.click(importButton());
     };
@@ -393,7 +393,7 @@ describe('ImportThreatModel', () => {
       const importedSeveral = async () => {
         setup({ [CHECK]: () => json(200, one(previewNotes)), [IMPORT]: () => json(201, several) });
         await open();
-        await upload(specterFile('Shop'));
+        await upload(scryluxFile('Shop'));
         await screen.findByRole('heading', { name: 'Ready to import' });
         await userEvent.click(importButton());
         return screen.findByRole('heading', { name: 'Imported' });
@@ -404,7 +404,7 @@ describe('ImportThreatModel', () => {
         expect(document.activeElement).toBe(heading);
         expect(screen.queryByText('Imported model page')).toBeNull();
         expect(screen.getByText('Trust boundary lines (not imported)')).toBeTruthy();
-        expect(screen.getByText('Components with a type Specter does not have (imported as process)')).toBeTruthy();
+        expect(screen.getByText('Components with a type Scrylux does not have (imported as process)')).toBeTruthy();
         expect(screen.queryByText('Only in the preview')).toBeNull();
         expect(screen.getByText("2 parts of this file weren't carried over or were changed to fit.")).toBeTruthy();
       });
@@ -442,7 +442,7 @@ describe('ImportThreatModel', () => {
     const open1 = async () => {
       setup({ [CHECK]: () => json(200, summary({}, notes)) });
       await open();
-      await upload(specterFile());
+      await upload(scryluxFile());
       await screen.findByRole('heading', { name: 'Ready to import' });
     };
 
@@ -458,10 +458,10 @@ describe('ImportThreatModel', () => {
       expect(headings).toEqual([
         'Trust boundary lines (not imported)',
         'Fields with no place in a threat model (not imported)',
-        'Components with a type Specter does not have (imported as process)',
-        'Statuses Specter does not have (imported with the default)',
+        'Components with a type Scrylux does not have (imported as process)',
+        'Statuses Scrylux does not have (imported with the default)',
         'Severities or likelihoods that were missing or unknown (imported as Medium)',
-        'Positions Specter could not hold',
+        'Positions Scrylux could not hold',
       ]);
       const lines = screen.getAllByRole('list').filter((list) => list.closest('[aria-label="Not carried over"]') !== null);
       expect(lines.length).toBeGreaterThan(1);
@@ -475,18 +475,18 @@ describe('ImportThreatModel', () => {
       expect(within(items[0] as HTMLElement).getByText('file.detail.diagrams.0.cells.3').tagName).toBe('CODE');
       const fields = screen.getByRole('heading', { name: 'Fields with no place in a threat model (not imported)' }).parentElement as HTMLElement;
       expect(within(fields).getByText(/API/).textContent).toContain('privilege level');
-      const layout = screen.getByRole('heading', { name: 'Positions Specter could not hold' }).parentElement as HTMLElement;
+      const layout = screen.getByRole('heading', { name: 'Positions Scrylux could not hold' }).parentElement as HTMLElement;
       expect(layout.textContent).toContain('enlarged to 40 × 40');
       const severity = screen.getByRole('heading', { name: /Severities or likelihoods/ }).parentElement as HTMLElement;
       expect(severity.textContent).toContain('TBA');
-      const status = screen.getByRole('heading', { name: /Statuses Specter does not have/ }).parentElement as HTMLElement;
+      const status = screen.getByRole('heading', { name: /Statuses Scrylux does not have/ }).parentElement as HTMLElement;
       expect(status.textContent).toContain('Transferred');
     });
 
     it('shows hostile names as text', async () => {
       setup({ [CHECK]: () => json(200, summary({}, [{ path: 'file.assets.0', kind: 'not_imported.asset', label: '<img src=x onerror=alert(1)>' }])) });
       await open();
-      await upload(specterFile());
+      await upload(scryluxFile());
       await screen.findByRole('heading', { name: 'Ready to import' });
       expect(screen.getByText('<img src=x onerror=alert(1)>')).toBeTruthy();
       expect(document.querySelector('img')).toBeNull();
@@ -496,7 +496,7 @@ describe('ImportThreatModel', () => {
   it('closes on Cancel and sends nothing more', async () => {
     const api = setup({ [CHECK]: () => json(200, summary()) });
     await open();
-    await upload(specterFile());
+    await upload(scryluxFile());
     await screen.findByRole('heading', { name: 'Ready to import' });
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByLabelText('File to import')).toBeNull();
@@ -507,7 +507,7 @@ describe('ImportThreatModel', () => {
   it('shows hostile text as text', async () => {
     setup({ [CHECK]: () => json(200, summary({ name: '<img src=x onerror=alert(1)>' })) });
     await open();
-    await upload(specterFile('<img src=x onerror=alert(1)>'));
+    await upload(scryluxFile('<img src=x onerror=alert(1)>'));
     const field = await screen.findByLabelText<HTMLInputElement>('Name of threat model 1');
     expect(field.value).toBe('<img src=x onerror=alert(1)>');
     expect(document.querySelector('img')).toBeNull();

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { SpecterFileV1 } from '../../src/index.js';
+import { ScryluxFileV1 } from '../../src/index.js';
 
-// The Specter file, format version 1 (contracts/specter-file.md, data-model.md): the field rules of the create
+// The Scrylux file, format version 1 (contracts/scrylux-file.md, data-model.md): the field rules of the create
 // inputs, with ids that are opaque strings and no key left out.
 
 type Row = Record<string, unknown>;
 type Mutable = { [key: string]: unknown; threat_model: Row; elements: Row[]; threats: Row[]; mitigations: Row[] };
 
 const valid = (): Mutable => ({
-  format: 'specter',
+  format: 'scrylux',
   format_version: 1,
   exported_at: '2026-10-10T09:30:00.000Z',
   project: { name: 'Payments' },
@@ -29,42 +29,42 @@ const valid = (): Mutable => ({
 function refusal(change: (file: Mutable) => void): string[] {
   const file = valid();
   change(file);
-  const result = SpecterFileV1.safeParse(file);
+  const result = ScryluxFileV1.safeParse(file);
   expect(result.success, 'the change should be refused').toBe(false);
   return result.error?.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`) ?? [];
 }
 
-describe('SpecterFileV1 accepts', () => {
+describe('ScryluxFileV1 accepts', () => {
   it('a complete file, unchanged', () => {
-    expect(SpecterFileV1.parse(valid())).toEqual(valid());
+    expect(ScryluxFileV1.parse(valid())).toEqual(valid());
   });
 
   it('an empty model', () => {
     const file = { ...valid(), elements: [], threats: [], mitigations: [] };
-    expect(SpecterFileV1.safeParse(file).success).toBe(true);
+    expect(ScryluxFileV1.safeParse(file).success).toBe(true);
   });
 
   it('origin ai: refusing it is the planner’s rule, not the schema’s', () => {
-    expect(SpecterFileV1.safeParse({ ...valid(), threats: [{ ...valid().threats[1], origin: 'ai' }] }).success).toBe(true);
+    expect(ScryluxFileV1.safeParse({ ...valid(), threats: [{ ...valid().threats[1], origin: 'ai' }] }).success).toBe(true);
   });
 
   it('an empty or over-long threat model name: a name issue is reported, never refused here', () => {
-    expect(SpecterFileV1.safeParse({ ...valid(), threat_model: { ...valid().threat_model, name: '' } }).success).toBe(true);
-    expect(SpecterFileV1.safeParse({ ...valid(), threat_model: { ...valid().threat_model, name: 'x'.repeat(300) } }).success).toBe(true);
+    expect(ScryluxFileV1.safeParse({ ...valid(), threat_model: { ...valid().threat_model, name: '' } }).success).toBe(true);
+    expect(ScryluxFileV1.safeParse({ ...valid(), threat_model: { ...valid().threat_model, name: 'x'.repeat(300) } }).success).toBe(true);
   });
 
   it('trims tags and text, as the create inputs do', () => {
     const file = valid();
     file.elements[1]!.properties = { tags: [' Node.js '] };
     file.elements[1]!.name = '  API  ';
-    const parsed = SpecterFileV1.parse(file);
+    const parsed = ScryluxFileV1.parse(file);
     expect(parsed.elements[1]?.properties).toEqual({ tags: ['Node.js'] });
     expect(parsed.elements[1]?.name).toBe('API');
   });
 });
 
-describe('SpecterFileV1 refuses, naming the field', () => {
-  it('a format other than specter', () => {
+describe('ScryluxFileV1 refuses, naming the field', () => {
+  it('a format other than scrylux', () => {
     expect(refusal((file) => { file.format = 'otm'; }).join('\n')).toContain('format:');
   });
 
@@ -127,17 +127,17 @@ describe('SpecterFileV1 refuses, naming the field', () => {
     for (const key of ['id', 'type', 'name', 'properties', 'layout', 'parent_boundary_id', 'source_element_id', 'target_element_id']) {
       const file = valid();
       delete file.elements[1]![key];
-      expect(SpecterFileV1.safeParse(file).success, key).toBe(false);
+      expect(ScryluxFileV1.safeParse(file).success, key).toBe(false);
     }
     for (const key of ['element_id', 'category', 'title', 'description', 'likelihood', 'impact', 'status', 'status_reason', 'origin', 'library_ref', 'stale']) {
       const file = valid();
       delete file.threats[0]![key];
-      expect(SpecterFileV1.safeParse(file).success, key).toBe(false);
+      expect(ScryluxFileV1.safeParse(file).success, key).toBe(false);
     }
     for (const top of ['format', 'format_version', 'exported_at', 'project', 'threat_model', 'elements', 'threats', 'mitigations']) {
       const file = valid();
       delete file[top];
-      expect(SpecterFileV1.safeParse(file).success, top).toBe(false);
+      expect(ScryluxFileV1.safeParse(file).success, top).toBe(false);
     }
   });
 

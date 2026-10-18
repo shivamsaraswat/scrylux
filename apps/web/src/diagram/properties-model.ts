@@ -1,4 +1,4 @@
-import { ELEMENT_FLAGS, type ElementType, type JsonValue } from '@specter/core';
+import { ELEMENT_FLAGS, type ElementType, type JsonValue } from '@scrylux/core';
 
 // An element's `properties` as the editor works with them: tags, and flags that are yes (true) or no
 // (false) when set and not assessed when absent (spec FR-015a). Anything else found in the stored object is

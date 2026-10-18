@@ -8,7 +8,7 @@ import {
   type Likelihood,
   type StrideCategory,
   type UnmetCondition,
-} from '@specter/core';
+} from '@scrylux/core';
 import { LibraryInputError } from './errors.js';
 import type { Rule } from './rule-schema.js';
 import { NODE_TYPES, type NodeType } from './stride.js';
@@ -94,7 +94,7 @@ function fill(text: string, names: Readonly<Record<string, string | undefined>>)
   return text.replace(PLACEHOLDER, (placeholder, name: string) => names[name] ?? placeholder);
 }
 
-// Cut to the limit in code points (as @specter/core counts them), ending in an ellipsis (FR-004b).
+// Cut to the limit in code points (as @scrylux/core counts them), ending in an ellipsis (FR-004b).
 function shorten(text: string, max: number): string {
   if (text.length <= max) return text;
   const characters = [...text];

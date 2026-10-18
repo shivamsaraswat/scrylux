@@ -27,7 +27,7 @@ export function LoginPage() {
 
   return (
     <main>
-      <h1>Sign in to Specter</h1>
+      <h1>Sign in to Scrylux</h1>
       {endedMessage && <p role="status">{endedMessage}</p>}
       <SignInForm onSubmit={signIn} />
     </main>

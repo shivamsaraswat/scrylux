@@ -1,13 +1,13 @@
-import { NODE_SIZE, OTM_EXPORT, SPECTER_FORMAT_VERSION, type ElementRecord, type MitigationRecord, type ThreatRecord } from '@specter/core';
+import { NODE_SIZE, OTM_EXPORT, SCRYLUX_FORMAT_VERSION, type ElementRecord, type MitigationRecord, type ThreatRecord } from '@scrylux/core';
 import type { Snapshot } from '../snapshot.js';
 import { shorten } from './import/notes.js';
 import { sortElements, sortMitigations, sortThreats } from './order.js';
 
 // The OTM 0.2.0 file an export writes (contracts/otm-mapping.md, "Export"). The standard fields describe the model in
 // OTM's own terms, so other tools can read it: trust zones, components, data flows, threats, mitigations and their
-// states. Everything OTM has no field for is kept in `attributes.specter` of each object, which is what lets Specter read
-// its own file back without losing anything (FR-011). OTM requires a few values Specter does not have; they are the
-// constants of OTM_EXPORT, each documented in docs/formats/otm.md. The order is the Specter file's, so two exports of an
+// states. Everything OTM has no field for is kept in `attributes.scrylux` of each object, which is what lets Scrylux read
+// its own file back without losing anything (FR-011). OTM requires a few values Scrylux does not have; they are the
+// constants of OTM_EXPORT, each documented in docs/formats/otm.md. The order is the Scrylux file's, so two exports of an
 // unchanged model differ only in the export time (FR-005).
 
 type Obj = Record<string, unknown>;
@@ -106,7 +106,7 @@ export function buildOtmFile(snapshot: Snapshot, exportedAt: Date): ExportedOtm 
       risk: { trustRating: OTM_EXPORT.trustRating },
       ...(boundary.parent_boundary_id === null ? {} : { parent: { trustZone: boundary.parent_boundary_id } }),
       ...(representations === undefined ? {} : { representations }),
-      attributes: { specter: { layout: boundary.layout, parent_boundary_id: boundary.parent_boundary_id } },
+      attributes: { scrylux: { layout: boundary.layout, parent_boundary_id: boundary.parent_boundary_id } },
     };
   });
   // OTM wants every component in a zone, so a node outside every boundary goes in a zone of its own, which is written
@@ -117,7 +117,7 @@ export function buildOtmFile(snapshot: Snapshot, exportedAt: Date): ExportedOtm 
       name: OTM_EXPORT.outsideZone.name,
       type: 'trust-boundary',
       risk: { trustRating: OTM_EXPORT.trustRating },
-      attributes: { specter: { outside: true } },
+      attributes: { scrylux: { outside: true } },
     });
   }
 
@@ -132,7 +132,7 @@ export function buildOtmFile(snapshot: Snapshot, exportedAt: Date): ExportedOtm 
       ...(tags === undefined ? {} : { tags }),
       ...(representations === undefined ? {} : { representations }),
       ...referencesOf(node),
-      attributes: { specter: { type: node.type, flags: flagsOf(node), layout: node.layout, parent_boundary_id: node.parent_boundary_id } },
+      attributes: { scrylux: { type: node.type, flags: flagsOf(node), layout: node.layout, parent_boundary_id: node.parent_boundary_id } },
     };
   });
 
@@ -146,7 +146,7 @@ export function buildOtmFile(snapshot: Snapshot, exportedAt: Date): ExportedOtm 
       destination: flow.target_element_id,
       ...(tags === undefined ? {} : { tags }),
       ...referencesOf(flow),
-      attributes: { specter: { flags: flagsOf(flow) } },
+      attributes: { scrylux: { flags: flagsOf(flow) } },
     };
   });
 
@@ -157,7 +157,7 @@ export function buildOtmFile(snapshot: Snapshot, exportedAt: Date): ExportedOtm 
       id: snapshot.model.id,
       description: null,
       attributes: {
-        specter: { format_version: SPECTER_FORMAT_VERSION, exported_at: exportedAt.toISOString(), status: snapshot.model.status, methodology: snapshot.model.methodology },
+        scrylux: { format_version: SCRYLUX_FORMAT_VERSION, exported_at: exportedAt.toISOString(), status: snapshot.model.status, methodology: snapshot.model.methodology },
       },
     },
     representations: [{ name: 'Diagram', id: 'diagram', type: 'diagram' }],
@@ -171,7 +171,7 @@ export function buildOtmFile(snapshot: Snapshot, exportedAt: Date): ExportedOtm 
       categories: [threat.category],
       risk: { likelihood: OTM_EXPORT.risk[threat.likelihood], impact: OTM_EXPORT.risk[threat.impact] },
       attributes: {
-        specter: {
+        scrylux: {
           element_id: threat.element_id,
           likelihood: threat.likelihood,
           impact: threat.impact,
@@ -188,7 +188,7 @@ export function buildOtmFile(snapshot: Snapshot, exportedAt: Date): ExportedOtm 
       name: mitigationName(mitigation),
       description: mitigation.description,
       riskReduction: OTM_EXPORT.riskReduction,
-      attributes: { specter: { threat_id: mitigation.threat_id, status: mitigation.status, external_ref: mitigation.external_ref } },
+      attributes: { scrylux: { threat_id: mitigation.threat_id, status: mitigation.status, external_ref: mitigation.external_ref } },
     })),
   };
 }

@@ -1,17 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { OtmFile, SpecterFileV1 } from '@specter/core';
+import { OtmFile, ScryluxFileV1 } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { buildOtmFile } from '../../src/exchange/otm-export.js';
 import { parseFile } from '../../src/exchange/import/parse.js';
 import { checkPlan, type ImportPlan } from '../../src/exchange/import/plan.js';
 import { planOtm } from '../../src/exchange/import/otm.js';
-import { planSpecter } from '../../src/exchange/import/specter.js';
-import { buildSpecterFile } from '../../src/exchange/specter-export.js';
+import { planScrylux } from '../../src/exchange/import/scrylux.js';
+import { buildScryluxFile } from '../../src/exchange/scrylux-export.js';
 import { HttpError } from '../../src/v1/errors.js';
 import { snapshotOf, us1Model } from './fixtures.js';
 
-// An OTM file becomes a plan (contracts/otm-mapping.md): strictly when Specter wrote it, and by a fixed mapping when
+// An OTM file becomes a plan (contracts/otm-mapping.md): strictly when Scrylux wrote it, and by a fixed mapping when
 // another tool did (FR-011, FR-012, FR-016, SC-003).
 
 type Obj = Record<string, unknown>;
@@ -19,7 +19,7 @@ const fixture = (name: string): Obj => JSON.parse(readFileSync(fileURLToPath(new
 const plan = (file: unknown): ImportPlan => planOtm(OtmFile.parse(file));
 const checked = (file: unknown): ImportPlan => checkPlan(plan(file), { existingNames: [] });
 const at = new Date('2026-10-10T09:30:00.000Z');
-const specterOtm = (): Obj => JSON.parse(JSON.stringify(buildOtmFile(snapshotOf(us1Model()), at))) as Obj;
+const scryluxOtm = (): Obj => JSON.parse(JSON.stringify(buildOtmFile(snapshotOf(us1Model()), at))) as Obj;
 
 function refusal(run: () => unknown): HttpError {
   try {
@@ -34,61 +34,61 @@ function refusal(run: () => unknown): HttpError {
 const stripPaths = (value: ImportPlan): unknown =>
   JSON.parse(JSON.stringify(value, (key, inner: unknown) => (key === 'path' && typeof inner === 'string' && inner.startsWith('file.') ? undefined : inner)));
 
-describe('an OTM file written by Specter (strict)', () => {
-  it('plans exactly what the same model’s Specter file plans, with no notes', () => {
-    const viaOtm = plan(specterOtm());
-    const viaSpecter = planSpecter(SpecterFileV1.parse(buildSpecterFile(snapshotOf(us1Model()), at)));
+describe('an OTM file written by Scrylux (strict)', () => {
+  it('plans exactly what the same model’s Scrylux file plans, with no notes', () => {
+    const viaOtm = plan(scryluxOtm());
+    const viaScrylux = planScrylux(ScryluxFileV1.parse(buildScryluxFile(snapshotOf(us1Model()), at)));
     expect(viaOtm.notes).toEqual([]);
-    expect(stripPaths(viaOtm)).toEqual(stripPaths(viaSpecter));
+    expect(stripPaths(viaOtm)).toEqual(stripPaths(viaScrylux));
   });
 
-  it('names the place in the OTM file, not in a Specter file', () => {
-    const rows = plan(specterOtm()).models[0]?.elements.map((element) => element.path);
+  it('names the place in the OTM file, not in a Scrylux file', () => {
+    const rows = plan(scryluxOtm()).models[0]?.elements.map((element) => element.path);
     expect(rows?.slice(0, 2)).toEqual(['file.trustZones.0', 'file.trustZones.1']);
     expect(rows).toContain('file.components.0');
     expect(rows?.at(-1)).toBe('file.dataflows.1');
   });
 
   it('writes no element for the outside zone', () => {
-    const elements = plan(specterOtm()).models[0]?.elements ?? [];
-    expect(elements.map((element) => element.id)).not.toContain('specter-outside');
+    const elements = plan(scryluxOtm()).models[0]?.elements ?? [];
+    expect(elements.map((element) => element.id)).not.toContain('scrylux-outside');
     expect(elements).toHaveLength(8);
   });
 
-  it('refuses an object without attributes.specter, saying the file was changed outside Specter', () => {
-    const file = specterOtm();
+  it('refuses an object without attributes.scrylux, saying the file was changed outside Scrylux', () => {
+    const file = scryluxOtm();
     delete ((file.components as Obj[])[2] as Obj).attributes;
     const err = refusal(() => plan(file));
     expect(err.status).toBe(400);
     expect(err.message).toBe(
-      'file.components.2.attributes.specter: missing; this file was changed outside Specter (remove project.attributes.specter to import it as another tool\'s file)',
+      'file.components.2.attributes.scrylux: missing; this file was changed outside Scrylux (remove project.attributes.scrylux to import it as another tool\'s file)',
     );
   });
 
   it('refuses an AI-drafted threat, naming it', () => {
-    const file = specterOtm();
-    (((file.threats as Obj[])[3] as Obj).attributes as Obj).specter = { ...(((file.threats as Obj[])[3] as Obj).attributes as Obj).specter as Obj, origin: 'ai' };
+    const file = scryluxOtm();
+    (((file.threats as Obj[])[3] as Obj).attributes as Obj).scrylux = { ...(((file.threats as Obj[])[3] as Obj).attributes as Obj).scrylux as Obj, origin: 'ai' };
     expect(refusal(() => plan(file)).message).toBe('file.threats.3.origin: AI-drafted threats cannot be imported yet');
   });
 
-  it('refuses a rule of the Specter file broken in attributes.specter, naming the place', () => {
-    const file = specterOtm();
-    const open = (file.threats as Obj[]).findIndex((threat) => (((threat.attributes as Obj).specter as Obj).status) === 'open');
-    (((file.threats as Obj[])[open] as Obj).attributes as Obj).specter = { ...(((file.threats as Obj[])[open] as Obj).attributes as Obj).specter as Obj, status_reason: 'why' };
+  it('refuses a rule of the Scrylux file broken in attributes.scrylux, naming the place', () => {
+    const file = scryluxOtm();
+    const open = (file.threats as Obj[]).findIndex((threat) => (((threat.attributes as Obj).scrylux as Obj).status) === 'open');
+    (((file.threats as Obj[])[open] as Obj).attributes as Obj).scrylux = { ...(((file.threats as Obj[])[open] as Obj).attributes as Obj).scrylux as Obj, status_reason: 'why' };
     expect(refusal(() => checked(file)).message).toBe(`file.threats.${open}.status_reason: can only be set on a threat that is accepted or not_applicable`);
   });
 
-  it('refuses a key it does not know in attributes.specter, and a version it does not read', () => {
-    const extra = specterOtm();
-    (((extra.components as Obj[])[0] as Obj).attributes as Obj).specter = { ...(((extra.components as Obj[])[0] as Obj).attributes as Obj).specter as Obj, colour: 'red' };
-    expect(refusal(() => plan(extra)).message).toContain('file.components.0.attributes.specter');
-    const version = specterOtm();
-    (((version.project as Obj).attributes as Obj).specter as Obj).format_version = 2;
-    expect(refusal(() => plan(version)).message).toBe('file.project.attributes.specter.format_version: must be 1; this file is version 2');
+  it('refuses a key it does not know in attributes.scrylux, and a version it does not read', () => {
+    const extra = scryluxOtm();
+    (((extra.components as Obj[])[0] as Obj).attributes as Obj).scrylux = { ...(((extra.components as Obj[])[0] as Obj).attributes as Obj).scrylux as Obj, colour: 'red' };
+    expect(refusal(() => plan(extra)).message).toContain('file.components.0.attributes.scrylux');
+    const version = scryluxOtm();
+    (((version.project as Obj).attributes as Obj).scrylux as Obj).format_version = 2;
+    expect(refusal(() => plan(version)).message).toBe('file.project.attributes.scrylux.format_version: must be 1; this file is version 2');
   });
 
-  it('refuses a field of the Specter file that breaks its rules, naming the OTM object', () => {
-    const file = specterOtm();
+  it('refuses a field of the Scrylux file that breaks its rules, naming the OTM object', () => {
+    const file = scryluxOtm();
     ((file.components as Obj[])[1] as Obj).name = '';
     expect(refusal(() => plan(file)).message).toMatch(/^file\.components\.1\.name: /);
   });
@@ -260,7 +260,7 @@ describe('another tool’s OTM file (adapted)', () => {
       expect(threatsOf(result).map((item) => item.category)).toEqual(['Information Disclosure', 'Information Disclosure', 'Denial of Service']);
     });
 
-    it('notes any other category a threat carries, because Specter keeps one STRIDE category (FR-016)', () => {
+    it('notes any other category a threat carries, because Scrylux keeps one STRIDE category (FR-016)', () => {
       const result = file({
         components: owner,
         threats: [
@@ -392,7 +392,7 @@ describe('another tool’s OTM file (adapted)', () => {
     it('always imports threats as manual, and never reads a rule or a stale mark from the file', () => {
       const result = file({
         components: [component('a', 'process', { threats: [{ threat: 't1', state: 'exposed' }] })],
-        threats: [threat('t1', { attributes: { specter: { origin: 'rule', library_ref: 'x', stale: { reason: 'rule_unknown' } } } })],
+        threats: [threat('t1', { attributes: { scrylux: { origin: 'rule', library_ref: 'x', stale: { reason: 'rule_unknown' } } } })],
       });
       expect(threatsOf(result)[0]).toMatchObject({ origin: 'manual', library_ref: null, stale: null, status_reason: null });
     });
@@ -439,7 +439,7 @@ describe('another tool’s OTM file (adapted)', () => {
       expect(details('not_imported.representation')).toEqual([['file.representations.1', 'Code', undefined]]);
     });
 
-    it('notes nothing for what carries no information: Specter’s own constants, and presentation data', () => {
+    it('notes nothing for what carries no information: Scrylux’s own constants, and presentation data', () => {
       const result = file({
         trustZones: [{ id: 'z1', name: 'Zone', type: 'whatever', risk: { trustRating: 50 }, representations: [{ representation: 'diagram', id: 'ignored-id', name: 'ignored name' }] }],
         components: [component('a', 'process', { parent: { trustZone: 'z1' }, representations: [{ representation: 'diagram', id: 'r', position: { x: 1, y: 1 }, size: { width: 99, height: 99 } }] })],

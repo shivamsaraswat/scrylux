@@ -1,4 +1,4 @@
-import type { ExportFormat } from '@specter/core';
+import type { ExportFormat } from '@scrylux/core';
 import { fileSlug } from '../report/filename.js';
 
 // The name a downloaded export is saved under: <slug>-<YYYY-MM-DD>.<format>.json. The slug is the report's, so a

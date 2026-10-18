@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { compareByRisk, type RiskLevel } from '@specter/core';
+import { compareByRisk, type RiskLevel } from '@scrylux/core';
 import type { Locator, Page } from '@playwright/test';
 import { canvasOf, elementsOf } from './diagram-helpers.js';
 import { apiRequest, apiToken, expect, seedElements, seedModel, signInAsNewAccount, test } from './fixtures.js';

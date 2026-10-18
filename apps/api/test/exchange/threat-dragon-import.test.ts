@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { NOTE_KINDS, ThreatDragonFile } from '@specter/core';
+import { NOTE_KINDS, ThreatDragonFile } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { parseFile } from '../../src/exchange/import/parse.js';
 import { checkPlan, summarize, type ImportPlan } from '../../src/exchange/import/plan.js';
@@ -209,7 +209,7 @@ describe('threats', () => {
     expect(notesOf(result)).toEqual([]);
   });
 
-  it('reads a status Specter has no equivalent for as open, naming it', () => {
+  it('reads a status Scrylux has no equivalent for as open, naming it', () => {
     const result = file([diagram(withThreats(threat('A', { status: 'Transferred' }), threat('B', { status: 'Eliminated' }), threat('C', { status: 'Whatever' })))]);
     expect(model0(result)?.threats.map((item) => item.status)).toEqual(['open', 'open', 'open']);
     expect(notesOf(result).map((item) => [item.kind, item.label, item.detail])).toEqual([
@@ -290,7 +290,7 @@ describe('models', () => {
   });
 });
 
-// Recorded from each file, and checked against it by hand: the cells Specter keeps, and what it lists. `iot-device` has
+// Recorded from each file, and checked against it by hand: the cells Scrylux keeps, and what it lists. `iot-device` has
 // one actor, nine processes, fourteen flows and one store (25 elements), a boundary line and a text block. The CIA and
 // LINDDUN demos import their diagrams and list their threats.
 const RECORDED: Record<string, { elements: number; threats: number; mitigations: number; notes: Record<string, number> }> = {

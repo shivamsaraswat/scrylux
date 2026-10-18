@@ -1,5 +1,5 @@
 // The words the editor uses for each security flag (spec FR-015). The keys are the shared vocabulary in
-// @specter/core; this file only gives them names a person reads.
+// @scrylux/core; this file only gives them names a person reads.
 export const FLAG_LABELS: Record<string, string> = {
   authenticated: 'Authenticated',
   internet_facing: 'Internet facing',

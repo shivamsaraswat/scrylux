@@ -174,7 +174,7 @@ describe('the diagram in the Markdown report', () => {
     const report = crowded(2, MERMAID_MAX_EDGES + 1);
     const markdown = renderMarkdown(report);
     expect(markdown).toContain(
-      `## Diagram\n\n> The diagram has ${2 + MERMAID_MAX_EDGES + 1} elements and is too large to draw here. Its structure is listed under Elements below; the HTML report from Specter draws it in full.\n`,
+      `## Diagram\n\n> The diagram has ${2 + MERMAID_MAX_EDGES + 1} elements and is too large to draw here. Its structure is listed under Elements below; the HTML report from Scrylux draws it in full.\n`,
     );
     expect(markdown).not.toContain('```mermaid');
     const note = markdown.split('\n').find((line) => line.includes('too large to draw')) as string;

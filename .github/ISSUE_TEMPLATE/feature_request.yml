@@ -1,12 +1,12 @@
 name: Feature request
-description: Suggest something Specter should do
+description: Suggest something Scrylux should do
 labels: [enhancement]
 body:
   - type: markdown
     attributes:
       value: |
-        Specter is built one phase at a time. Features for later phases are scheduled in the
-        [Roadmap](https://github.com/shivamsaraswat/specter#roadmap), so check it first. A request is
+        Scrylux is built one phase at a time. Features for later phases are scheduled in the
+        [Roadmap](https://github.com/shivamsaraswat/scrylux#roadmap), so check it first. A request is
         still welcome, and helps decide what a later phase includes.
   - type: textarea
     id: problem

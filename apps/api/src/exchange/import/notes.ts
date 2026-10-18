@@ -8,7 +8,7 @@ import {
   type ImportNote,
   type NoteKind,
   type StrideCategory,
-} from '@specter/core';
+} from '@scrylux/core';
 
 // Small helpers the planners of other tools' files share (research #12, #13).
 
@@ -16,7 +16,7 @@ export function note(path: string, kind: NoteKind, label?: string, detail?: stri
   return { path, kind, ...(label === undefined ? {} : { label }), ...(detail === undefined ? {} : { detail }) };
 }
 
-// Cut to the limit in code points (as @specter/core counts them), ending in an ellipsis, as the threat library does for
+// Cut to the limit in code points (as @scrylux/core counts them), ending in an ellipsis, as the threat library does for
 // generated text. `cut` says whether anything was lost, so the caller can add a note.
 export function shorten(text: string, max: number): { text: string; cut: boolean } {
   const characters = [...text];
@@ -24,7 +24,7 @@ export function shorten(text: string, max: number): { text: string; cut: boolean
   return { text: `${characters.slice(0, max - 1).join('').trimEnd()}…`, cut: true };
 }
 
-// Specter's tag rules applied to tags from another tool: trimmed, empty ones dropped, equal ignoring case merged (the
+// Scrylux's tag rules applied to tags from another tool: trimmed, empty ones dropped, equal ignoring case merged (the
 // first kept), each cut to the length limit, at most the count limit. Only merging, cutting and capping are reported:
 // trimming and dropping a blank lose nothing.
 export function normalizeTags(tags: readonly string[]): { tags: string[]; changed: boolean } {
@@ -75,13 +75,13 @@ const PLACEHOLDERS: Record<ElementType | 'threat' | 'mitigation', string> = {
 
 export const hasText = (value: string | null | undefined): value is string => typeof value === 'string' && value.trim() !== '';
 
-// What the planners of another tool's file do to make its text fit Specter, each saying so in the notes: a name that is
+// What the planners of another tool's file do to make its text fit Scrylux, each saying so in the notes: a name that is
 // empty becomes "Unnamed …", a name or text over the limit is shortened, and tags are normalised.
 export function adapters(notes: ImportNote[]) {
   const add = (item: ImportNote): void => void notes.push(item);
   return {
     add,
-    // A field of the file that Specter has no place for.
+    // A field of the file that Scrylux has no place for.
     field: (path: string, label: string | undefined, detail: string): void => add(note(path, 'not_imported.field', label, detail)),
     nameOf: (raw: string | null | undefined, path: string, type: ElementType | 'threat' | 'mitigation'): string => {
       const trimmed = (raw ?? '').trim();

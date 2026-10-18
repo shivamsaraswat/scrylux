@@ -1,5 +1,5 @@
-import type { ElementType } from '@specter/core';
-import { NODE_TYPES, type FlowContext, type NodeType } from '@specter/threat-library';
+import type { ElementType } from '@scrylux/core';
+import { NODE_TYPES, type FlowContext, type NodeType } from '@scrylux/threat-library';
 
 // The columns of a stored element that generation reads.
 export interface ElementRow {

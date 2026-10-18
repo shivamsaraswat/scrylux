@@ -7,8 +7,8 @@ import {
   type StaleReason,
   type StrideCategory,
   type ThreatGenerationResult,
-} from '@specter/core';
-import type { ElementInput, Library } from '@specter/threat-library';
+} from '@scrylux/core';
+import type { ElementInput, Library } from '@scrylux/threat-library';
 import { computeFlowContexts, type ElementRow } from './flow-context.js';
 
 // The pure half of the rule engine: from the diagram, the generated threats it already has and the

@@ -1,4 +1,4 @@
-import type { ElementRecord, ThreatRecord } from '@specter/core';
+import type { ElementRecord, ThreatRecord } from '@scrylux/core';
 
 // What deleting an element involves, decided before anything is sent (spec FR-021, FR-022, FR-023).
 //   - a data flow, a trust boundary, or a node with no flows: nothing to ask. A boundary's members are kept

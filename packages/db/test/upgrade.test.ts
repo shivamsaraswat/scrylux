@@ -20,7 +20,7 @@ const openPools: pg.Pool[] = [];
 
 // Creates an empty database next to the test database and returns a pool connected to it.
 async function scratchDatabase(): Promise<pg.Pool> {
-  const name = `specter_upgrade_${uid()}`;
+  const name = `scrylux_upgrade_${uid()}`;
   await pool().query(`CREATE DATABASE ${escapeIdentifier(name)}`);
   scratch.push(name);
   const p = new pg.Pool(connectionSettings(name));

@@ -6,7 +6,7 @@ import {
   NAME_MAX_LENGTH,
   STRIDE_CATEGORIES,
   URL_MAX_LENGTH,
-} from '@specter/core';
+} from '@scrylux/core';
 import { z } from 'zod';
 import {
   NODE_TYPES,
@@ -16,7 +16,7 @@ import {
 } from './stride.js';
 
 // The shape of the three kinds of data file, with the limits of data-model.md. Text is trimmed and
-// counted in code points, as @specter/core counts it (and as Postgres' char_length does).
+// counted in code points, as @scrylux/core counts it (and as Postgres' char_length does).
 
 const ID_MAX_LENGTH = 100;
 const MITIGATIONS_MAX = 5;

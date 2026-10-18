@@ -18,7 +18,7 @@ import type {
   ThreatModelStatus,
   ThreatOrigin,
   ThreatStatus,
-} from '@specter/core';
+} from '@scrylux/core';
 
 type JsonObject = Record<string, JsonValue>;
 

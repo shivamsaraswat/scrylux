@@ -18,7 +18,7 @@ import {
   type ThreatModelCreateInput,
   type ThreatModelUpdateInput,
   type ThreatUpdateInput,
-} from '@specter/core';
+} from '@scrylux/core';
 import { apiDelete, apiGet, apiPatch, apiPost } from './client.js';
 import { ApiError, isGone } from './errors.js';
 

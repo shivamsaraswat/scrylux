@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-// What Specter reads of an OWASP Threat Dragon version 2 file (contracts/threat-dragon-mapping.md, research #7). Only the
+// What Scrylux reads of an OWASP Threat Dragon version 2 file (contracts/threat-dragon-mapping.md, research #7). Only the
 // members the mapping uses are declared, with their types and generous caps. Every object is loose: Threat Dragon writes
-// colours, line styles, z-order and more that Specter has no use for, so those are allowed, but they are bounded first by
+// colours, line styles, z-order and more that Scrylux has no use for, so those are allowed, but they are bounded first by
 // `checkBounds` and then never walked, stored, logged or echoed (`attrs` is typed `unknown` on purpose).
 
 const NAME_CAP = 10_000;

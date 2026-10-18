@@ -80,9 +80,9 @@ export function findChangelogEntry(changelog: string, core: string): string | nu
   return (next === -1 ? rest : rest.slice(0, next)).join('\n').trim();
 }
 
-const COMPOSE_DEFAULT = /\$\{SPECTER_VERSION:-([^}\s]+)\}/;
+const COMPOSE_DEFAULT = /\$\{SCRYLUX_VERSION:-([^}\s]+)\}/;
 
-// The default of SPECTER_VERSION in the release compose file, or nothing.
+// The default of SCRYLUX_VERSION in the release compose file, or nothing.
 export function composeDefaultVersion(compose: string): string | null {
   return COMPOSE_DEFAULT.exec(compose)?.[1] ?? null;
 }
@@ -102,18 +102,18 @@ export function packagesAgree(packages: { path: string; version: string }[]): st
   return packages.filter((p) => p.version !== majority).map((p) => p.path);
 }
 
-// The compose file as it is attached to a release. For a pre-release the default of SPECTER_VERSION becomes the full version
+// The compose file as it is attached to a release. For a pre-release the default of SCRYLUX_VERSION becomes the full version
 // (`0.1.0-rc.1`), because only that image exists; for a final release the file is returned as committed, whose default is
 // already the version (check V). Nothing else in the text changes.
 export function pinComposeVersion(compose: string, version: string): string {
   if (!COMPOSE_DEFAULT.test(compose)) {
-    throw new Error('the release compose file has no ${SPECTER_VERSION:-…} default to pin');
+    throw new Error('the release compose file has no ${SCRYLUX_VERSION:-…} default to pin');
   }
   if (!version.includes('-')) return compose;
-  return compose.replace(new RegExp(COMPOSE_DEFAULT.source, 'g'), () => `\${SPECTER_VERSION:-${version}}`);
+  return compose.replace(new RegExp(COMPOSE_DEFAULT.source, 'g'), () => `\${SCRYLUX_VERSION:-${version}}`);
 }
 
-export const IMAGE_SOURCE = 'https://github.com/shivamsaraswat/specter';
+export const IMAGE_SOURCE = 'https://github.com/shivamsaraswat/scrylux';
 
 // The six labels of contracts/release-artifacts.md "The image". One definition: the build step sets them from here, and the
 // smoke run and the anonymous-pull check compare the image to it.
@@ -123,8 +123,8 @@ export function expectedLabels({ version, sha }: { version: string; sha: string 
     'org.opencontainers.image.version': version,
     'org.opencontainers.image.revision': sha,
     'org.opencontainers.image.licenses': 'Apache-2.0',
-    'org.opencontainers.image.title': 'Specter',
-    'org.opencontainers.image.description': 'Specter, an open-source, self-hosted threat modeling platform.',
+    'org.opencontainers.image.title': 'Scrylux',
+    'org.opencontainers.image.description': 'Scrylux, an open-source, self-hosted threat modeling platform.',
   };
 }
 
@@ -173,9 +173,9 @@ export function checkVersions({ packages, composeDefault, changelog }: VersionFi
   }
 
   if (composeDefault === null) {
-    add('docker-compose.release.yml', 'it has no SPECTER_VERSION default', 'give the image tag the form ${SPECTER_VERSION:-<version>}');
+    add('docker-compose.release.yml', 'it has no SCRYLUX_VERSION default', 'give the image tag the form ${SCRYLUX_VERSION:-<version>}');
   } else if (composeDefault !== version) {
-    add('docker-compose.release.yml', `its SPECTER_VERSION default is ${composeDefault}, and the packages carry ${version}`, `set the default to ${version}`);
+    add('docker-compose.release.yml', `its SCRYLUX_VERSION default is ${composeDefault}, and the packages carry ${version}`, `set the default to ${version}`);
   }
 
   const entry = findChangelogEntry(changelog, version);
@@ -194,7 +194,7 @@ export function checkVersions({ packages, composeDefault, changelog }: VersionFi
     }
   }
 
-  for (const [target, what] of [['(docs/threat-model/)', 'Specter\'s own threat model'], ['(SECURITY.md)', 'the security policy']] as const) {
+  for (const [target, what] of [['(docs/threat-model/)', 'Scrylux\'s own threat model'], ['(SECURITY.md)', 'the security policy']] as const) {
     if (!changelog.includes(target)) add('CHANGELOG.md', `it does not link ${what}: ${target.slice(1, -1)}`, 'say in its introduction where open risks are recorded and how to report a vulnerability (FR-034)');
   }
   return findings;

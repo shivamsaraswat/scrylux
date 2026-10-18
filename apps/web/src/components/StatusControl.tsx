@@ -6,7 +6,7 @@ import {
   type MitigationRecord,
   type ThreatRecord,
   type ThreatStatus,
-} from '@specter/core';
+} from '@scrylux/core';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { writeErrorMessage } from '../api/errors.js';
 import { useUpdateThreat } from '../api/queries.js';

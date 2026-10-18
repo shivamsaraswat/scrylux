@@ -3,25 +3,25 @@ import {
   OTM_EXPORT,
   OTM_MITIGATION_STATES,
   OTM_THREAT_STATES,
-  OtmSpecter,
-  SpecterFileV1,
+  OtmScrylux,
+  ScryluxFileV1,
   type ImportNote,
   type Impact,
   type MitigationStatus,
   type OtmFile,
   type StrideCategory,
   type ThreatStatus,
-} from '@specter/core';
+} from '@scrylux/core';
 import { z } from 'zod';
 import { HttpError } from '../../v1/errors.js';
 import { placeBoundary, placeNode } from './geometry.js';
 import { adapters, hasText, letters, matchStride, note } from './notes.js';
 import { parseWith, refuse } from './parse-with.js';
 import type { ImportPlan, PlanElement, PlanMitigation, PlanThreat } from './plan.js';
-import { planSpecter } from './specter.js';
+import { planScrylux } from './scrylux.js';
 
-// An OTM 0.2.0 file as a plan (contracts/otm-mapping.md). A file Specter wrote carries its own fields in
-// `attributes.specter` and is read back strictly, as a Specter file would be (FR-011). A file from another tool is
+// An OTM 0.2.0 file as a plan (contracts/otm-mapping.md). A file Scrylux wrote carries its own fields in
+// `attributes.scrylux` and is read back strictly, as a Scrylux file would be (FR-011). A file from another tool is
 // mapped by a fixed table, and everything it cannot carry over is listed in the notes (FR-012, FR-016).
 
 type Obj = Record<string, unknown>;
@@ -35,33 +35,33 @@ type Representation = NonNullable<Zone['representations']>[number];
 const isRecord = (value: unknown): value is Obj => typeof value === 'object' && value !== null && !Array.isArray(value);
 const hasEntries = (value: unknown): boolean => isRecord(value) && Object.keys(value).length > 0;
 
-// A Specter file's mark: `project.attributes.specter.format_version`. Whoever sets it gets the strict rules, so claiming
-// to be Specter's buys nothing (FR-008a).
-function isSpecterFile(file: OtmFile): boolean {
+// A Scrylux file's mark: `project.attributes.scrylux.format_version`. Whoever sets it gets the strict rules, so claiming
+// to be Scrylux's buys nothing (FR-008a).
+function isScryluxFile(file: OtmFile): boolean {
   const attributes = file.project.attributes;
-  const specter = isRecord(attributes) ? attributes.specter : undefined;
-  return isRecord(specter) && 'format_version' in specter;
+  const scrylux = isRecord(attributes) ? attributes.scrylux : undefined;
+  return isRecord(scrylux) && 'format_version' in scrylux;
 }
 
 export function planOtm(file: OtmFile): ImportPlan {
-  return isSpecterFile(file) ? planStrict(file) : planAdapted(file);
+  return isScryluxFile(file) ? planStrict(file) : planAdapted(file);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// A file Specter wrote
+// A file Scrylux wrote
 
 const MISSING = (path: string): string =>
-  `${path}.attributes.specter: missing; this file was changed outside Specter (remove project.attributes.specter to import it as another tool's file)`;
+  `${path}.attributes.scrylux: missing; this file was changed outside Scrylux (remove project.attributes.scrylux to import it as another tool's file)`;
 
 function planStrict(file: OtmFile): ImportPlan {
-  const project = parseWith(OtmSpecter.project, (file.project.attributes as Obj).specter, ['file', 'project', 'attributes', 'specter']);
+  const project = parseWith(OtmScrylux.project, (file.project.attributes as Obj).scrylux, ['file', 'project', 'attributes', 'scrylux']);
 
   // The attributes of one object, parsed strictly, or a refusal that says the file was edited.
   const attributesOf = <T>(owner: { attributes?: unknown }, collection: string, index: number, schema: z.ZodType<T>): T => {
     const attributes = owner.attributes;
-    const specter = isRecord(attributes) ? attributes.specter : undefined;
-    if (specter === undefined || specter === null) throw refuse(MISSING(`file.${collection}.${index}`));
-    return parseWith(schema, specter, ['file', collection, index, 'attributes', 'specter']);
+    const scrylux = isRecord(attributes) ? attributes.scrylux : undefined;
+    if (scrylux === undefined || scrylux === null) throw refuse(MISSING(`file.${collection}.${index}`));
+    return parseWith(schema, scrylux, ['file', collection, index, 'attributes', 'scrylux']);
   };
   const stringTags = (tags: readonly (string | null)[] | null | undefined): string[] => (tags ?? []).filter((tag): tag is string => typeof tag === 'string');
   const properties = (tags: string[], flags: Record<string, boolean>): Obj => ({
@@ -76,7 +76,7 @@ function planStrict(file: OtmFile): ImportPlan {
     paths.push(path);
   };
   (file.trustZones ?? []).forEach((zone, index) => {
-    const attributes = attributesOf(zone, 'trustZones', index, OtmSpecter.zone);
+    const attributes = attributesOf(zone, 'trustZones', index, OtmScrylux.zone);
     if ('outside' in attributes) return;
     add(
       { id: zone.id, type: 'trust_boundary', name: zone.name, properties: {}, layout: attributes.layout, parent_boundary_id: attributes.parent_boundary_id, source_element_id: null, target_element_id: null },
@@ -84,14 +84,14 @@ function planStrict(file: OtmFile): ImportPlan {
     );
   });
   (file.components ?? []).forEach((component, index) => {
-    const attributes = attributesOf(component, 'components', index, OtmSpecter.component);
+    const attributes = attributesOf(component, 'components', index, OtmScrylux.component);
     add(
       { id: component.id, type: attributes.type, name: component.name, properties: properties(stringTags(component.tags), attributes.flags), layout: attributes.layout, parent_boundary_id: attributes.parent_boundary_id, source_element_id: null, target_element_id: null },
       `file.components.${index}`,
     );
   });
   (file.dataflows ?? []).forEach((flow, index) => {
-    const attributes = attributesOf(flow, 'dataflows', index, OtmSpecter.dataflow);
+    const attributes = attributesOf(flow, 'dataflows', index, OtmScrylux.dataflow);
     add(
       { id: flow.id, type: 'data_flow', name: flow.name, properties: properties(stringTags(flow.tags), attributes.flags), layout: null, parent_boundary_id: null, source_element_id: flow.source, target_element_id: flow.destination },
       `file.dataflows.${index}`,
@@ -102,15 +102,15 @@ function planStrict(file: OtmFile): ImportPlan {
     category: threat.categories?.[0] ?? '',
     title: threat.name,
     description: threat.description ?? '',
-    ...attributesOf(threat, 'threats', index, OtmSpecter.threat),
+    ...attributesOf(threat, 'threats', index, OtmScrylux.threat),
   }));
   const mitigations = (file.mitigations ?? []).map((mitigation, index) => {
-    const attributes = attributesOf(mitigation, 'mitigations', index, OtmSpecter.mitigation);
+    const attributes = attributesOf(mitigation, 'mitigations', index, OtmScrylux.mitigation);
     return { id: mitigation.id, description: mitigation.description ?? '', ...attributes };
   });
 
   const raw = {
-    format: 'specter',
+    format: 'scrylux',
     format_version: project.format_version,
     exported_at: project.exported_at,
     project: { name: file.project.name },
@@ -120,12 +120,12 @@ function planStrict(file: OtmFile): ImportPlan {
     mitigations,
   };
 
-  // The file is read as the Specter file it says it is, so every field rule is the same one; a refusal names the OTM
-  // object where it is, not the position it would have in a Specter file.
+  // The file is read as the Scrylux file it says it is, so every field rule is the same one; a refusal names the OTM
+  // object where it is, not the position it would have in a Scrylux file.
   const where = (message: string): string => message.replaceAll(/file\.elements\.(\d+)/g, (match, at: string) => paths[Number(at)] ?? match);
   let result: ImportPlan;
   try {
-    result = planSpecter(parseWith(SpecterFileV1, raw));
+    result = planScrylux(parseWith(ScryluxFileV1, raw));
   } catch (err) {
     if (err instanceof HttpError) throw new HttpError(err.status, where(err.message));
     throw err;
@@ -154,7 +154,7 @@ function statusFrom<T extends string>(table: Readonly<Record<T, readonly string[
   return (Object.keys(table) as T[]).find((status) => table[status].includes(wanted)) ?? null;
 }
 
-// OTM's 0 to 100 as Specter's three levels: under 34 is Low, under 67 Medium, and the rest High.
+// OTM's 0 to 100 as Scrylux's three levels: under 34 is Low, under 67 Medium, and the rest High.
 const level = (value: number): Impact => (value < 34 ? 'Low' : value < 67 ? 'Medium' : 'High');
 
 interface ThreatInfo {
@@ -176,7 +176,7 @@ function planAdapted(file: OtmFile): ImportPlan {
     if (hasEntries(owner.attributes)) field(path, label, 'attributes');
   };
 
-  // The one diagram Specter draws: the first representation of type "diagram". The others are noted.
+  // The one diagram Scrylux draws: the first representation of type "diagram". The others are noted.
   const representations = file.representations ?? [];
   const diagramAt = representations.findIndex((entry) => entry?.type === 'diagram');
   const diagramId = diagramAt >= 0 ? representations[diagramAt]?.id : undefined;
@@ -334,7 +334,7 @@ function planAdapted(file: OtmFile): ImportPlan {
       impact: bucket(threat.risk?.impact),
     };
     if (category === null) addNote(note(path, 'not_imported.threat_category', threat.name));
-    // A threat has one STRIDE category in Specter. Any other category it carries is content that has no place, and is listed.
+    // A threat has one STRIDE category in Scrylux. Any other category it carries is content that has no place, and is listed.
     if ((threat.categories ?? []).filter(hasText).length > 1) field(path, threat.name, 'categories');
     if ((threat.cwes ?? []).length > 0) field(path, threat.name, 'cwes');
     if ((threat.tags ?? []).length > 0) field(path, threat.name, 'tags');

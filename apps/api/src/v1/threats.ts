@@ -1,4 +1,4 @@
-import { MitigationRecord, ThreatCreateFields, ThreatRecord, ThreatUpdateInput, needsReason, threatLifecycleIssues } from '@specter/core';
+import { MitigationRecord, ThreatCreateFields, ThreatRecord, ThreatUpdateInput, needsReason, threatLifecycleIssues } from '@scrylux/core';
 import { z } from 'zod';
 import { kdb } from '../db.js';
 import { HttpError, orNotFound } from './errors.js';

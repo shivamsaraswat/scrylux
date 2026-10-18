@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { jsonValue, toJsonSchemaOverride } from '@specter/core';
+import { jsonValue, toJsonSchemaOverride } from '@scrylux/core';
 import { z } from 'zod';
 import { DEFAULT_BODY_LIMIT, defineOperation, type Operation } from './operation.js';
 import { resourceOperations } from './operations.js';
@@ -148,7 +148,7 @@ export function buildOpenApiDocument(): JsonObject {
   }
   return {
     openapi: '3.1.0',
-    info: { title: 'Specter API', version: '1' },
+    info: { title: 'Scrylux API', version: '1' },
     security: [{ bearerAuth: [] }],
     paths,
     components: {
@@ -174,7 +174,7 @@ const openApiOperation = defineOperation({
 // Everything the router mounts: the resource operations, and the document that describes them.
 export const allOperations: Operation<unknown>[] = [...resourceOperations, openApiOperation];
 
-// `pnpm --filter @specter/api openapi` rewrites the committed copy. The server never reads it.
+// `pnpm --filter @scrylux/api openapi` rewrites the committed copy. The server never reads it.
 const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
 if (isMainModule) {
   const target = fileURLToPath(new URL('../../openapi.json', import.meta.url));

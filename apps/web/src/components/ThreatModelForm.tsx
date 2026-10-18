@@ -1,4 +1,4 @@
-import { ThreatModelCreateInput, ThreatModelUpdateInput, type ThreatModelRecord } from '@specter/core';
+import { ThreatModelCreateInput, ThreatModelUpdateInput, type ThreatModelRecord } from '@scrylux/core';
 import { useState, type FormEvent } from 'react';
 import { zodFieldErrors } from '../api/errors.js';
 import { ErrorSummary } from './ErrorSummary.js';

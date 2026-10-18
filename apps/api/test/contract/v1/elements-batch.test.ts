@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ElementBatchResult, type ElementRecord } from '@specter/core';
+import { ElementBatchResult, type ElementRecord } from '@scrylux/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
 import db from '../../../src/db.js';

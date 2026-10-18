@@ -1,4 +1,4 @@
-import { TYPE_LABELS, type ElementRecord } from '@specter/core';
+import { TYPE_LABELS, type ElementRecord } from '@scrylux/core';
 import { useDiagramEditor } from './DiagramEditorProvider.js';
 import { openThreatsText } from './flow.js';
 

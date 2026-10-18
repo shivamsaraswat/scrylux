@@ -1,5 +1,5 @@
-import { deriveRisk, ELEMENT_TYPES, MITIGATION_STATUSES, STRIDE_CATEGORIES, THREAT_STATUSES } from '@specter/core';
-import type { ExportedFile } from '../../src/exchange/specter-export.js';
+import { deriveRisk, ELEMENT_TYPES, MITIGATION_STATUSES, STRIDE_CATEGORIES, THREAT_STATUSES } from '@scrylux/core';
+import type { ExportedFile } from '../../src/exchange/scrylux-export.js';
 import type { Finding } from '../dogfood/checks.js';
 
 // The demo's own checks, D4 and D6 of contracts/checks.md (spec FR-023, FR-024). The rest of what the demo is held to (the
@@ -11,8 +11,8 @@ import type { Finding } from '../dogfood/checks.js';
 // value the file holds.
 
 export const DEMO_FOLDER = 'docs/demo';
-export const DEMO_FILE = `${DEMO_FOLDER}/notes-app.specter.json`;
-export const DEMO_FOLDER_NAMES: readonly string[] = ['README.md', 'notes-app.specter.json'];
+export const DEMO_FILE = `${DEMO_FOLDER}/notes-app.scrylux.json`;
+export const DEMO_FOLDER_NAMES: readonly string[] = ['README.md', 'notes-app.scrylux.json'];
 
 const WHERE_TO_READ = 'See "Updating the demo" in docs/demo/README.md.';
 
@@ -40,7 +40,7 @@ const FICTIONAL = /fictional/i;
 
 // What FR-024 says the demo contains, and what its names must say. `file` is only used to name it in a finding.
 export function checkDemoShape(file: string, data: ExportedFile): Finding[] {
-  const fix = 'correct it in Specter and export the demo again';
+  const fix = 'correct it in Scrylux and export the demo again';
   const findings: Finding[] = [];
   const add = (message: string): void => {
     findings.push(finding('shape', file, message, fix));

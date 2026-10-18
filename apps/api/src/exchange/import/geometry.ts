@@ -1,6 +1,6 @@
-import { COORDINATE_LIMIT, MAX_BOUNDARY_SIZE, MIN_BOUNDARY_SIZE, type BoundaryLayout, type NodeLayout } from '@specter/core';
+import { COORDINATE_LIMIT, MAX_BOUNDARY_SIZE, MIN_BOUNDARY_SIZE, type BoundaryLayout, type NodeLayout } from '@scrylux/core';
 
-// Positions from another tool's file, held to the limits Specter's own diagram has (FR-008a): what cannot be held is left
+// Positions from another tool's file, held to the limits Scrylux's own diagram has (FR-008a): what cannot be held is left
 // for the canvas to place, or enlarged to the smallest size allowed, and the caller adds a note.
 
 export interface Placement<L> {
@@ -26,7 +26,7 @@ export function placeNode(position: Point | null | undefined): Placement<NodeLay
   return { layout: { x: position.x, y: position.y }, adjusted: null };
 }
 
-// A trust boundary needs a size as well: one smaller than the least Specter draws is enlarged to it.
+// A trust boundary needs a size as well: one smaller than the least Scrylux draws is enlarged to it.
 export function placeBoundary(position: Point | null | undefined, size: Size | null | undefined): Placement<BoundaryLayout> {
   if (position === null || position === undefined) return { layout: null, adjusted: null };
   if (!inRange(position.x) || !inRange(position.y) || size === null || size === undefined) return { layout: null, adjusted: 'unplaced' };
@@ -83,7 +83,7 @@ export function assignBoxes(
   return { boxParent, nodeParent };
 }
 
-// A position in its parent's frame: Specter stores a member's position relative to its trust boundary.
+// A position in its parent's frame: Scrylux stores a member's position relative to its trust boundary.
 export function relativeTo(position: Point, parent: Point | null): Point {
   return parent === null ? { x: position.x, y: position.y } : { x: position.x - parent.x, y: position.y - parent.y };
 }

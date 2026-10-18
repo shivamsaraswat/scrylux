@@ -1,4 +1,4 @@
-import { ProjectCreateInput, ProjectUpdateInput, type ProjectRecord } from '@specter/core';
+import { ProjectCreateInput, ProjectUpdateInput, type ProjectRecord } from '@scrylux/core';
 import { useState, type FormEvent } from 'react';
 import { zodFieldErrors } from '../api/errors.js';
 import { ErrorSummary } from './ErrorSummary.js';

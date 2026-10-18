@@ -90,7 +90,7 @@ describe('renew()', () => {
     try {
       await renew();
       expect(request).toHaveBeenCalledTimes(1);
-      expect(request.mock.calls[0]?.[0]).toBe('specter-session-refresh');
+      expect(request.mock.calls[0]?.[0]).toBe('scrylux-session-refresh');
     } finally {
       Reflect.deleteProperty(navigator, 'locks');
     }

@@ -5,7 +5,7 @@ import {
   ElementRecord,
   ElementUpdateInput,
   MAX_BATCH_OPERATIONS,
-} from '@specter/core';
+} from '@scrylux/core';
 import { kdb } from '../db.js';
 import { createElementIn, deleteElementIn, lockModel, updateElementIn } from './element-writes.js';
 import { HttpError, mapStorageError, orNotFound, prefixOperation } from './errors.js';

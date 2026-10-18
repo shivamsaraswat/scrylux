@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import app from '../../src/app.js';
-import type { ExportedFile } from '../../src/exchange/specter-export.js';
+import type { ExportedFile } from '../../src/exchange/scrylux-export.js';
 import { login, startTestServer, type TestServer } from '../contract/helpers.js';
 import {
   checkForm,
@@ -14,7 +14,7 @@ import {
   type Finding,
   type SummaryLike,
 } from '../dogfood/checks.js';
-import { exportSpecter, importTwice, regenerate, session, type Session } from '../dogfood/operations.js';
+import { exportScrylux, importTwice, regenerate, session, type Session } from '../dogfood/operations.js';
 import {
   checkDemoFolder,
   checkDemoShape,
@@ -26,13 +26,13 @@ import {
 } from './checks.js';
 
 // The demo threat model (spec Milestone 8, FR-023 to FR-026), the committed file held to contracts/checks.md D1 to D7 through
-// the real operations, as Milestone 7 holds Specter's own model: the file is imported twice into a scratch project, one model
+// the real operations, as Milestone 7 holds Scrylux's own model: the file is imported twice into a scratch project, one model
 // (A) is exported, the other (B) is generated against. A missing file is a failure whose message says how to fix it, never a
 // skip: a skipped check would let the files be deleted unnoticed (Milestone 7, research #13). The committed files are only read.
 
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
 const DIR = `${ROOT}${DEMO_FOLDER}/`;
-const FILE_NAME = 'notes-app.specter.json';
+const FILE_NAME = 'notes-app.scrylux.json';
 const README_NAME = 'README.md';
 
 const present = (name: string): boolean => existsSync(`${DIR}${name}`);
@@ -43,7 +43,7 @@ const needed = (name: string): string => {
         check: 'folder',
         file: `${DEMO_FOLDER}/${name}`,
         message: 'the file does not exist',
-        fix: 'author the demo in Specter, export it unchanged, and write its description',
+        fix: 'author the demo in Scrylux, export it unchanged, and write its description',
       }),
     );
   }
@@ -77,7 +77,7 @@ describe('docs/demo/', () => {
     s = session(server.baseUrl, await login(server.baseUrl));
     const two = await importTwice(s, data);
     summary = two.summary;
-    exportedAgain = await exportSpecter(s, two.a);
+    exportedAgain = await exportScrylux(s, two.a);
     regeneration = await regenerate(s, two.b);
   }, 60_000);
 
@@ -85,7 +85,7 @@ describe('docs/demo/', () => {
     await server?.close();
   });
 
-  it('D1 form: is what Specter writes, valid against the published schema', () => {
+  it('D1 form: is what Scrylux writes, valid against the published schema', () => {
     clean(checkForm(DEMO_FILE, needed(FILE_NAME), publishedSchemaValidator()));
   });
 

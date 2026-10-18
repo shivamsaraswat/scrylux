@@ -1,4 +1,4 @@
-import type { ElementBatchOperationInput, ElementRecord } from '@specter/core';
+import type { ElementBatchOperationInput, ElementRecord } from '@scrylux/core';
 
 // What one user action does to the diagram, as the batch operations that save it (research #5, #8, #9).
 // The same operations are replayed locally, so the screen shows an action the moment it is made and the

@@ -297,7 +297,7 @@ describe('parseLibrary: file layout (research #2)', () => {
 describe('loadLibrary: reading a directory', () => {
   const made: string[] = [];
   const directory = (): string => {
-    const dir = mkdtempSync(join(tmpdir(), 'specter-rules-'));
+    const dir = mkdtempSync(join(tmpdir(), 'scrylux-rules-'));
     made.push(dir);
     return dir;
   };

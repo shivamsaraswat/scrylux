@@ -1,23 +1,23 @@
-# The Specter file
+# The Scrylux file
 
-The Specter file is Specter's own format for one threat model. It is **lossless**: exporting a threat model and
+The Scrylux file is Scrylux's own format for one threat model. It is **lossless**: exporting a threat model and
 importing the file again gives the same diagram, the same threats in the same states and the same mitigations. Use it
-to back a threat model up, move it to another Specter install, commit it next to the code it describes, or ship it as a
+to back a threat model up, move it to another Scrylux install, commit it next to the code it describes, or ship it as a
 demo.
 
-- **Export** it from a threat model's page (**Download Specter file**), or with
-  `GET /api/v1/threat-models/{id}/export?format=specter`.
+- **Export** it from a threat model's page (**Download Scrylux file**), or with
+  `GET /api/v1/threat-models/{id}/export?format=scrylux`.
 - **Import** it from a project's page (**Import threat model**), or with
   `POST /api/v1/projects/{id}/imports` (and `…/imports/check` to preview). See [API.md](../../API.md).
-- **Schema**: [`specter-file-v1.schema.json`](./specter-file-v1.schema.json), JSON Schema 2020-12. It is generated from
+- **Schema**: [`scrylux-file-v1.schema.json`](./scrylux-file-v1.schema.json), JSON Schema 2020-12. It is generated from
   the same rules the import checks, and a test fails if the committed copy is out of date. Regenerate it with
-  `pnpm --filter @specter/api formats`.
+  `pnpm --filter @scrylux/api formats`.
 
 ## Example (abridged)
 
 ```json
 {
-  "format": "specter",
+  "format": "scrylux",
   "format_version": 1,
   "exported_at": "2026-10-10T09:30:00.000Z",
   "project": { "name": "Payments" },
@@ -60,7 +60,7 @@ demo.
 
 | Part | Fields |
 |---|---|
-| Header | `format` (`"specter"`), `format_version` (`1`), `exported_at`, and `project.name` (for information) |
+| Header | `format` (`"scrylux"`), `format_version` (`1`), `exported_at`, and `project.name` (for information) |
 | `threat_model` | `name`, `methodology`, `status` (`draft`, `in_review` or `approved`) |
 | `elements[]` | `id`, `type`, `name`, `properties` (`tags`, `flags`), `layout`, `parent_boundary_id`, and for a data flow `source_element_id` and `target_element_id` |
 | `threats[]` | `id`, `element_id` (or `null` for a threat on no element), `category`, `title`, `description`, `likelihood`, `impact`, `status`, `status_reason`, `origin`, `library_ref`, `stale` |
@@ -110,17 +110,17 @@ Two rules are *not* applied to an import, because a file restores a decision as 
   no reason. It keeps its status and is shown as *missing what its status needs*, as Milestone 4 describes.
 - `origin` may be `rule`: a generated threat stays generated, with its `library_ref` and `stale` mark, so
   **Generate threats** recognises it afterwards and creates no duplicate. (A file can claim `rule` for any threat;
-  Specter cannot check it.)
+  Scrylux cannot check it.)
 
 A file with a threat whose `origin` is `ai` is **refused**: AI-drafted threats cannot be imported yet.
 
 An element saved before today's rules (for example with a flag that no longer exists) is exported as it is stored, and
-importing that file is refused with a message naming the element, so you can correct it in Specter and export again.
+importing that file is refused with a message naming the element, so you can correct it in Scrylux and export again.
 
 ## Size
 
 An import accepts a file of up to **64 MiB**, nested at most **64 levels** deep and holding at most **2,000,000**
-values. That holds the largest threat model Specter allows (1,000 elements, about 15,000 threats and about 49,000
+values. That holds the largest threat model Scrylux allows (1,000 elements, about 15,000 threats and about 49,000
 mitigations). A model whose every text field is at its maximum length can be larger than that and cannot be imported
 in one file.
 
@@ -135,4 +135,4 @@ version listed here and refuses any other, naming both versions (`file.format_ve
 
 | Version | Schema |
 |---|---|
-| 1 | [`specter-file-v1.schema.json`](./specter-file-v1.schema.json) |
+| 1 | [`scrylux-file-v1.schema.json`](./scrylux-file-v1.schema.json) |

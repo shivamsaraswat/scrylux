@@ -1,4 +1,4 @@
-import { formatValidationError, uuid } from '@specter/core';
+import { formatValidationError, uuid } from '@scrylux/core';
 import type { z } from 'zod';
 import { HttpError } from './errors.js';
 import type { RecordType } from './write-log.js';

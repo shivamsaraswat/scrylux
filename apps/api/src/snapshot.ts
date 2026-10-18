@@ -1,5 +1,5 @@
-import { ElementRecord, MitigationRecord, ThreatModelRecord, ThreatRecord } from '@specter/core';
-import type { Database } from '@specter/db';
+import { ElementRecord, MitigationRecord, ThreatModelRecord, ThreatRecord } from '@scrylux/core';
+import type { Database } from '@scrylux/db';
 import type { Transaction } from 'kysely';
 import { kdb } from './db.js';
 

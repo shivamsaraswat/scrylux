@@ -39,7 +39,7 @@ function setup() {
 describe('AppShell', () => {
   it('shows the product name as a link to the project list, and the signed-in username', () => {
     setup();
-    const brand = screen.getByRole('link', { name: 'Specter' });
+    const brand = screen.getByRole('link', { name: 'Scrylux' });
     expect(brand.getAttribute('href')).toBe('/projects');
     expect(screen.getByText('ada')).toBeTruthy();
     expect(screen.getByText('projects page')).toBeTruthy();

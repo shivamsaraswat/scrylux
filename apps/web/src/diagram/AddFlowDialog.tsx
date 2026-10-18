@@ -1,4 +1,4 @@
-import { TYPE_LABELS } from '@specter/core';
+import { TYPE_LABELS } from '@scrylux/core';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { connectionProblem, newFlowAction } from './connect.js';
 import { useDiagramEditor } from './DiagramEditorProvider.js';

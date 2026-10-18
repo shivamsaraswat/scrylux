@@ -81,11 +81,11 @@ describe('tokens that only look like a UI access token', () => {
   const sub = '1';
 
   it.each([
-    ['audience "specter-ui" but no sid', { sub, aud: 'specter-ui' }],
+    ['audience "scrylux-ui" but no sid', { sub, aud: 'scrylux-ui' }],
     ['another audience', { sub, aud: 'someone-else', sid: '00000000-0000-4000-8000-000000000000' }],
-    ['a sid that is not a UUID', { sub, aud: 'specter-ui', sid: "1'; DROP TABLE users;--" }],
-    ['a sid for a session that does not exist', { sub, aud: 'specter-ui', sid: '00000000-0000-4000-8000-000000000000' }],
-    ['a numeric sid', { sub, aud: 'specter-ui', sid: 5 }],
+    ['a sid that is not a UUID', { sub, aud: 'scrylux-ui', sid: "1'; DROP TABLE users;--" }],
+    ['a sid for a session that does not exist', { sub, aud: 'scrylux-ui', sid: '00000000-0000-4000-8000-000000000000' }],
+    ['a numeric sid', { sub, aud: 'scrylux-ui', sid: 5 }],
   ])('is refused on /api/v1 with %s, without a server error', async (_label, payload) => {
     expect(await get('/api/v1/projects', forge(payload))).toEqual({ status: 401, body: UNAUTHORIZED });
   });

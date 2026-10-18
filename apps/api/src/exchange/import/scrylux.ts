@@ -1,16 +1,16 @@
-import type { SpecterFileV1 } from '@specter/core';
+import type { ScryluxFileV1 } from '@scrylux/core';
 import { HttpError } from '../../v1/errors.js';
 import type { ImportPlan } from './plan.js';
 
-// A Specter file as a plan (contracts/specter-file.md): every record, status and origin as the file has it. The file's
+// A Scrylux file as a plan (contracts/scrylux-file.md): every record, status and origin as the file has it. The file's
 // ids are kept here and replaced by `checkPlan`. A generated threat stays generated, with its rule and stale reason, so
 // "Generate threats" recognises it afterwards; an AI-drafted one is refused, because none can exist before Phase 3,
 // which decides what rationale and citations such a threat must carry (FR-010, Principle VI). The file's export time
 // and project name are ignored.
 //
-// The field rules were applied when the file was parsed (SpecterFileV1), and the rules across records are applied by
-// `checkPlan`, so there is nothing else to refuse here and nothing to note: a Specter file imports with an empty list.
-export function planSpecter(file: SpecterFileV1): ImportPlan {
+// The field rules were applied when the file was parsed (ScryluxFileV1), and the rules across records are applied by
+// `checkPlan`, so there is nothing else to refuse here and nothing to note: a Scrylux file imports with an empty list.
+export function planScrylux(file: ScryluxFileV1): ImportPlan {
   file.threats.forEach((threat, index) => {
     if (threat.origin === 'ai') throw new HttpError(400, `file.threats.${index}.origin: AI-drafted threats cannot be imported yet`);
   });

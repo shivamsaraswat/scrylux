@@ -1,4 +1,4 @@
-import { absoluteRects, freeSpotInside, innermostOf, resolveLayout, sizeFor, type ElementRecord, type Rect, type Resolved } from '@specter/core';
+import { absoluteRects, freeSpotInside, innermostOf, resolveLayout, sizeFor, type ElementRecord, type Rect, type Resolved } from '@scrylux/core';
 import type { BatchOp, DiagramAction } from './operations.js';
 
 // Which boundary an element belongs to follows where it is drawn (spec FR-008 to FR-011, research #13):

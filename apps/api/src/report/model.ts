@@ -23,7 +23,7 @@ import {
   type ThreatRecord,
   type ThreatStatus,
   type ThreatSummary,
-} from '@specter/core';
+} from '@scrylux/core';
 import { computeFlowContexts } from '../rule-engine/flow-context.js';
 import type { Snapshot } from '../snapshot.js';
 

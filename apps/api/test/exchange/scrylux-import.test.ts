@@ -1,16 +1,16 @@
-import { deriveRisk, SpecterFileV1, type ElementRecord, type MitigationRecord, type ThreatRecord } from '@specter/core';
+import { deriveRisk, ScryluxFileV1, type ElementRecord, type MitigationRecord, type ThreatRecord } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
-import { buildSpecterFile } from '../../src/exchange/specter-export.js';
+import { buildScryluxFile } from '../../src/exchange/scrylux-export.js';
 import { parseFile } from '../../src/exchange/import/parse.js';
 import { checkPlan, type ImportPlan } from '../../src/exchange/import/plan.js';
-import { planSpecter } from '../../src/exchange/import/specter.js';
+import { planScrylux } from '../../src/exchange/import/scrylux.js';
 import type { Snapshot } from '../../src/snapshot.js';
 import { HttpError } from '../../src/v1/errors.js';
 import { canonical, snapshotOf, us1Model, type ExchangeFile } from './fixtures.js';
 
-// A Specter file becomes a plan with its records, statuses and origins as they are (FR-004, FR-008 to FR-010).
+// A Scrylux file becomes a plan with its records, statuses and origins as they are (FR-004, FR-008 to FR-010).
 
-const plan = (file: ExchangeFile): ImportPlan => planSpecter(SpecterFileV1.parse(file));
+const plan = (file: ExchangeFile): ImportPlan => planScrylux(ScryluxFileV1.parse(file));
 const checked = (file: ExchangeFile) => checkPlan(plan(file), { existingNames: [] });
 
 function refusal(run: () => unknown): HttpError {
@@ -23,7 +23,7 @@ function refusal(run: () => unknown): HttpError {
   throw new Error('expected a refusal');
 }
 
-describe('planSpecter', () => {
+describe('planScrylux', () => {
   it('plans one model with every record, its place in the file, and no notes', () => {
     const result = plan(us1Model());
     expect(result.notes).toEqual([]);
@@ -85,14 +85,14 @@ describe('planSpecter', () => {
   it('refuses a file stored before today’s rules, naming the element and the field (spec edge case)', () => {
     const file = us1Model();
     (file.elements[3] as { properties: unknown }).properties = { flags: { legacy_flag: true } };
-    const err = refusal(() => parseFile('specter', file));
+    const err = refusal(() => parseFile('scrylux', file));
     expect(err.status).toBe(400);
     expect(err.message).toBe("file.elements.3: properties: unknown flag");
   });
 
   it('round-trips in memory: plan, check, export again, and compare once ids are mapped (FR-004)', () => {
-    const original = buildSpecterFile(snapshotOf(us1Model()), new Date('2026-10-10T09:30:00.000Z'));
-    const again = buildSpecterFile(snapshotFromPlan(checked(original as unknown as ExchangeFile)), new Date('2030-01-01T00:00:00.000Z'));
+    const original = buildScryluxFile(snapshotOf(us1Model()), new Date('2026-10-10T09:30:00.000Z'));
+    const again = buildScryluxFile(snapshotFromPlan(checked(original as unknown as ExchangeFile)), new Date('2030-01-01T00:00:00.000Z'));
     expect(canonical(again as unknown as ExchangeFile)).toEqual(canonical(original as unknown as ExchangeFile));
   });
 });

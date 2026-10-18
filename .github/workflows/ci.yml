@@ -81,19 +81,19 @@ jobs:
       - run: pnpm test
       # `pnpm test` runs five packages at once, and pnpm then puts the package name in front of every line of
       # output. GitHub only reads a `::warning` command at the start of a line, so a warning raised there is
-      # printed but never becomes an annotation. This runs the two tests that raise one (Specter's own threat model
-      # and the demo's) as a single project, which pnpm leaves unprefixed (docs/ci.md, "Specter's own threat model").
+      # printed but never becomes an annotation. This runs the two tests that raise one (Scrylux's own threat model
+      # and the demo's) as a single project, which pnpm leaves unprefixed (docs/ci.md, "Scrylux's own threat model").
       - name: Threat model warnings
         if: ${{ !cancelled() }}
-        run: pnpm --filter @specter/api exec vitest run test/dogfood/threat-model.test.ts test/demo/demo.test.ts
+        run: pnpm --filter @scrylux/api exec vitest run test/dogfood/threat-model.test.ts test/demo/demo.test.ts
       # The browser tests run inside this required job, so they gate merges without a change to the
       # ruleset. They need the *built* app: only it serves the UI and applies the CSP.
       - name: Build
         run: pnpm build
       - name: Check the built UI for inline code and data URIs
-        run: pnpm --filter @specter/web verify:build
+        run: pnpm --filter @scrylux/web verify:build
       - name: Install Chromium
-        run: pnpm --filter @specter/web exec playwright install --with-deps chromium
+        run: pnpm --filter @scrylux/web exec playwright install --with-deps chromium
       - name: Browser tests
         run: pnpm test:e2e
       # A failed browser test keeps a Playwright trace: its network traffic (session cookies, tokens), what was
@@ -118,4 +118,4 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: docker build --pull -t specter:ci .
+      - run: docker build --pull -t scrylux:ci .

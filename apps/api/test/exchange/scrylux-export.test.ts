@@ -1,19 +1,19 @@
-import { SpecterFileV1 } from '@specter/core';
+import { ScryluxFileV1 } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
-import { buildSpecterFile, serializeExport } from '../../src/exchange/specter-export.js';
+import { buildScryluxFile, serializeExport } from '../../src/exchange/scrylux-export.js';
 import { snapshotOf, us1Model } from './fixtures.js';
 
-// The Specter file an export writes (contracts/specter-file.md): every key, in a fixed order, records in content order,
+// The Scrylux file an export writes (contracts/scrylux-file.md): every key, in a fixed order, records in content order,
 // and bytes that change only when the model does (FR-003, FR-005).
 
 const at = new Date('2026-10-10T09:30:00.000Z');
-const build = () => buildSpecterFile(snapshotOf(us1Model()), at);
+const build = () => buildScryluxFile(snapshotOf(us1Model()), at);
 
-describe('buildSpecterFile', () => {
+describe('buildScryluxFile', () => {
   it('writes the header and the three arrays, in the contract’s key order', () => {
     const file = build();
     expect(Object.keys(file)).toEqual(['format', 'format_version', 'exported_at', 'project', 'threat_model', 'elements', 'threats', 'mitigations']);
-    expect(file.format).toBe('specter');
+    expect(file.format).toBe('scrylux');
     expect(file.format_version).toBe(1);
     expect(file.exported_at).toBe('2026-10-10T09:30:00.000Z');
     expect(file.project).toEqual({ name: 'Payments' });
@@ -48,14 +48,14 @@ describe('buildSpecterFile', () => {
     const snapshot = snapshotOf(us1Model());
     const first = snapshot.elements.find((element) => element.id === 'p-batch');
     if (first) first.properties = { tags: [], flags: {} };
-    expect(buildSpecterFile(snapshot, at).elements.find((element) => element.name === 'Batch')?.properties).toEqual({});
+    expect(buildScryluxFile(snapshot, at).elements.find((element) => element.name === 'Batch')?.properties).toEqual({});
   });
 
   it('exports what is stored, even outside today’s vocabulary, so a later import can name it', () => {
     const snapshot = snapshotOf(us1Model());
     const api = snapshot.elements.find((element) => element.id === 'p-api');
     if (api) api.properties = { flags: { legacy_flag: true }, zeta: 1, alpha: 2 };
-    expect(buildSpecterFile(snapshot, at).elements.find((element) => element.name === 'API')?.properties).toEqual({
+    expect(buildScryluxFile(snapshot, at).elements.find((element) => element.name === 'API')?.properties).toEqual({
       flags: { legacy_flag: true },
       alpha: 2,
       zeta: 1,
@@ -85,7 +85,7 @@ describe('buildSpecterFile', () => {
     backward.threats.reverse();
     backward.mitigations.reverse();
     backward.elements.forEach((element, index) => (element.created_at = `2026-10-10T00:00:0${index}.000Z`));
-    expect(buildSpecterFile(backward, at)).toEqual(buildSpecterFile(forward, at));
+    expect(buildScryluxFile(backward, at)).toEqual(buildScryluxFile(forward, at));
     expect(build().elements.map((element) => element.type)).toEqual([
       'trust_boundary', 'trust_boundary', 'external_entity', 'process', 'process', 'data_store', 'data_flow', 'data_flow',
     ]);
@@ -95,12 +95,12 @@ describe('buildSpecterFile', () => {
     const snapshot = snapshotOf(us1Model());
     const clone = { ...(snapshot.elements.find((element) => element.id === 'p-batch') as (typeof snapshot.elements)[number]), id: 'p-batch-2' };
     snapshot.elements.push(clone);
-    const names = buildSpecterFile(snapshot, at).elements.filter((element) => element.name === 'Batch').map((element) => element.id);
+    const names = buildScryluxFile(snapshot, at).elements.filter((element) => element.name === 'Batch').map((element) => element.id);
     expect(names).toEqual(['p-batch', 'p-batch-2']);
   });
 
   it('writes a file the schema accepts', () => {
-    expect(SpecterFileV1.safeParse(build()).success).toBe(true);
+    expect(ScryluxFileV1.safeParse(build()).success).toBe(true);
   });
 });
 
@@ -110,13 +110,13 @@ describe('serializeExport', () => {
     expect(text.endsWith('}\n')).toBe(true);
     expect(text.endsWith('\n\n')).toBe(false);
     expect(text).not.toContain('\r');
-    expect(text.split('\n')[1]).toBe('  "format": "specter",');
+    expect(text.split('\n')[1]).toBe('  "format": "scrylux",');
     expect(JSON.parse(text)).toEqual(build());
   });
 
   it('differs between two exports of an unchanged model only on the export time line (FR-005)', () => {
-    const first = serializeExport(buildSpecterFile(snapshotOf(us1Model()), new Date('2026-10-10T09:30:00.000Z'))).split('\n');
-    const second = serializeExport(buildSpecterFile(snapshotOf(us1Model()), new Date('2027-01-02T03:04:05.000Z'))).split('\n');
+    const first = serializeExport(buildScryluxFile(snapshotOf(us1Model()), new Date('2026-10-10T09:30:00.000Z'))).split('\n');
+    const second = serializeExport(buildScryluxFile(snapshotOf(us1Model()), new Date('2027-01-02T03:04:05.000Z'))).split('\n');
     expect(second).toHaveLength(first.length);
     const differing = first.flatMap((line, index) => (line === second[index] ? [] : [line.trim().split(':')[0]]));
     expect(differing).toEqual(['"exported_at"']);

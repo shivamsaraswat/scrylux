@@ -1,14 +1,14 @@
-# Specter
+# Scrylux
 
 An open-source, self-hosted threat modeling platform, in early development.
 
-The goal: give Specter the context of a project (design docs, a repository, Jira/Confluence) and get a threat model back, or build one by hand on a data-flow diagram. Both paths produce the same threat model, AI suggestions are always drafts with citations that a human accepts or rejects, and you bring your own LLM, including a fully local one, so nothing has to leave your network.
+The goal: give Scrylux the context of a project (design docs, a repository, Jira/Confluence) and get a threat model back, or build one by hand on a data-flow diagram. Both paths produce the same threat model, AI suggestions are always drafts with citations that a human accepts or rejects, and you bring your own LLM, including a fully local one, so nothing has to leave your network.
 
-> **Current status: Phase 2 in progress; the data-flow diagram editor has landed.** Today Specter is an API and a web app for STRIDE threat models: sign in, manage projects and threat models, draw the system as a data-flow diagram (processes, data stores, external entities, data flows and trust boundaries, with undo and redo, saved as you go), and create, edit and delete threats and their mitigations (Node.js + Express, React, PostgreSQL), already deployable to AWS. Rule-generated threats, reports and import/export are the rest of Phase 2. Roadmap phases not marked ✅ are planned, not built. The run instructions, environment variables and API documented here describe the app as it exists now.
+> **Current status: Phase 2 in progress; the data-flow diagram editor has landed.** Today Scrylux is an API and a web app for STRIDE threat models: sign in, manage projects and threat models, draw the system as a data-flow diagram (processes, data stores, external entities, data flows and trust boundaries, with undo and redo, saved as you go), and create, edit and delete threats and their mitigations (Node.js + Express, React, PostgreSQL), already deployable to AWS. Rule-generated threats, reports and import/export are the rest of Phase 2. Roadmap phases not marked ✅ are planned, not built. The run instructions, environment variables and API documented here describe the app as it exists now.
 
 ## Screenshots
 
-The fictional demo threat model ([`docs/demo/`](docs/demo/)), a small note-taking app, in Specter.
+The fictional demo threat model ([`docs/demo/`](docs/demo/)), a small note-taking app, in Scrylux.
 
 ![The diagram editor: a fictional notes app with two nested trust boundaries, its data flows, and the number of open threats on every element](docs/images/diagram-editor.png)
 
@@ -23,7 +23,7 @@ The fictional demo threat model ([`docs/demo/`](docs/demo/)), a small note-takin
 
 They are pictures of the demo, taken by hand, and nothing checks that they are current: retake them when the interface changes.
 
-1. Start Specter from a clone ([CONTRIBUTING.md](CONTRIBUTING.md) has the setup), sign in, create a project named `Specter demo (fictional)` and import [`docs/demo/notes-app.specter.json`](docs/demo/notes-app.specter.json) into it.
+1. Start Scrylux from a clone ([CONTRIBUTING.md](CONTRIBUTING.md) has the setup), sign in, create a project named `Scrylux demo (fictional)` and import [`docs/demo/notes-app.scrylux.json`](docs/demo/notes-app.scrylux.json) into it.
 2. Use a browser window of **1400 × 900**. Crop each picture to the application area: no browser chrome, **no address bar, no account name** (crop below the page header), and nothing else on screen.
 3. Take the four views and save them as PNG under `docs/images/` with these names:
    - `diagram-editor.png`: the threat model's **Diagram** tab after **Fit to view**, from the title down to the bottom of the canvas;
@@ -57,9 +57,9 @@ What v0.1 does not do, so that you can decide before you rely on it:
 - **No AI features.** Nothing reads documents or calls a language model yet; that is Phase 3.
 - **One container with its database, and no TLS of its own.** Put a proxy that terminates TLS in front of it before anyone else can reach it.
 - **The image is not signed**, and carries no build attestation or SBOM in this release; pin it by the digest on the release page. Verifiable release images are planned for Phase 6.
-- **Open risks exist.** Specter keeps its own threat model, built in Specter, with what covers each risk and what is still open: [`docs/threat-model/`](docs/threat-model/).
+- **Open risks exist.** Scrylux keeps its own threat model, built in Scrylux, with what covers each risk and what is still open: [`docs/threat-model/`](docs/threat-model/).
 
-More: the [changelog](CHANGELOG.md), the [releases](https://github.com/shivamsaraswat/specter/releases), the [demo threat model](docs/demo/), [Specter's own threat model](docs/threat-model/), the [contribution guide](CONTRIBUTING.md) and the [security policy](SECURITY.md).
+More: the [changelog](CHANGELOG.md), the [releases](https://github.com/shivamsaraswat/scrylux/releases), the [demo threat model](docs/demo/), [Scrylux's own threat model](docs/threat-model/), the [contribution guide](CONTRIBUTING.md) and the [security policy](SECURITY.md).
 
 ## Run locally with Docker
 
@@ -82,12 +82,12 @@ Requires Node 22+, pnpm, and a reachable PostgreSQL **13 or newer** (CI and `doc
 ```sh
 pnpm install
 cp .env.example .env   # edit values, then export them into your shell
-pnpm --filter @specter/api start
+pnpm --filter @scrylux/api start
 ```
 
 The app does not read `.env` itself — export the variables (e.g. `set -a; source .env; set +a`) or set them in your process manager.
 
-On startup the app applies any pending SQL files from `packages/db/migrations/` (tracked in a `schema_migrations` table) and creates/updates the admin user. `pnpm --filter @specter/api migrate` runs only the migrations. `pnpm run test` runs the whole workspace's test suite.
+On startup the app applies any pending SQL files from `packages/db/migrations/` (tracked in a `schema_migrations` table) and creates/updates the admin user. `pnpm --filter @scrylux/api migrate` runs only the migrations. `pnpm run test` runs the whole workspace's test suite.
 
 The original threat tracker was removed in Phase 1 Milestone 5. On the first start after upgrading, a migration drops its entries (the `threat_entries` table) and the `legacy_threat_links` table, and deletes the "Imported" project that an earlier version created from those entries, with everything inside it. Nothing is exported first: those entries were throwaway data. User accounts, and any project that did not come from that import, are untouched.
 
@@ -96,9 +96,9 @@ If you're used to this project's pre-Phase-1 npm commands, here's the mapping:
 | Old (npm, single package) | New (pnpm workspace) |
 | --- | --- |
 | `npm install` | `pnpm install` |
-| `npm start` | `pnpm --filter @specter/api start` |
-| `npm run migrate` | `pnpm --filter @specter/api migrate` |
-| `npm test` | `pnpm run test` (whole workspace) or `pnpm --filter @specter/api test` (API only) |
+| `npm start` | `pnpm --filter @scrylux/api start` |
+| `npm run migrate` | `pnpm --filter @scrylux/api migrate` |
+| `npm test` | `pnpm run test` (whole workspace) or `pnpm --filter @scrylux/api test` (API only) |
 
 ## Development (contributing)
 
@@ -133,16 +133,16 @@ The tests, and the browser tests further down, read a gitignored `.env.test` at 
 To run the web app while you work on it, start the API and Vite in two terminals. Vite proxies `/api` to the API, and serves the app on <http://localhost:5173>:
 
 ```sh
-pnpm --filter @specter/api dev
-pnpm --filter @specter/web dev
+pnpm --filter @scrylux/api dev
+pnpm --filter @scrylux/web dev
 ```
 
 The Vite dev server does not apply the content security policy. That is only checked against the built app, by the browser tests:
 
 ```sh
 pnpm run build
-pnpm --filter @specter/web verify:build    # the built page has no inline code or data: URIs
-pnpm --filter @specter/web exec playwright install chromium    # once
+pnpm --filter @scrylux/web verify:build    # the built page has no inline code or data: URIs
+pnpm --filter @scrylux/web exec playwright install chromium    # once
 pnpm run test:e2e                          # Playwright, against the built app and a real database
 ```
 
@@ -152,8 +152,8 @@ are added later. `pnpm run test` migrates and seeds a fresh test database itself
 even on a database volume that's never been started before.
 
 The tests need a role that can create databases (the `postgres` user in `docker-compose.yml` and in
-CI can). `packages/db`'s tests drop and recreate a database called `specter_db_test`, and create and
-drop short-lived `specter_upgrade_*` databases, on the server `DB_HOST` points to, so never point
+CI can). `packages/db`'s tests drop and recreate a database called `scrylux_db_test`, and create and
+drop short-lived `scrylux_upgrade_*` databases, on the server `DB_HOST` points to, so never point
 `pnpm test` at a server that holds anything that matters. `apps/api`'s own tests still use
 `DB_NAME` itself, and insert rows into it on every run.
 
@@ -203,12 +203,12 @@ If `ADMIN_USERNAME`/`ADMIN_PASSWORD` are unset, no user is seeded and nobody can
 | POST | `/api/login` | no | `{username, password}` → `{token}` (for API clients). Failed attempts are throttled: `429` |
 | POST | `/api/session` and `/api/session/{refresh,logout,logout-all}` | cookie | The browser's sign-in and session. Used by the web app, not meant for scripts. See [API.md](API.md) |
 | POST | `/api/users` | Bearer | `{username, password}` → `{id, username}`; password 8–72 bytes |
-| | `/api/v1/…` | Bearer | Projects, threat models, elements, threats and mitigations: create, read, update, delete and list, generating threats from a diagram, downloading a report of a threat model as Markdown or HTML, and exporting a threat model as a Specter or OTM file and importing a Specter, OTM or Threat Dragon file (32 operations) |
+| | `/api/v1/…` | Bearer | Projects, threat models, elements, threats and mitigations: create, read, update, delete and list, generating threats from a diagram, downloading a report of a threat model as Markdown or HTML, and exporting a threat model as a Scrylux or OTM file and importing a Scrylux, OTM or Threat Dragon file (32 operations) |
 | GET | `/api/v1/openapi.json` | Bearer | The OpenAPI 3.1 document for v1 |
 
 The v1 request bodies are validated, ids are UUIDs, and lists come oldest first. The original `/api/threats` endpoints are gone.
 
-Send the token as `Authorization: Bearer <token>`. See [API.md](API.md) for every operation, the fields, curl examples and error codes, and [`apps/api/openapi.json`](apps/api/openapi.json) for the OpenAPI document. The file formats Specter exports and imports (its own lossless file, [Open Threat Model](https://github.com/iriusrisk/OpenThreatModel) and OWASP Threat Dragon) are described in [`docs/formats/`](docs/formats/), with the Specter file's JSON Schema.
+Send the token as `Authorization: Bearer <token>`. See [API.md](API.md) for every operation, the fields, curl examples and error codes, and [`apps/api/openapi.json`](apps/api/openapi.json) for the OpenAPI document. The file formats Scrylux exports and imports (its own lossless file, [Open Threat Model](https://github.com/iriusrisk/OpenThreatModel) and OWASP Threat Dragon) are described in [`docs/formats/`](docs/formats/), with the Scrylux file's JSON Schema.
 
 ## Deployment
 
@@ -217,7 +217,7 @@ Send the token as `Authorization: Bearer <token>`. See [API.md](API.md) for ever
 - Point the load balancer health check at `/health`.
 - The compose defaults for `JWT_SECRET` and passwords are for local use only — set real values in any deployed environment.
 - The app reads its secrets from AWS Secrets Manager when configured to (see `apps/api/src/config.ts`).
-- **Memory:** give the host at least **2 GiB** if it will hold large threat models. Exporting or importing the largest one Specter allows (1,000 elements, about 15,000 threats) takes the API about 500 to 650 MB while it runs, on top of about 110 MB at rest, and two at once about 700 MB. A 1 GiB host (such as a `t3.micro`) is fine for ordinary use, but it is not promised to survive several large exports or imports at the same time. Lowering the 64 MiB import limit would not help: memory follows the number of records.
+- **Memory:** give the host at least **2 GiB** if it will hold large threat models. Exporting or importing the largest one Scrylux allows (1,000 elements, about 15,000 threats) takes the API about 500 to 650 MB while it runs, on top of about 110 MB at rest, and two at once about 700 MB. A 1 GiB host (such as a `t3.micro`) is fine for ordinary use, but it is not promised to survive several large exports or imports at the same time. Lowering the 64 MiB import limit would not help: memory follows the number of records.
 
 A reference deployment (ALB → private EC2 → RDS, Secrets Manager, CloudWatch) has been run against this app on AWS; a generic public write-up isn't published yet.
 
@@ -229,10 +229,10 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first, and no
 
 To report a vulnerability, follow [SECURITY.md](SECURITY.md). Report it privately, never in a public issue.
 
-Specter's own threat model, built in Specter, is in [`docs/threat-model/`](docs/threat-model/); [start with the report](docs/threat-model/report.md).
+Scrylux's own threat model, built in Scrylux, is in [`docs/threat-model/`](docs/threat-model/); [start with the report](docs/threat-model/report.md).
 
 ## License
 
-Specter is licensed under the [Apache License 2.0](LICENSE). In short, you may use, modify and distribute it, including commercially. In return you keep the license and copyright notices and state your changes, and the license includes an express patent grant from contributors.
+Scrylux is licensed under the [Apache License 2.0](LICENSE). In short, you may use, modify and distribute it, including commercially. In return you keep the license and copyright notices and state your changes, and the license includes an express patent grant from contributors.
 
 The container image also carries the license notices of the web app's bundled dependencies, at `apps/web/dist/.vite/license.md`.

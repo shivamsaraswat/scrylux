@@ -1,4 +1,4 @@
-import { ImportSummary } from '@specter/core';
+import { ImportSummary } from '@scrylux/core';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { ImportNotes } from './ImportNotes.js';

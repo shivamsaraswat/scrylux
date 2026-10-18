@@ -79,13 +79,13 @@ export function decide(input: GateInput): GateResult {
   }
 
   const differs: string[] = input.packages.filter((p) => p.version !== parsed.core).map((p) => `${p.path} is ${p.version}`);
-  if (input.composeDefault === null) differs.push('docker-compose.release.yml has no SPECTER_VERSION default');
+  if (input.composeDefault === null) differs.push('docker-compose.release.yml has no SCRYLUX_VERSION default');
   else if (input.composeDefault !== parsed.core) differs.push(`docker-compose.release.yml defaults to ${input.composeDefault}`);
   if (differs.length > 0) {
     return refuse(
       'G3',
       `the versions do not agree with the tag's version ${parsed.core}: ${differs.join('; ')}`,
-      `set every package.json and the default of SPECTER_VERSION in docker-compose.release.yml to ${parsed.core} in a pull request, merge it, and tag the merge commit (a release candidate carries the version it is a candidate for)`,
+      `set every package.json and the default of SCRYLUX_VERSION in docker-compose.release.yml to ${parsed.core} in a pull request, merge it, and tag the merge commit (a release candidate carries the version it is a candidate for)`,
     );
   }
 
@@ -162,7 +162,7 @@ export function escapeCommandData(data: string): string {
 // candidate exercises it (tasks.md T056). Every value reaches it through the environment, never through a script expression.
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const IMAGE = 'ghcr.io/shivamsaraswat/specter';
+const IMAGE = 'ghcr.io/shivamsaraswat/scrylux';
 const PACKAGE_FILES = ['apps/api', 'apps/web', 'packages/core', 'packages/db', 'packages/threat-library'].map((p) => `${p}/package.json`);
 
 interface Ran {

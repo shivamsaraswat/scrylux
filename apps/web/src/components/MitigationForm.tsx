@@ -4,7 +4,7 @@ import {
   MitigationUpdateInput,
   type MitigationRecord,
   type MitigationStatus,
-} from '@specter/core';
+} from '@scrylux/core';
 import { useState, type FormEvent } from 'react';
 import { zodFieldErrors } from '../api/errors.js';
 import { ErrorSummary } from './ErrorSummary.js';

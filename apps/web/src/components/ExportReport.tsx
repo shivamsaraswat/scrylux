@@ -1,4 +1,4 @@
-import type { ReportFormat } from '@specter/core';
+import type { ReportFormat } from '@scrylux/core';
 import { useState } from 'react';
 import { download } from '../api/download.js';
 import { ApiError, isGone } from '../api/errors.js';

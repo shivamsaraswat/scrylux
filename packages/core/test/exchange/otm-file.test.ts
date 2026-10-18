@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { OtmFile, OtmSpecter } from '../../src/index.js';
+import { OtmFile, OtmScrylux } from '../../src/index.js';
 
-// What Specter reads of an OTM 0.2.0 file (contracts/otm-mapping.md, research #7): only the members the mapping uses,
-// typed, with every other member allowed and never walked. Specter's own attributes are strict.
+// What Scrylux reads of an OTM 0.2.0 file (contracts/otm-mapping.md, research #7): only the members the mapping uses,
+// typed, with every other member allowed and never walked. Scrylux's own attributes are strict.
 
 const example = (): Record<string, unknown> =>
   JSON.parse(readFileSync(fileURLToPath(new URL('../../../../apps/api/test/exchange/fixtures/otm/EXAMPLE.json', import.meta.url)), 'utf8')) as Record<string, unknown>;
@@ -74,23 +74,23 @@ describe('OtmFile refuses', () => {
   });
 });
 
-describe('OtmSpecter attributes (strict)', () => {
-  it('parses what Specter writes for each kind of object', () => {
-    expect(OtmSpecter.project.safeParse({ format_version: 1, exported_at: 'x', status: 'draft', methodology: 'STRIDE' }).success).toBe(true);
-    expect(OtmSpecter.zone.safeParse({ layout: { x: 1, y: 2, width: 100, height: 100 }, parent_boundary_id: null }).success).toBe(true);
-    expect(OtmSpecter.zone.safeParse({ outside: true }).success).toBe(true);
-    expect(OtmSpecter.component.safeParse({ type: 'process', flags: { internet_facing: true }, layout: { x: 1, y: 2 }, parent_boundary_id: 'z' }).success).toBe(true);
-    expect(OtmSpecter.dataflow.safeParse({ flags: {} }).success).toBe(true);
+describe('OtmScrylux attributes (strict)', () => {
+  it('parses what Scrylux writes for each kind of object', () => {
+    expect(OtmScrylux.project.safeParse({ format_version: 1, exported_at: 'x', status: 'draft', methodology: 'STRIDE' }).success).toBe(true);
+    expect(OtmScrylux.zone.safeParse({ layout: { x: 1, y: 2, width: 100, height: 100 }, parent_boundary_id: null }).success).toBe(true);
+    expect(OtmScrylux.zone.safeParse({ outside: true }).success).toBe(true);
+    expect(OtmScrylux.component.safeParse({ type: 'process', flags: { internet_facing: true }, layout: { x: 1, y: 2 }, parent_boundary_id: 'z' }).success).toBe(true);
+    expect(OtmScrylux.dataflow.safeParse({ flags: {} }).success).toBe(true);
     expect(
-      OtmSpecter.threat.safeParse({ element_id: null, likelihood: 'Low', impact: 'High', status: 'open', status_reason: null, origin: 'rule', library_ref: 'r', stale: null }).success,
+      OtmScrylux.threat.safeParse({ element_id: null, likelihood: 'Low', impact: 'High', status: 'open', status_reason: null, origin: 'rule', library_ref: 'r', stale: null }).success,
     ).toBe(true);
-    expect(OtmSpecter.mitigation.safeParse({ threat_id: 't', status: 'proposed', external_ref: null }).success).toBe(true);
+    expect(OtmScrylux.mitigation.safeParse({ threat_id: 't', status: 'proposed', external_ref: null }).success).toBe(true);
   });
 
   it('refuses an unknown key, a wrong version and a bad enum value', () => {
-    expect(OtmSpecter.project.safeParse({ format_version: 2, exported_at: 'x', status: 'draft', methodology: 'STRIDE' }).success).toBe(false);
-    expect(OtmSpecter.component.safeParse({ type: 'process', flags: {}, layout: null, parent_boundary_id: null, extra: 1 }).success).toBe(false);
-    expect(OtmSpecter.component.safeParse({ type: 'data_flow', flags: {}, layout: null, parent_boundary_id: null }).success).toBe(false);
-    expect(OtmSpecter.threat.safeParse({ element_id: null, likelihood: 'Huge', impact: 'High', status: 'open', status_reason: null, origin: 'rule', library_ref: 'r', stale: null }).success).toBe(false);
+    expect(OtmScrylux.project.safeParse({ format_version: 2, exported_at: 'x', status: 'draft', methodology: 'STRIDE' }).success).toBe(false);
+    expect(OtmScrylux.component.safeParse({ type: 'process', flags: {}, layout: null, parent_boundary_id: null, extra: 1 }).success).toBe(false);
+    expect(OtmScrylux.component.safeParse({ type: 'data_flow', flags: {}, layout: null, parent_boundary_id: null }).success).toBe(false);
+    expect(OtmScrylux.threat.safeParse({ element_id: null, likelihood: 'Huge', impact: 'High', status: 'open', status_reason: null, origin: 'rule', library_ref: 'r', stale: null }).success).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { describeStale, type ElementRecord, type MitigationRecord, type ThreatRecord, type ThreatUpdateInput } from '@specter/core';
+import { describeStale, type ElementRecord, type MitigationRecord, type ThreatRecord, type ThreatUpdateInput } from '@scrylux/core';
 import { Fragment, useMemo, useState } from 'react';
 import { writeErrorMessage } from '../api/errors.js';
 import { useDeleteThreat, useUpdateThreat } from '../api/queries.js';

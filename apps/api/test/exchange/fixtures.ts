@@ -13,10 +13,10 @@ import {
   type ThreatOrigin,
   type ThreatRecord,
   type ThreatStatus,
-} from '@specter/core';
+} from '@scrylux/core';
 import type { Snapshot } from '../../src/snapshot.js';
 
-// Builders the exchange suites share. Each returns a Specter file in the shape of contracts/specter-file.md, built by
+// Builders the exchange suites share. Each returns a Scrylux file in the shape of contracts/scrylux-file.md, built by
 // hand, so a test can change one field and see which rule refuses it. Ids are readable strings: in a file they are
 // opaque, and an import replaces them.
 
@@ -55,7 +55,7 @@ export interface FileMitigation {
 }
 
 export interface ExchangeFile {
-  format: 'specter';
+  format: 'scrylux';
   format_version: 1;
   exported_at: string;
   project: { name: string };
@@ -108,7 +108,7 @@ const mitigation = (id: string, threat_id: string, description: string, status: 
 // and without a ticket.
 export function us1Model(): ExchangeFile {
   return {
-    format: 'specter',
+    format: 'scrylux',
     format_version: 1,
     exported_at: '2026-10-10T09:30:00.000Z',
     project: { name: 'Payments' },
@@ -212,9 +212,9 @@ export function hostile(): ExchangeFile {
   return file;
 }
 
-// The request body of the check and import operations for a Specter file.
-export function specterBody(file: ExchangeFile, names?: string[]): { format: 'specter'; names?: string[]; file: ExchangeFile } {
-  return names === undefined ? { format: 'specter', file } : { format: 'specter', names, file };
+// The request body of the check and import operations for a Scrylux file.
+export function scryluxBody(file: ExchangeFile, names?: string[]): { format: 'scrylux'; names?: string[]; file: ExchangeFile } {
+  return names === undefined ? { format: 'scrylux', file } : { format: 'scrylux', names, file };
 }
 
 // The same file with every id replaced through `map`, and every reference with it.

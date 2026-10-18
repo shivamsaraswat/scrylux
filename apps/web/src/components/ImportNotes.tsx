@@ -1,4 +1,4 @@
-import type { ImportNote } from '@specter/core';
+import type { ImportNote } from '@scrylux/core';
 import { NOTE_HEADINGS, groupNotes, noteDetail } from './import-notes.js';
 
 // Everything an import leaves out or changes, grouped by kind (FR-016). Names and places come from the file, so they are

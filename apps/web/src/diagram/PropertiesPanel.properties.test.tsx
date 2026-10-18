@@ -1,4 +1,4 @@
-import type { JsonValue } from '@specter/core';
+import type { JsonValue } from '@scrylux/core';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';

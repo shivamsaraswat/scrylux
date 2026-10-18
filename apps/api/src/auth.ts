@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
-import { uuid } from '@specter/core';
+import { uuid } from '@scrylux/core';
 import type { NextFunction, Request, Response } from 'express';
 import config from './config.js';
 import db from './db.js';
@@ -43,7 +43,7 @@ export function signToken(user: Pick<User, 'id' | 'username'>): string {
 }
 
 // The audience that marks a browser UI's access token. An /api/login token has no audience.
-const UI_AUDIENCE = 'specter-ui';
+const UI_AUDIENCE = 'scrylux-ui';
 const ACCESS_TOKEN_SECONDS = 300;
 
 // The short-lived token the browser UI keeps in page memory (research #6). It names its session, so

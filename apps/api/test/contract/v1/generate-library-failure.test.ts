@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { LibraryLoadError } from '@specter/threat-library';
+import { LibraryLoadError } from '@scrylux/threat-library';
 import app from '../../../src/app.js';
 import { login, startTestServer, type TestServer } from '../helpers.js';
 import { captureWriteLog, client, uniqueName, type ApiRecord, type V1Client } from './helpers.js';
@@ -9,8 +9,8 @@ import { captureWriteLog, client, uniqueName, type ApiRecord, type V1Client } fr
 // rule file would. This file mocks it, so it stays apart from the tests that need the real one.
 const library = vi.hoisted(() => ({ fail: true }));
 
-vi.mock('@specter/threat-library', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@specter/threat-library')>();
+vi.mock('@scrylux/threat-library', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@scrylux/threat-library')>();
   return {
     ...original,
     shippedLibrary: () => {

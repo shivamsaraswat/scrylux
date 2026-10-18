@@ -113,7 +113,7 @@ describe('G3: versions agree', () => {
     expect(differs.condition).toContain('0.2.0');
     const missing = refused(decide(good({ composeDefault: null })));
     expect(missing.gate).toBe('G3');
-    expect(missing.condition).toMatch(/no SPECTER_VERSION default/);
+    expect(missing.condition).toMatch(/no SCRYLUX_VERSION default/);
   });
 
   it('compares a candidate with its core version, not its suffix', () => {
@@ -292,13 +292,13 @@ describe('escapeCommandData', () => {
 // published" and as an error. Reading an outage as "not published" is the one mistake that matters: the gate would go on to build.
 describe('isNotPublished', () => {
   it.each([
-    'Error: reading manifest 0.1.0 in ghcr.io/shivamsaraswat/specter: manifest unknown',
+    'Error: reading manifest 0.1.0 in ghcr.io/shivamsaraswat/scrylux: manifest unknown',
     'Error: name unknown: repository name not known to registry',
-    'Error: initializing source docker://ghcr.io/shivamsaraswat/specter:0.1.0: reading manifest: denied',
+    'Error: initializing source docker://ghcr.io/shivamsaraswat/scrylux:0.1.0: reading manifest: denied',
     'unauthorized: authentication required',
     'requested access to the resource is denied',
     'received unexpected HTTP status: 404 Not Found',
-    'Get "https://ghcr.io/v2/shivamsaraswat/specter/manifests/0.1.0": 403 Forbidden',
+    'Get "https://ghcr.io/v2/shivamsaraswat/scrylux/manifests/0.1.0": 403 Forbidden',
     'the manifest was NOT FOUND',
   ])('reads %j as not published', (answer) => {
     expect(isNotPublished(answer)).toBe(true);

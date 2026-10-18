@@ -9,8 +9,8 @@ const fixtures = fileURLToPath(new URL('../../../../apps/api/test/exchange/fixtu
 const load = (path: string): unknown => JSON.parse(readFileSync(`${fixtures}${path}`, 'utf8')) as unknown;
 
 describe('detectFormat', () => {
-  it('recognises a Specter file by its format member', () => {
-    expect(detectFormat({ format: 'specter', format_version: 1 })).toEqual({ format: 'specter' });
+  it('recognises a Scrylux file by its format member', () => {
+    expect(detectFormat({ format: 'scrylux', format_version: 1 })).toEqual({ format: 'scrylux' });
   });
 
   it('recognises an OTM file by a string otmVersion, whatever the version, so the API can name the one it refuses', () => {

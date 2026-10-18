@@ -14,10 +14,10 @@ RUN pnpm install --frozen-lockfile
 COPY apps/api ./apps/api
 COPY apps/web ./apps/web
 COPY packages ./packages
-# "..." builds the api's workspace dependencies (@specter/db) first, in dependency order. The web app
+# "..." builds the api's workspace dependencies (@scrylux/db) first, in dependency order. The web app
 # is built too; the final stage ships its dist next to the API.
-RUN pnpm --filter "@specter/api..." --filter @specter/web run build
-RUN pnpm --filter=@specter/api deploy --prod /prod/api
+RUN pnpm --filter "@scrylux/api..." --filter @scrylux/web run build
+RUN pnpm --filter=@scrylux/api deploy --prod /prod/api
 
 FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
 ENV NODE_ENV=production

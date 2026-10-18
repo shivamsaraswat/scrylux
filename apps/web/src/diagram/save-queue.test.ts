@@ -1,4 +1,4 @@
-import type { ElementRecord } from '@specter/core';
+import type { ElementRecord } from '@scrylux/core';
 import { describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/errors.js';
 import { applyActions } from './operations.js';

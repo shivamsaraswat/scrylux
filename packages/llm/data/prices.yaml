@@ -1,0 +1,100 @@
+# Prices in US dollars per million tokens (Principle IV, FR-033a). Each entry says when its price was checked and where
+# it is published. Models are matched by their exact id; an entry never applies to a model it was not checked for. A
+# model with no entry has an unknown cost, and an operator's own price (LLM_PRICE_INPUT and LLM_PRICE_OUTPUT) wins
+# over this list. Embedding models have an input price only.
+#
+# Optional tier: above_input_tokens and above are chosen per attempt, by the attempt's input tokens.
+#
+# To add or update a price: copy it from the source page, set `checked` to the day you did, and keep the source address.
+# Never estimate a price: leave the model out.
+
+anthropic:
+  - { model: claude-fable-5-1, input: 10, output: 50, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-fable-5, input: 10, output: 50, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-opus-5-5, input: 4, output: 20, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-opus-5, input: 5, output: 25, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-opus-4-8, input: 5, output: 25, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-opus-4-7, input: 5, output: 25, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-opus-4-6, input: 5, output: 25, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-opus-4-5, input: 5, output: 25, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-sonnet-5-5, input: 2, output: 10, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-sonnet-5, input: 2, output: 10, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-sonnet-4-6, input: 3, output: 15, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-sonnet-4-5, input: 3, output: 15, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  # Priced by prompt length: a prompt over 100,000 tokens pays the higher prices.
+  - { model: claude-haiku-5-5, input: 0.1, output: 0.5, above_input_tokens: 100000, above: { input: 0.5, output: 2.5 }, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+  - { model: claude-haiku-4-5, input: 1, output: 5, checked: 2026-10-21, source: https://platform.claude.com/docs/en/about-claude/pricing }
+
+# OpenAI's own models. These apply only to OpenAI's address (api.openai.com): a deployment on Azure, a gateway or a local
+# server is priced by the operator.
+openai-compatible:
+  - { model: gpt-6-astra, input: 10, output: 50, above_input_tokens: 272000, above: { input: 20, output: 75 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-6.1-sol, input: 2, output: 10, above_input_tokens: 272000, above: { input: 4, output: 15 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-6-luna, input: 0.1, output: 0.5, above_input_tokens: 272000, above: { input: 0.2, output: 0.75 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-6-sol, input: 2, output: 10, above_input_tokens: 272000, above: { input: 4, output: 15 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.6-sol, input: 4, output: 20, above_input_tokens: 272000, above: { input: 8, output: 30 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.6-terra, input: 2, output: 12, above_input_tokens: 272000, above: { input: 4, output: 18 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.6-luna, input: 0.2, output: 1.2, above_input_tokens: 272000, above: { input: 0.4, output: 1.8 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.5, input: 5, output: 30, above_input_tokens: 272000, above: { input: 10, output: 45 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.5-pro, input: 30, output: 180, above_input_tokens: 272000, above: { input: 60, output: 270 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.4, input: 2.5, output: 15, above_input_tokens: 272000, above: { input: 5, output: 22.5 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.4-pro, input: 30, output: 180, above_input_tokens: 272000, above: { input: 60, output: 270 }, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.4-mini, input: 0.75, output: 4.5, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.4-nano, input: 0.2, output: 1.25, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.2, input: 1.75, output: 14, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.2-pro, input: 21, output: 168, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.1, input: 1.25, output: 10, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5, input: 1.25, output: 10, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5-mini, input: 0.25, output: 2, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5-nano, input: 0.05, output: 0.4, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5-pro, input: 15, output: 120, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-4.1, input: 2, output: 8, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-4.1-mini, input: 0.4, output: 1.6, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-4.1-nano, input: 0.1, output: 0.4, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-4o, input: 2.5, output: 10, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-4o-2024-05-13, input: 5, output: 15, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-4o-mini, input: 0.15, output: 0.6, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: o1, input: 15, output: 60, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: o1-pro, input: 150, output: 600, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: o3-pro, input: 20, output: 80, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: o3, input: 2, output: 8, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: o4-mini, input: 1.1, output: 4.4, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: o3-mini, input: 1.1, output: 4.4, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-4-turbo-2024-04-09, input: 10, output: 30, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-4-0613, input: 30, output: 60, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-3.5-turbo, input: 0.5, output: 1.5, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-3.5-turbo-0125, input: 0.5, output: 1.5, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: chat-latest, input: 5, output: 30, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5.3-codex, input: 1.75, output: 14, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: gpt-5-search-api, input: 1.25, output: 10, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: text-embedding-3-small, input: 0.02, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: text-embedding-3-large, input: 0.13, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+  - { model: text-embedding-ada-002, input: 0.1, checked: 2026-10-21, source: https://developers.openai.com/api/docs/pricing }
+
+# Amazon Bedrock, On-Demand prices in US East (N. Virginia). Claude on Bedrock is not listed: AWS's price list names its
+# models but not their Bedrock model ids, and a price is never applied to an id it was not checked for. Set
+# LLM_PRICE_INPUT and LLM_PRICE_OUTPUT for those.
+bedrock:
+  - { model: amazon.titan-embed-text-v2:0, input: 0.02, checked: 2026-10-21, source: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/index.json }
+
+# Gemini Developer API, Paid tier, Standard. The unpaid tier has no price but may use your data (docs/ai-providers.md).
+gemini:
+  # The page says this rises to 4.00 and 20.00 from 2026-12-01.
+  - { model: gemini-4-argon, input: 2.0, output: 10.0, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  # The page says this rises to 1.50 and 7.50 from 2027-01-01.
+  - { model: gemini-3.8-flash, input: 0.75, output: 3.75, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  # The page says this rises to 1.50 and 7.50 from 2027-01-01.
+  - { model: gemini-3.6-flash, input: 0.75, output: 3.75, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  - { model: gemini-3.1-pro-preview, input: 2.0, output: 12.0, above_input_tokens: 200000, above: { input: 4.0, output: 18.0 }, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  - { model: gemini-3.5-flash-lite, input: 0.3, output: 2.5, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  # Text, image and video input. Audio input costs more and is not priced here.
+  - { model: gemini-3.1-flash-lite, input: 0.25, output: 1.5, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  # Text, image and video input. Audio input costs more and is not priced here.
+  - { model: gemini-3-flash-preview, input: 0.5, output: 3.0, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  - { model: gemini-2.5-pro, input: 1.25, output: 10.0, above_input_tokens: 200000, above: { input: 2.5, output: 15.0 }, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  # Text, image and video input. Audio input costs more and is not priced here.
+  - { model: gemini-2.5-flash, input: 0.3, output: 2.5, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  # Text, image and video input. Audio input costs more and is not priced here.
+  - { model: gemini-2.5-flash-lite, input: 0.1, output: 0.4, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }
+  # Text input.
+  - { model: gemini-embedding-2, input: 0.2, checked: 2026-10-21, source: https://ai.google.dev/gemini-api/docs/pricing }

@@ -1,0 +1,11 @@
+# The operator's check (docs/ai-providers.md, "Checking the configuration") sends this fixed request to each configured
+# operation, so it holds no user data and says the same every time (FR-047).
+generation:
+  instructions: >-
+    This is a connection check from Scrylux. Answer with a JSON object that has a single field named "status", whose
+    value is the word "ok". Do not add anything else.
+  # The one required string field of the answer.
+  field: status
+  schema_name: connection_check
+embedding:
+  text: A short sentence that Scrylux sends to check that embeddings work.

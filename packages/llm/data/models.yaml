@@ -1,0 +1,116 @@
+# What each model accepts, matched by model id (Principle IV, FR-015a). The first matching entry wins; a field an
+# entry leaves out comes from the provider's "*" entry, which every provider ends with. `*` is the only wildcard.
+# Every `temperature: omit` says why and where that is documented, so a reviewer can check it. A model this file does
+# not know is handled at run time: a 400 that names the setting makes the layer resend once without it and remember.
+#
+# Fields: temperature (send | omit), structured_output (native | instructions), max_tokens_param (openai-compatible
+# only), embedding_batch (1-2048; not anthropic), embedding_body (bedrock only: titan-v2).
+
+anthropic:
+  - match: "claude-opus-4-7*"
+    temperature: omit
+    reason: "Sampling parameters were removed from this model; a request that sets a temperature is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+  - match: "claude-opus-4-8*"
+    temperature: omit
+    reason: "Sampling parameters were removed from this model; a request that sets a temperature is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+  - match: "claude-opus-5*"
+    temperature: omit
+    reason: "Sampling parameters were removed from this model; a request that sets a temperature is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+  - match: "claude-fable-*"
+    temperature: omit
+    reason: "Sampling parameters were removed from this model; a request that sets a temperature is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+  - match: "claude-sonnet-5*"
+    temperature: omit
+    reason: "This model does not accept a temperature; a request that sets one is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+  - match: "claude-haiku-5*"
+    temperature: omit
+    reason: "This model does not accept a temperature; a request that sets one is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+  - match: "*"
+    temperature: send
+    structured_output: native
+
+openai-compatible:
+  - match: "gpt-5*"
+    temperature: omit
+    reason: "OpenAI reasoning models accept only the default temperature"
+    source: https://platform.openai.com/docs/guides/reasoning
+    max_tokens_param: max_completion_tokens
+  - match: "o1*"
+    temperature: omit
+    reason: "OpenAI reasoning models accept only the default temperature"
+    source: https://platform.openai.com/docs/guides/reasoning
+    max_tokens_param: max_completion_tokens
+  - match: "o3*"
+    temperature: omit
+    reason: "OpenAI reasoning models accept only the default temperature"
+    source: https://platform.openai.com/docs/guides/reasoning
+    max_tokens_param: max_completion_tokens
+  - match: "o4*"
+    temperature: omit
+    reason: "OpenAI reasoning models accept only the default temperature"
+    source: https://platform.openai.com/docs/guides/reasoning
+    max_tokens_param: max_completion_tokens
+  - match: "*"
+    temperature: send
+    structured_output: native
+    max_tokens_param: max_tokens
+    embedding_batch: 256
+
+bedrock:
+  # Claude on Bedrock mirrors the Anthropic entries above, in order. The leading * also matches the geographic
+  # prefix of an inference profile id (us., eu., global.).
+  - match: "*anthropic.claude-opus-4-7*"
+    temperature: omit
+    reason: "Sampling parameters were removed from this model; a request that sets a temperature is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+    structured_output: native
+  - match: "*anthropic.claude-opus-4-8*"
+    temperature: omit
+    reason: "Sampling parameters were removed from this model; a request that sets a temperature is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+    structured_output: native
+  - match: "*anthropic.claude-opus-5*"
+    temperature: omit
+    reason: "Sampling parameters were removed from this model; a request that sets a temperature is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+    structured_output: native
+  - match: "*anthropic.claude-fable-*"
+    temperature: omit
+    reason: "Sampling parameters were removed from this model; a request that sets a temperature is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+    structured_output: native
+  - match: "*anthropic.claude-sonnet-5*"
+    temperature: omit
+    reason: "This model does not accept a temperature; a request that sets one is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+    structured_output: native
+  - match: "*anthropic.claude-haiku-5*"
+    temperature: omit
+    reason: "This model does not accept a temperature; a request that sets one is refused with a 400"
+    source: https://platform.claude.com/docs/en/about-claude/models/overview
+    structured_output: native
+  - match: "*anthropic.claude-*"
+    structured_output: native
+  - match: "amazon.titan-embed-text-v2*"
+    embedding_body: titan-v2
+    embedding_batch: 1
+  - match: "*"
+    temperature: send
+    structured_output: instructions
+    embedding_batch: 1
+
+gemini:
+  - match: "gemini-2.5*"
+    temperature: send
+  - match: "*"   # Gemini 3 and every later generation
+    temperature: omit
+    reason: "Google advises keeping Gemini 3 and later at the default temperature of 1.0; lower values may loop or degrade"
+    source: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/gemini-3-prompting-guide
+    structured_output: native
+    embedding_batch: 100

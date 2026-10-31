@@ -3,26 +3,26 @@
 - **Project:** Scrylux
 - **Methodology:** STRIDE
 - **Threat model status:** Approved
-- **Exported:** 2026-10-12 07:14 UTC
-- **Contents:** 41 elements, 264 threats, 203 mitigations
+- **Exported:** 2026-10-31 14:00 UTC
+- **Contents:** 43 elements, 271 threats, 214 mitigations
 
 ## Risk summary
 
 | Status | Threats |
 |---|---:|
-| Open | 35 |
-| Mitigated | 67 |
-| Accepted | 94 |
-| Not applicable | 68 |
-| **Total** | **264** |
+| Open | 37 |
+| Mitigated | 68 |
+| Accepted | 97 |
+| Not applicable | 69 |
+| **Total** | **271** |
 
 | Risk (open threats) | Threats |
 |---|---:|
 | Critical | 6 |
 | High | 11 |
-| Medium | 17 |
+| Medium | 19 |
 | Low | 1 |
-| **Total** | **35** |
+| **Total** | **37** |
 
 ## Diagram
 
@@ -49,9 +49,10 @@ flowchart LR
     n31(["Web app"])
   end
   n32["API client"]
-  n33["Operator"]
-  n34["Secrets manager"]
-  n35["Signed#45;in user"]
+  n33["LLM provider #40;hosted#41;"]
+  n34["Operator"]
+  n35["Secrets manager"]
+  n36["Signed#45;in user"]
   n20 -->|"Account and session queries"| n28
   n16 -->|"Account queries"| n28
   n2 -->|"Account requests"| n16
@@ -69,9 +70,10 @@ flowchart LR
   n22 -->|"Report requests"| n18
   n32 -->|"API client requests"| n2
   n31 -->|"Browser requests"| n2
-  n33 -->|"Environment settings"| n21
-  n34 -->|"Secrets"| n21
-  n35 -->|"Use the web app"| n31
+  n34 -->|"Environment settings"| n21
+  n21 -->|"Model requests"| n33
+  n35 -->|"Secrets"| n21
+  n36 -->|"Use the web app"| n31
   n23 -->|"Web app code"| n31
 ```
 
@@ -2312,12 +2314,13 @@ No mitigations.
 - **Status:** Mitigated
 - **Origin:** Manual
 
-> JWT\_SECRET\, the database credentials and the admin credentials would let anyone who saw them act as Scrylux\.
+> JWT\_SECRET\, the database credentials\, the admin credentials and the LLM provider keys \(LLM\_API\_KEY\, EMBEDDING\_API\_KEY\) would let anyone who saw them act as Scrylux or spend on its provider account\.
 
 **Mitigations**
 
-1. **Verified** — No log line holds a username\, password\, credential\, token or address \(apps\/api\/src\/session\/log\.ts\; tests\: apps\/api\/test\/contract\/session\-log\.test\.ts\)
-2. **Implemented** — Secrets come only from the environment or a secrets manager\, \.env and \.env\.test are gitignored\, and the process stops at start with a fixed line when JWT\_SECRET is unset \(apps\/api\/src\/config\.ts\, server\.ts\, \.gitignore\)\. apps\/api\/test\/config\.test\.ts covers loading and overriding from a secret and its failure message\; the stop on a missing JWT\_SECRET is not tested
+1. **Verified** — An LLM provider key comes only from the environment or the secrets\-manager secret\, and never reaches a log line\, an error\, a usage record\, the check command\'s output\, the database or the browser\; while a provider is configured\, Scrylux refuses to start if a variable the provider libraries read on their own is set \(packages\/llm\/src\/config\.ts\; tests\: apps\/api\/test\/llm\/canary\.test\.ts\, packages\/llm\/test\/sdk\-env\.test\.ts\)\.
+2. **Verified** — No log line holds a username\, password\, credential\, token or address \(apps\/api\/src\/session\/log\.ts\; tests\: apps\/api\/test\/contract\/session\-log\.test\.ts\)
+3. **Implemented** — Secrets come only from the environment or a secrets manager\, \.env and \.env\.test are gitignored\, and the process stops at start with a fixed line when JWT\_SECRET is unset \(apps\/api\/src\/config\.ts\, server\.ts\, \.gitignore\)\. apps\/api\/test\/config\.test\.ts covers loading and overriding from a secret and its failure message\; the stop on a missing JWT\_SECRET is not tested
 
 ##### Sensitive data handled by Startup and configuration is open to anyone who can reach it — Medium
 
@@ -3533,7 +3536,43 @@ No mitigations.
 
 1. **Verified** — Every successful \/api\/v1 create\, update and delete writes one stdout line with the account id\, action\, record type and id\, never a value \(apps\/api\/src\/v1\/write\-log\.ts\; tests\: apps\/api\/test\/contract\/v1\/write\-log\.test\.ts\)
 
-#### E33 · External entity · Operator
+#### E33 · External entity · LLM provider \(hosted\)
+
+- **Tags:** HTTPS, Anthropic, OpenAI\-compatible, Amazon Bedrock, Google Gemini, Optional
+- **Authenticated:** Yes
+- **Internet facing:** No
+
+##### Stolen credentials let an attacker act as LLM provider \(hosted\) — High
+
+- **Category:** Spoofing
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > The provider proves who it is with its TLS certificate\, which Scrylux checks because a hosted provider must be reached over https\; the provider\'s keys and certificates are the provider\'s to protect\, outside Scrylux\. An impostor\'s answers are still checked against their schema and never executed\.
+- **Origin:** Rule-generated
+
+> LLM provider \(hosted\) proves who it is with a credential such as a password\, key or token\. If that credential is stolen\, leaked or guessed\, the attacker is indistinguishable from the real entity until someone notices\.
+
+**Mitigations**
+
+No mitigations.
+
+##### LLM provider \(hosted\) can deny having done something — Medium
+
+- **Category:** Repudiation
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The provider asks Scrylux for nothing and only answers requests\; it keeps its own usage and billing record per key\, outside Scrylux\. Scrylux logs one line per request with the provider\, model\, outcome\, tokens and cost\, but no content \(packages\/llm\/src\/log\.ts\)\.
+- **Origin:** Rule-generated
+
+> If the system keeps no trustworthy record of what LLM provider \(hosted\) asked for\, the entity can later claim it never did\, and the system cannot show otherwise\. That matters most for orders\, approvals\, deletions and payments\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E34 · External entity · Operator
 
 - **Authenticated:** Not assessed
 - **Internet facing:** No
@@ -3584,7 +3623,7 @@ No mitigations.
 
 No mitigations.
 
-#### E34 · External entity · Secrets manager
+#### E35 · External entity · Secrets manager
 
 - **Tags:** AWS Secrets Manager, Optional
 - **Authenticated:** Yes
@@ -3620,7 +3659,7 @@ No mitigations.
 
 No mitigations.
 
-#### E35 · External entity · Signed\-in user
+#### E36 · External entity · Signed\-in user
 
 - **Authenticated:** Yes
 - **Internet facing:** Yes
@@ -3668,7 +3707,7 @@ No mitigations.
 
 1. **Verified** — Every successful \/api\/v1 create\, update and delete writes one stdout line with the account id\, action\, record type and id\, never a value \(apps\/api\/src\/v1\/write\-log\.ts\; tests\: apps\/api\/test\/contract\/v1\/write\-log\.test\.ts\)
 
-#### E36 · Data flow · API client requests
+#### E37 · Data flow · API client requests
 
 - **From:** E32 API client
 - **To:** E2 Reverse proxy
@@ -3736,7 +3775,7 @@ No mitigations.
 2. **Proposed** — General rate limiting for every route \(plan\.md\, Phase 6\)
 3. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E37 · Data flow · Browser requests
+#### E38 · Data flow · Browser requests
 
 - **From:** E31 Web app
 - **To:** E2 Reverse proxy
@@ -3803,9 +3842,9 @@ No mitigations.
 2. **Proposed** — General rate limiting for every route \(plan\.md\, Phase 6\)
 3. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E38 · Data flow · Environment settings
+#### E39 · Data flow · Environment settings
 
-- **From:** E33 Operator
+- **From:** E34 Operator
 - **To:** E21 Startup and configuration
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** Environment variables
@@ -3873,9 +3912,79 @@ No mitigations.
 
 No mitigations.
 
-#### E39 · Data flow · Secrets
+#### E40 · Data flow · Model requests
 
-- **From:** E34 Secrets manager
+- **From:** E21 Startup and configuration
+- **To:** E33 LLM provider \(hosted\)
+- **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
+- **Tags:** HTTPS
+- **Encrypted in transit:** Yes
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### Sensitive data goes from Startup and configuration to an outside party\, LLM provider \(hosted\) — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Accepted for Phase 3 Milestone 1\: only the operator\'s check command sends requests\, with fixed text and the provider\'s own key\, to the provider that issued it\, and no user content is sent\. Until Phase 3 Milestone 3\, the first milestone that sends user content\; it must show that data leaves the install before a hosted provider is used \(Principle VI\)\.
+- **Origin:** Rule-generated
+
+> Model requests carries sensitive data to LLM provider \(hosted\)\, which is outside the system\. Once the data has left\, you cannot control what the recipient does with it\, who else can see it there\, or how long it is kept\.
+
+**Mitigations**
+
+1. **Proposed** — Before document text is sent to a hosted provider\, the UI says that data leaves the install \(Principle VI\; plan\.md\, Phase 3 Milestone 3\)\.
+
+##### Startup and configuration can flood LLM provider \(hosted\) with messages across a trust boundary — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Model requests crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than LLM provider \(hosted\) can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+1. **Verified** — Every request is tried at most three times\, with at most two retries for a failing provider\, and its output size is bounded \(packages\/llm\/src\/attempts\.ts\, client\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, client\.test\.ts\)\.
+2. **Verified** — Every request reports its tokens and cost in one log line \(packages\/llm\/src\/log\.ts\, usage\.ts\; tests\: packages\/llm\/test\/usage\.test\.ts\)\.
+3. **Proposed** — Per\-job token and cost caps\, so a single job cannot exhaust the provider budget \(plan\.md\, Phase 3 Milestone 2\)\.
+
+##### Startup and configuration stops working when the outside party LLM provider \(hosted\) is slow or down — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Model requests sends work to LLM provider \(hosted\)\, which is outside the system\. You do not run it and cannot make it available\, so when it is slow or down Startup and configuration can be left waiting\, and the failure spreads to whoever depends on Startup and configuration\.
+
+**Mitigations**
+
+1. **Verified** — A failing provider is retried at most twice\, with backoff and a bounded wait for retry\-after\, then the request fails with a category \(packages\/llm\/src\/attempts\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\)
+2. **Verified** — Every attempt has a time limit \(LLM\_TIMEOUT\, 300 seconds by default\) enforced by the client and its connection pool\, and a call that never answers is cancelled \(packages\/llm\/src\/attempts\.ts\, adapters\/http\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, http\.test\.ts\)\.
+3. **Implemented** — Start\-up only checks the settings and never contacts a provider\, so a slow or down provider cannot stop Scrylux from starting or serving \(packages\/llm\/src\/config\.ts\, apps\/api\/src\/llm\-startup\.ts\)\.
+
+##### A captured message from Startup and configuration to LLM provider \(hosted\) can be sent again — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A hosted provider must be reached over https\, so a request cannot be captured in transit\, and Bedrock requests are signed with a timestamp by the AWS SDK\; a model request changes nothing at the provider\, so a repeat would only produce another answer and its cost\.
+- **Origin:** Rule-generated
+
+> Model requests is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and LLM provider \(hosted\) will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E41 · Data flow · Secrets
+
+- **From:** E35 Secrets manager
 - **To:** E21 Startup and configuration
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** HTTPS, AWS SDK
@@ -3913,9 +4022,9 @@ No mitigations.
 
 No mitigations.
 
-#### E40 · Data flow · Use the web app
+#### E42 · Data flow · Use the web app
 
-- **From:** E35 Signed\-in user
+- **From:** E36 Signed\-in user
 - **To:** E31 Web app
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to User device)
 - **Encrypted in transit:** Not assessed
@@ -3982,7 +4091,7 @@ No mitigations.
 
 No mitigations.
 
-#### E41 · Data flow · Web app code
+#### E43 · Data flow · Web app code
 
 - **From:** E23 Web app server
 - **To:** E31 Web app
@@ -4064,6 +4173,21 @@ No mitigations.
 **Mitigations**
 
 No mitigations.
+
+##### A hostile or misconfigured model endpoint answers with crafted output — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> An LLM provider\, or an endpoint the operator points Scrylux at by mistake\, could answer with output shaped to make Scrylux store or act on something it should not\.
+
+**Mitigations**
+
+1. **Verified** — A hosted provider must be reached over https\; http is allowed only for a provider the operator declares local \(packages\/llm\/src\/config\.ts\; tests\: packages\/llm\/test\/config\.test\.ts\)\.
+2. **Verified** — Every answer is checked against its schema before anything uses it\, and a field the schema does not name makes it invalid \(packages\/llm\/src\/schema\.ts\, attempts\.ts\; tests\: packages\/llm\/test\/schema\.test\.ts\, attempts\.test\.ts\)\.
+3. **Verified** — The model is offered no tool\, and nothing in an answer is executed \(tests\: packages\/llm\/test\/adapters\/placement\.test\.ts\)\.
 
 ##### An install is left running on the documented default credentials — High
 

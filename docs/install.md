@@ -63,7 +63,7 @@ The original threat tracker was removed in Phase 1 Milestone 5. On the first sta
 | `DB_NAME` | yes | — | Database name |
 | `DB_USER` | yes | — | Database user |
 | `DB_PASSWORD` | yes | — | Database password |
-| `DB_SECRET_ID` | no | — | Id of an AWS Secrets Manager secret to read at startup, using the instance or task role. Its JSON keys override the matching environment values: `host`, `port`, `dbname`, `username`, `password`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`. Unset, the app reads the environment only |
+| `DB_SECRET_ID` | no | — | Id of an AWS Secrets Manager secret to read at startup, using the instance or task role. Its JSON keys override the matching environment values: `host`, `port`, `dbname`, `username`, `password`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `LLM_API_KEY`, `EMBEDDING_API_KEY`. Unset, the app reads the environment only |
 | `JWT_SECRET` | yes | — | Secret for signing login tokens; app refuses to start without it |
 | `JWT_EXPIRES_IN` | no | `8h` | Lifetime of a token from `POST /api/login` (API clients). Browser sessions use `SESSION_MAX_LIFETIME` instead |
 | `ADMIN_USERNAME` | no | — | Login user, created/updated on startup |
@@ -75,6 +75,25 @@ The original threat tracker was removed in Phase 1 Milestone 5. On the first sta
 | `SIGN_IN_BASE_WAIT` | no | `30s` | The first wait after the threshold; it doubles with each further failure |
 | `SIGN_IN_MAX_WAIT` | no | `15m` | The longest wait, and how long failures are remembered |
 | `TRUST_PROXY` | no | — (trust none) | Behind a load balancer or reverse proxy, set this, or sign-in throttling sees every client as the proxy. `1` trusts one proxy hop (a single ALB); a comma-separated list of addresses or CIDR ranges also works. `true` is refused |
+
+| `LLM_PROVIDER` | no | — (AI off) | Which provider writes text for the AI features: `anthropic`, `openai-compatible` (OpenAI, Azure OpenAI, Ollama, vLLM), `bedrock` or `gemini`. Unset, there is no AI feature and Scrylux never connects to a model provider. See [AI providers](ai-providers.md) |
+| `LLM_MODEL` | with `LLM_PROVIDER` | — | The provider's model id. For Azure OpenAI, the name of your deployment |
+| `LLM_BASE_URL` | with `openai-compatible` | — | The provider's address, for example `https://api.openai.com/v1`, `https://<resource>.openai.azure.com/openai/v1/` or `http://ollama:11434/v1`. It must be `https` unless `LLM_LOCAL=true`. Not accepted for the other providers |
+| `LLM_API_KEY` | with `anthropic` or `gemini`; optional with `openai-compatible` | — | The provider's API key. Also read from the `DB_SECRET_ID` secret. Not accepted for `bedrock`, which uses the AWS credentials of the host |
+| `LLM_LOCAL` | no | `false` | `true` says the `openai-compatible` provider runs on your own hardware, so data sent to it stays in your install. Scrylux cannot check this, so it is your statement. Any other provider is always hosted, and `true` for it stops Scrylux from starting |
+| `LLM_REGION` | with `bedrock` | — | The AWS region, for example `us-east-1`. Bedrock's credentials come from the instance or task role, or the usual `AWS_*` variables |
+| `EMBEDDING_PROVIDER` | no | — (embeddings off) | Which provider turns text into embeddings: `openai-compatible`, `bedrock` or `gemini`. Optional even when `LLM_PROVIDER` is set |
+| `EMBEDDING_MODEL` | with `EMBEDDING_PROVIDER` | — | For example `text-embedding-3-small`, `nomic-embed-text`, `amazon.titan-embed-text-v2:0` or `gemini-embedding-001` |
+| `EMBEDDING_BASE_URL` | with `openai-compatible` | — | As `LLM_BASE_URL` |
+| `EMBEDDING_API_KEY` | as `LLM_API_KEY` | the `LLM_API_KEY` | Used for the same provider at the same address when unset. Also read from the `DB_SECRET_ID` secret |
+| `EMBEDDING_LOCAL` | no | `false` | As `LLM_LOCAL` |
+| `EMBEDDING_REGION` | with `bedrock` | — | As `LLM_REGION` |
+| `LLM_TIMEOUT` | no | `300s` | The longest one request to a provider may take, for generation and embeddings alike: a whole number and `s` or `m`, from `10s` to `60m` |
+| `LLM_PRICE_INPUT` | no | — | US dollars per million input tokens, to cost a model that Scrylux's price list does not know, or to override it. Set it with `LLM_PRICE_OUTPUT` |
+| `LLM_PRICE_OUTPUT` | no | — | US dollars per million output tokens |
+| `EMBEDDING_PRICE_INPUT` | no | — | US dollars per million input tokens for the embedding model |
+
+Scrylux refuses to start with a bad AI setting, and says which variable. It also refuses while a provider is configured and a variable that the provider libraries read on their own is set (for example `OPENAI_API_KEY`); [AI providers](ai-providers.md) lists them.
 
 ### Behind a load balancer or reverse proxy
 

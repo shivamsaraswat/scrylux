@@ -36,6 +36,7 @@ This is a pnpm workspace. The packages are:
 | `packages/db` | The forward-only SQL migrations (the threat-model schema), the migration runner, and the tests that check the schema's integrity rules against a real Postgres |
 | `packages/core` | The shared definitions of projects, threat models, elements, threats and mitigations (Zod schemas, value lists, risk scoring). It has no Node.js dependencies, so the web app can use it too |
 | `packages/threat-library` | The STRIDE-per-element threat rules, as plain YAML files, and the code that checks them and works out which candidate threats apply to a diagram element. The rule engine reads it from Phase 2 Milestone 3. See its [README](../packages/threat-library/README.md) |
+| `packages/llm` | How Scrylux asks a language model for a validated structured result or for embeddings, behind one interface and four provider adapters (Anthropic, OpenAI-compatible, Amazon Bedrock, Google Gemini), with the prices and prompts it needs as plain files. Nothing sends user content through it yet |
 
 Workspace packages are read as TypeScript source by the type checker, the linter, the tests and
 `tsx`, and as compiled JavaScript inside the Docker image. Running this takes no extra build step.

@@ -32,6 +32,22 @@ describe('config.load()', () => {
     expect(config.adminPassword).toBe('ap');
   });
 
+  it('reads the AI provider keys from the secret, over the environment', async () => {
+    config.llmApiKey = 'from-env';
+    config.embeddingApiKey = 'embedding-from-env';
+    await config.load({ secretId: 'x', client: fakeClient({ LLM_API_KEY: 'llm-from-secret', EMBEDDING_API_KEY: 'embedding-from-secret' }) });
+    expect(config.llmApiKey).toBe('llm-from-secret');
+    expect(config.embeddingApiKey).toBe('embedding-from-secret');
+  });
+
+  it('leaves the environment’s AI provider keys alone when the secret has none', async () => {
+    config.llmApiKey = 'from-env';
+    config.embeddingApiKey = 'embedding-from-env';
+    await config.load({ secretId: 'x', client: fakeClient({ JWT_SECRET: 'j' }) });
+    expect(config.llmApiKey).toBe('from-env');
+    expect(config.embeddingApiKey).toBe('embedding-from-env');
+  });
+
   it('fails clearly when the secret cannot be read', async () => {
     const client: SecretClient = {
       send: () => Promise.reject(new Error('AccessDenied')),

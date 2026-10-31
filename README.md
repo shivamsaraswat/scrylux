@@ -62,6 +62,7 @@ Scrylux keeps its own threat model, built in Scrylux, with what is still open: [
 | | |
 | --- | --- |
 | [Install and run](docs/install.md) | Version choice, upgrading, running without Docker, environment variables, deployment |
+| [AI providers](docs/ai-providers.md) | Choose a model provider or a local model, what leaves your install, what a request costs |
 | [API](API.md) · [File formats](docs/formats/) | The REST API, and the Scrylux, OTM and Threat Dragon files |
 | [Roadmap](docs/roadmap.md) | What each phase builds, and when |
 | [Development](docs/development.md) · [CI](docs/ci.md) | Run from source, the workspace, tests and checks |

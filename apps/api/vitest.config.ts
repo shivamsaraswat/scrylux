@@ -11,6 +11,9 @@ export default defineConfig({
     alias: {
       '@scrylux/core': fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url)),
       '@scrylux/db': fileURLToPath(new URL('../../packages/db/src/index.ts', import.meta.url)),
+      // The more specific alias first: an alias also matches a longer specifier that starts with it.
+      '@scrylux/llm/testing': fileURLToPath(new URL('../../packages/llm/testing/index.ts', import.meta.url)),
+      '@scrylux/llm': fileURLToPath(new URL('../../packages/llm/src/index.ts', import.meta.url)),
       '@scrylux/threat-library': fileURLToPath(new URL('../../packages/threat-library/src/index.ts', import.meta.url)),
     },
   },

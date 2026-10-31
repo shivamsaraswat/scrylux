@@ -14,7 +14,8 @@
     "migrate": "tsx --conditions=@scrylux/source src/migrate.ts",
     "openapi": "tsx --conditions=@scrylux/source src/v1/openapi.ts",
     "formats": "tsx --conditions=@scrylux/source src/exchange/schema.ts",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "llm:check": "tsx --conditions=@scrylux/source src/llm-check.ts"
   },
   "engines": {
     "node": ">=22"
@@ -23,6 +24,7 @@
     "@aws-sdk/client-secrets-manager": "^3.1152.0",
     "@scrylux/core": "workspace:*",
     "@scrylux/db": "workspace:*",
+    "@scrylux/llm": "workspace:*",
     "@scrylux/threat-library": "workspace:*",
     "bcryptjs": "^3.0.3",
     "express": "^5.3.0",

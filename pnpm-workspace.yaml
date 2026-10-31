@@ -2,7 +2,9 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  '@google/genai': false
   esbuild: true
+  protobufjs: false
 # Keeps pnpm-lock.yaml a single YAML document, instead of the two-document stream pnpm >=11
 # writes by default when it manages its own version. The two-document format makes GitHub's
 # dependency graph report zero dependencies and silently disables Dependabot alerts

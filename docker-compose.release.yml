@@ -39,6 +39,26 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      # AI providers (docs/ai-providers.md). All empty by default, which leaves AI off, as in v0.1.
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_LOCAL: ${LLM_LOCAL:-}
+      LLM_REGION: ${LLM_REGION:-}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_LOCAL: ${EMBEDDING_LOCAL:-}
+      EMBEDDING_REGION: ${EMBEDDING_REGION:-}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-}
+      LLM_PRICE_INPUT: ${LLM_PRICE_INPUT:-}
+      LLM_PRICE_OUTPUT: ${LLM_PRICE_OUTPUT:-}
+      EMBEDDING_PRICE_INPUT: ${EMBEDDING_PRICE_INPUT:-}
+    extra_hosts:
+      # So a model server on the host (Ollama) is reachable as host.docker.internal on Linux too.
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy

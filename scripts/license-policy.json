@@ -1,4 +1,6 @@
 {
   "allowed": ["MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0", "0BSD"],
-  "exceptions": {}
+  "exceptions": {
+    "fast-sha256": "Unlicense (public-domain dedication). Reached only through @anthropic-ai/sdk → standardwebhooks; the allow-list itself is not widened (Phase 3 Milestone 1, research #16)"
+  }
 }

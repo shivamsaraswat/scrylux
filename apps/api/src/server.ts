@@ -4,6 +4,7 @@ import config, { parseSessionConfig } from './config.js';
 import { createApp } from './app.js';
 import migrate from './migrate.js';
 import { seedAdminUser } from './auth.js';
+import { checkLlmConfig } from './llm-startup.js';
 
 // The built web app, resolved relative to this module (never an absolute path, Principle IV). From
 // apps/api/src and from apps/api/dist this reaches apps/web/dist, and the image keeps that layout.
@@ -45,6 +46,14 @@ async function main(): Promise<void> {
     process.exit(1);
     return;
   }
+  // The AI provider layer (Phase 3): validated here, never contacted. With nothing set, Scrylux is v0.1.
+  const llm = checkLlmConfig(process.env, config);
+  if (!llm.ok) {
+    console.error(llm.line);
+    process.exit(1);
+    return;
+  }
+  console.log(llm.line);
   await initDatabase();
 
   // Without a build, such as the API run alone in development, only the API is served. The line is

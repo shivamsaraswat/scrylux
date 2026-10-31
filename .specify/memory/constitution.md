@@ -1,37 +1,49 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.13.0 → 1.13.1
-Rationale: the product is renamed from Specter to Scrylux before its first release, after the name check for v0.1 found
-  "Specter" taken (docs/releasing.md, "the name check"). This is a PATCH: the name is changed throughout, and the cookie, the
-  package scope, the image path and the file format follow it. No principle, section, rule or risk changes.
-Previous change (1.12.0 → 1.13.0): Phase 2 Milestone 8 (release v0.1, specs/phase-2/milestone-8-release-v0-1/) publishes Scrylux for the first time: a
-  tag-triggered release pipeline (`.github/workflows/release.yml`) that builds, tests and publishes a two-platform image to GHCR
-  and creates a GitHub release. It is the first workflow that holds a write permission (`packages: write` in one job and
-  `contents: write` in another), it adds an entry point (the creation of a version tag), assets (the published image and the
-  publishing credential) and a trust boundary (the release pipeline against the pipelines of pull requests), and Principle V
-  requires the Threat Model section, and the committed model, to say so in the same change. This is a MINOR: materially expanded
-  guidance (the threat model's assets, entry points, boundaries and nine risks, and a rule for how a release is made). It adds
-  no principle, no endpoint, no table and no runtime dependency.
-Modified principles: V (applied, not reworded: the section and `docs/threat-model/` are updated in the same change; the write
-  permission is justified below, as Governance asks). No other principle changes.
+Version change: 1.13.1 → 1.14.0
+Rationale: Phase 3 Milestone 1 (the LLM provider layer, specs/phase-3/milestone-1-llm-provider-layer/) adds `packages/llm`, its
+  four provider adapters (Anthropic, OpenAI-compatible, Amazon Bedrock, Google Gemini), a configuration of 16 environment
+  variables and an operator check command. It adds an asset (LLM provider API keys, and the AWS role Bedrock uses) and a trust
+  boundary (the outbound connection to a hosted model provider), and Principle V requires the Threat Model section, and the
+  committed model, to say so in the same change. This is a MINOR: materially expanded guidance (the threat model's assets,
+  boundaries and four risks, and two rules aligned with what the milestone actually ships). It adds no principle, no endpoint,
+  no table and no UI. No user content is sent to a provider in this milestone.
+Modified principles:
+  - IV: the reference for documenting every environment variable is corrected from `README.md`'s table to the table in
+    `docs/install.md`, where the table moved when the README was shortened for v0.1.
+  - VI: states when its notice that data leaves the install is required: from the first milestone in which user content can
+    reach a provider (Phase 3 Milestone 3, which sends document chunks for embedding). A request made only of fixed text that
+    Scrylux ships, such as the operator's check, holds no user content.
+  - V (applied, not reworded): the section and `docs/threat-model/` are updated in the same change.
 Added sections: none (existing section set retained: Core Principles, Threat Model (STRIDE),
   Development Workflow & Quality Gates, Governance)
 Removed sections: none
-Threat Model changes: assets (the published image; the pipeline's publishing credential), a trust boundary (the release
-  pipeline against the pull-request pipelines) and an entry point (the creation of a `v*` tag) are added, with nine risks:
-  - Spoofing: a forged version tag (mitigated); a look-alike image or registry (accepted until Phase 6).
-  - Tampering: a replaced build or release step (mitigated); a published image replaced after publication (open; Phase 6).
-  - Repudiation: no way to tell who built an image beyond its labels (open; Phase 6).
-  - Information Disclosure: a secret reaching the image, an asset or the log (mitigated).
-  - Elevation of Privilege: the publishing credential stolen or too broad (mitigated); the workflow running as defined at the
-    tagged commit (accepted until Phase 6); an install left on the documented default credentials (open).
-Development Workflow: one sentence added: a release is published only by the tag-triggered pipeline.
-Development Workflow (from Milestone 7, kept): a pull request that updates the Threat Model section also updates `docs/threat-model/`.
+Threat Model changes: assets (LLM provider API keys, which move from planned to current, and the AWS role for Bedrock) and a
+  trust boundary (the outbound connection to a hosted model provider) are added, with four risks:
+  - Information Disclosure: a provider key disclosed (mitigated: only from the environment or the secrets-manager secret, never
+    logged, stored or sent to the browser, and a variable the provider libraries read on their own is refused at start-up); a
+    hosted provider as a path for data to leave the install (accepted for this milestone: no user content is sent yet).
+  - Tampering: a hostile or misconfigured endpoint answering with crafted output (mitigated: every answer is checked against its
+    schema, no tools are offered, nothing is executed, and a hosted provider must be reached over `https`).
+  - Denial of Service: runaway spend or a hung request (partially mitigated: a time limit per attempt, at most three tries and
+    cancellation here; per-job token and cost caps are Phase 3 Milestone 2's).
+Development Workflow: the sentence that requires eval-harness results for a change to a prompt, a provider adapter or the
+  extraction pipeline is aligned with Principle II: it applies once an LLM-backed feature exists and the harness (Phase 3
+  Milestone 7) is in place. Until then such a pull request says that the gate does not yet apply and how it was tested instead.
+  The sentence said "from Phase 3 onward" without that condition, which this milestone could not meet, and the harness it
+  needs does not exist yet.
+Development Workflow (kept): a pull request that updates the Threat Model section also updates `docs/threat-model/`.
 Deferred / TODO items: none
-Templates requiring follow-up: none checked in this run (scope of this change is the constitution
-  file only; dependent templates read it at runtime per the scope guard). The pull request template was
-  extended in the same milestone.
+Templates requiring follow-up: none checked in this run (scope of this change is the constitution file only; dependent
+  templates read it at runtime per the scope guard).
+Previous change (1.13.0 → 1.13.1): the product was renamed from Specter to Scrylux before its first release, after the name check
+  for v0.1 found "Specter" taken (docs/releasing.md). A PATCH: the name changed throughout, and no principle, section, rule or
+  risk changed.
+Previous change (1.12.0 → 1.13.0): Phase 2 Milestone 8 (release v0.1) published Scrylux for the first time through a
+  tag-triggered release pipeline (`.github/workflows/release.yml`), the first workflow with a write permission. It added assets
+  (the published image and the publishing credential), a trust boundary (the release pipeline against the pipelines of pull
+  requests), an entry point (the creation of a `v*` tag), nine risks, and a rule for how a release is made. A MINOR.
 -->
 
 # Scrylux Constitution
@@ -120,8 +132,8 @@ file-based logging), and MUST NOT contain secrets, password hashes, full JWTs, o
 provider payloads (prompt/response logging is opt-in and off by default, per plan.md's AI
 security hardening). Schema changes MUST be forward-only SQL files, tracked via the existing
 `schema_migrations` mechanism (Kysely is used for queries only; migrations stay plain SQL files) — never edited in
-place once merged. Every environment variable the app reads MUST be documented in `README.md`'s
-environment variable table. Per plan.md's cloud-friendly rules: `/health` MUST return 200 with
+place once merged. Every environment variable the app reads MUST be documented in the
+environment variable table in `docs/install.md`. Per plan.md's cloud-friendly rules: `/health` MUST return 200 with
 no auth and no DB dependency; the API and worker processes MUST remain stateless and
 horizontally scalable; uploaded/ingested files MUST go through a storage abstraction (local
 volume or S3-compatible), never an absolute local path. Threat-library rules, detection
@@ -168,7 +180,9 @@ scoped to exclude agentic tool-calling. AI-generated text MUST be rendered escap
 LLM provider integration MUST stay behind Scrylux's own provider-agnostic interface
 (`packages/llm`) — no feature may hard-depend on one vendor's API, and a fully local model
 (e.g. Ollama/vLLM) MUST remain a supported path. When a non-local, hosted provider is configured,
-the UI MUST clearly disclose that data leaves the install.
+the UI MUST clearly disclose that data leaves the install. That notice is required from the first milestone in which user content can
+reach a provider (Phase 3 Milestone 3, which sends document chunks for embedding); a request made only of fixed text that Scrylux
+ships, such as the operator's check of its configuration, holds no user content.
 **Rationale**: This is Scrylux's core trust proposition (plan.md guiding principles: "AI output
 is a draft with provenance... nothing AI-generated enters the threat model silently", "private
 by default", "provider-agnostic LLM layer") — without it, an AI-assisted threat model is not
@@ -179,7 +193,7 @@ over a vendor-locked competitor.
 
 This section reflects the application as implemented today (Node.js/Express 5 API with a versioned
 JSON API under `/api/v1`, browser sessions under `/api/session`, the React web app it serves,
-PostgreSQL, optional AWS Secrets Manager) and MUST be kept current per
+PostgreSQL, optional AWS Secrets Manager, and an optional outbound connection to an LLM provider) and MUST be kept current per
 Principle V as each phase in plan.md lands. Phase boundaries that will change this section are
 called out inline below; they are not yet implemented and MUST NOT be treated as mitigated until
 they ship.
@@ -199,9 +213,11 @@ short-lived access tokens the UI holds in page memory, and the sign-in failure c
 (`sign_in_throttle`), whose keys are HMACs of what was typed and of the client address. The original
 threat entry records and Milestone 4's legacy links no longer exist: Milestone 5 removed them. Since Phase 2 Milestone 8: the
 published image, `ghcr.io/shivamsaraswat/scrylux`, which every user runs, and the credential the release pipeline holds to publish
-it (the run's `GITHUB_TOKEN` as held by its two publishing jobs; no other secret exists).
+it (the run's `GITHUB_TOKEN` as held by its two publishing jobs; no other secret exists in that pipeline). Since Phase 3 Milestone 1
+(`specs/phase-3/milestone-1-llm-provider-layer/`): LLM provider API keys (`LLM_API_KEY` and `EMBEDDING_API_KEY`, from the environment
+or the secrets-manager secret, never in the database) and, for Bedrock, the AWS role of the host.
 **Assets (planned, not yet implemented)**: from Phase 3 — uploaded design documents, extracted
-text chunks and embeddings, LLM provider API keys, and the LLM outputs derived from them; from
+text chunks and embeddings, and the LLM outputs derived from them; from
 Phase 4 — read-only repository/IaC access tokens and cloned source code; from Phase 5 —
 third-party OAuth tokens (Jira, Confluence, Google Docs, Linear, Azure DevOps) and outbound
 webhook targets.
@@ -222,11 +238,13 @@ from forks — run against this repository's contents with a scoped, read-by-def
 boundary sits inside it: the release pipeline (`.github/workflows/release.yml`) is the only workflow that holds a write permission
 (`packages: write` in one job, `contents: write` in another, nothing by default), and it is started by one entry point, **the
 creation of a `v*` tag**, which only the repository owner can make (ruleset `release-tags`); the pipelines of pull requests, of
-forks included, hold none.
-**Trust boundaries (planned)**: Phase 3 adds an outbound boundary from the worker process to a
-third-party LLM provider (or a local model, which stays inside the trust boundary) and an inbound
-boundary for untrusted document content flowing into prompts (prompt-injection surface — see
-Principle VI). Phase 4 adds a boundary into external source-control/IaC systems (read-only,
+forks included, hold none. Since Phase 3 Milestone 1 an outbound boundary also exists: from the Scrylux process to a hosted LLM
+provider (Anthropic, OpenAI or Azure OpenAI, Amazon Bedrock, Google Gemini, or an OpenAI-compatible endpoint that the operator has
+not declared local). Today only the operator's check command (`node dist/llm-check.js`) uses it, with fixed text and no user data.
+A model on the operator's own hardware, declared local, stays inside the trust boundary.
+**Trust boundaries (planned)**: Phase 3 adds an inbound boundary for untrusted document content flowing into prompts
+(Milestone 3 onward; prompt-injection surface — see Principle VI), and the worker process of Milestone 2 will use the outbound
+boundary to the LLM provider above. Phase 4 adds a boundary into external source-control/IaC systems (read-only,
 code never executed). Phase 5 adds boundaries into external SaaS integrations and inbound
 webhooks.
 
@@ -354,6 +372,11 @@ webhooks.
   because the registry does not enforce immutable tags. The pipeline never overwrites a version and completes a half-done release from
   the image already there (`scripts/release/gate.test.ts`), and the release notes print the image's digest so that a user can pin it;
   the image is not signed and carries no build attestation or SBOM. *Planned*: `plan.md` Phase 6, "Verifiable release images".
+  *Mitigated (Phase 3 Milestone 1)*: a hostile or misconfigured model endpoint answering with crafted output. Every answer is
+  checked against its schema before anything uses it, and a field the schema does not name makes it invalid
+  (`packages/llm/src/attempts.ts`); the model is offered no tool and nothing in an answer is executed; and a hosted provider
+  must be reached over `https`, with `http` allowed only for a provider the operator declares local, which is the operator's own
+  statement and is not checked.
 - **Repudiation**: *Open risk*: no audit trail persists who created, updated, or deleted a
   threat-model record or a user — the JWT's `sub` is known per-request but never written to storage.
   This is a notable gap precisely because Repudiation is one of the STRIDE categories the app
@@ -385,9 +408,16 @@ webhooks.
   (`apps/api/src/security-headers.ts`), brought forward from Phase 6; the UI renders all record text
   as text; and an injected script can no longer read a long-lived credential. Zod runs `jitless`
   (`apps/web/src/zod-config.ts`, which must stay the first import of the entry point), because its
-  `new Function` probe would otherwise be reported as a CSP violation. *Planned*: from Phase 3, a hosted (non-local) LLM provider is itself a
-  disclosure path for any data included in a prompt — Principle VI requires the UI to disclose
-  this, and a fully local model MUST remain available for installs that cannot accept it.
+  `new Function` probe would otherwise be reported as a CSP violation. *Mitigated (Phase 3 Milestone 1)*: an LLM provider API key comes only from
+  the environment or the secrets-manager secret. It is never written to a log line, an error, a usage record or the check
+  command's output, never stored in the database and never sent to the browser (`apps/api/test/llm/canary.test.ts` searches all of
+  them for a fake key, fake document text and a fake password in an address). While a provider is configured, Scrylux refuses to
+  start if a variable the provider libraries read on their own is set (a vendor key, address, extra header or logging switch), so
+  none can reach a provider unchecked (`packages/llm/test/sdk-env.test.ts` keeps that list in step with the installed libraries).
+  *Accepted for this milestone*: a hosted (non-local) LLM provider is itself a disclosure path for any data included in a
+  prompt, and a fully local model MUST remain available for installs that cannot accept it. No user content is sent yet: only
+  the operator's check, with fixed text. Principle VI's notice that data leaves the install ships with the first milestone that
+  does send it (Phase 3 Milestone 3, which sends document chunks for embedding).
   *Mitigated (Phase 1 Milestone 2)*: no CI job references a repository secret; the `test` job's
   credentials are throwaway, non-secret development defaults defined directly in the workflow, so
   pull requests from forks get identical, fully-functional results with nothing to leak. Every
@@ -443,9 +473,11 @@ webhooks.
   of that size is documented as needing at least 2 GiB (README, Deployment; `step6-ec2-guide.md`), and the 64 MiB limit stays
   (a lower one would not lower the memory). Moving it to the worker (Phase 3) or limiting it
   (Phase 6) is the remedy. *Open risk*: no rate limiting on any other route. *Planned*: Phase 6 adds general
-  rate limiting explicitly; from Phase 3, LLM calls
-  MUST carry per-job token/cost caps (plan.md Phase 3 Milestone 2) so a single job cannot
-  exhaust provider budget or worker capacity.
+  rate limiting explicitly. *Partially mitigated (Phase 3 Milestone 1)*: a request to an LLM provider has
+  a time limit for each attempt (300 seconds unless the operator changes it), at most three tries against a failing provider, a
+  bounded output size and cancellation, and every request reports its tokens and cost; nothing sends one on a request path yet.
+  *Planned*: from Phase 3 Milestone 2, LLM calls MUST carry per-job token/cost caps (plan.md) so a single job cannot exhaust
+  provider budget or worker capacity.
 - **Elevation of Privilege**: *Open risk, by design, currently unmitigated*: there is no role
   model. Any authenticated user can create additional users (`POST /api/users`) and, since Phase 1
   Milestone 5, can read, change and delete every project, threat model, element, threat and
@@ -506,9 +538,10 @@ route's authorization/validation logic, or (from Phase 3) prompt construction, L
 adapters, or document-ingestion code MUST call out the security implication explicitly in its
 description and MUST update the Threat Model section, and `docs/threat-model/`, if it changes an entry point, asset, or
 trust boundary. A release is published only by the tag-triggered release pipeline (`.github/workflows/release.yml`,
-`docs/releasing.md`), never from a maintainer's machine. From Phase 3 onward, a PR that changes a prompt, provider adapter, or the
-extraction/threat-generation pipeline MUST include the eval harness results against the
-committed thresholds. Reviewers MUST reject PRs that reintroduce a mitigated risk from the
+`docs/releasing.md`), never from a maintainer's machine. Once any LLM-backed feature exists and the eval harness is in place (Phase 3 Milestone 7), a PR that
+changes a prompt, provider adapter, or the extraction/threat-generation pipeline MUST include the eval
+harness results against the committed thresholds; until then, such a PR states that the gate does not
+yet apply and how the change was tested instead. Reviewers MUST reject PRs that reintroduce a mitigated risk from the
 Threat Model (e.g. reverting to string-built SQL, removing the dummy-hash timing defense,
 persisting unvalidated LLM output) without an equally strong replacement, and MUST reject PRs
 that implement a later phase's scope while an earlier phase is still in progress, per Principle
@@ -531,4 +564,4 @@ rather than silently merged. This file is the source of truth for "why" a rule e
 implementation-level how-to guidance belongs in `README.md`, `API.md`, `CONTRIBUTING.md`, `SECURITY.md`, `plan.md`, and code
 comments, not here.
 
-**Version**: 1.13.1 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-18
+**Version**: 1.14.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-21

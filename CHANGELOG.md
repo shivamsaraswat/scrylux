@@ -2,6 +2,23 @@
 
 What changed in each release of Scrylux, newest first. Versions are `MAJOR.MINOR.PATCH`; while the major version is 0, a minor release may change things that matter to you, and each entry says so under *Upgrading*. Open risks are recorded in [Scrylux's own threat model](docs/threat-model/), and a vulnerability is reported privately as [SECURITY.md](SECURITY.md) says, never in a public issue.
 
+## [Unreleased]
+
+### AI providers, with no AI feature yet
+
+This groundwork for Phase 3 adds the layer that later AI features will use to reach a language model. **Nothing in Scrylux sends your content to a model yet**, and with no AI setting made, Scrylux behaves exactly as v0.1 does.
+
+- **Choose where the model runs**, with environment values and no code change: Anthropic, OpenAI, Azure OpenAI, Amazon Bedrock, Google Gemini, or a local model through Ollama or vLLM. Generation and embeddings are chosen separately, and embeddings are optional. [AI providers](docs/ai-providers.md) has a working configuration for each, and says what leaves your install: a provider is hosted unless you declare an OpenAI-compatible one local, and a hosted one must be reached over `https`.
+- **Check a setup** with `docker compose exec app node dist/llm-check.js`. It sends one tiny fixed request with none of your data, and reports the provider, the model, whether data leaves the install, the tokens used and the cost, or what failed and which setting to look at.
+- **Every request reports its tokens and cost.** Prices come from a dated list in the repository or from your own `LLM_PRICE_INPUT` and `LLM_PRICE_OUTPUT`, and a model with no price has an unknown cost, never a free one.
+- **Your keys stay yours.** A provider key is read from the environment or from the secrets-manager secret, and is never logged, stored in the database or sent to the browser.
+
+### Upgrading
+
+- Sixteen new environment variables, all optional, are in [Install and run](docs/install.md#environment-variables). The secrets-manager secret may also hold `LLM_API_KEY` and `EMBEDDING_API_KEY`.
+- **A setting that is wrong stops Scrylux from starting**, and the message names the variable. So does a stray variable that the provider libraries would read on their own, such as `OPENAI_API_KEY` or `ANTHROPIC_BASE_URL`, but only while a provider is configured. [AI providers](docs/ai-providers.md#variables-scrylux-refuses) lists them.
+- The compose files pass the new variables through, and map `host.docker.internal` to the host, so a model server on the same machine is reachable from the container.
+
 ## [0.1.0] - 2026-10-18
 
 The first release: a manual threat modeling tool you run yourself. Draw a system, get STRIDE threats from rules, work them to a decision, and take the result with you.

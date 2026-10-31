@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS builder
 RUN corepack enable
 WORKDIR /app
 
@@ -20,7 +20,7 @@ COPY packages ./packages
 RUN pnpm --filter "@scrylux/api..." --filter @scrylux/web run build
 RUN pnpm --filter=@scrylux/api deploy --prod /prod/api
 
-FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
 ENV NODE_ENV=production
 # The image keeps the repository's layout: the API resolves the built web app relative to its own
 # module (../../web/dist), so it must sit at /app/apps/web/dist next to /app/apps/api.

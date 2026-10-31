@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -87,8 +87,9 @@ function vendorVariables(): Map<string, string> {
   const names = new Map<string, string>();
   for (const [pkg, dir] of installedPackages()) {
     for (const file of jsFiles(dir)) {
-      if (statSync(file).size > 5_000_000) continue;
-      for (const match of readFileSync(file, 'utf8').matchAll(LITERAL)) {
+      const text = readFileSync(file, 'utf8');
+      if (text.length > 5_000_000) continue;
+      for (const match of text.matchAll(LITERAL)) {
         const name = match[1] as string;
         if (!names.has(name)) names.set(name, `${pkg}: ${basename(file)}`);
       }

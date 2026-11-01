@@ -1,4 +1,4 @@
-# Messages and hints for job failures (Phase 3 Milestone 2, FR-064). Fixed text only: no value from a request, a provider
+# Messages and hints for job failures (Phase 3 Milestone 2, FR-064; the categories of ingestion, Milestone 3, FR-013). Fixed text only: no value from a request, a provider
 # or a setting, only the settings' names. {prefix} becomes LLM or EMBEDDING, for the operation that failed. A hint never
 # holds an address. This file is read by the API, which adds the message and hint to a job when it is read, and by the
 # operator's check command, so both say the same thing. To change a hint, edit it here: apps/api/test/jobs/failures.test.ts
@@ -36,3 +36,58 @@ job:
   job_error:
     message: "The job failed because of an error in Scrylux."
     hint: "Check the worker's logs, and report it if it happens again."
+  # Phase 3 Milestone 3: why a document could not be read, or stored. A category that names a bound has a text for each bound
+  # it can name: unreadable (time, memory) and too_large (pages, chars). The plain entries are the fallback.
+  unsupported_type:
+    message: "This file is not a kind of document Scrylux can read."
+    hint: "Upload a .md, .txt, .pdf or .docx file. A Word file with macros (.docm) or in the older .doc format is not read: save it as a plain .docx."
+  encrypted:
+    message: "This PDF is protected with a password, and Scrylux does not ask for passwords."
+    hint: "Remove the protection, or save an unprotected copy, and upload that."
+  damaged:
+    message: "This file could not be opened. It may be damaged or cut short."
+    hint: "Open it in the program that made it, save a fresh copy, and upload that."
+  no_text_found:
+    message: "No text was found in this file."
+    hint: "It may be a scan or a set of images, which this release does not read. Upload a version that has selectable text, or paste the text in."
+  too_large:
+    message: "This document holds more text, or more pages, than Scrylux reads from one source."
+    hint: "Split it into several documents, or ask an operator to raise SOURCE_MAX_CHARS or EXTRACT_MAX_PAGES."
+  too_large_pages:
+    message: "This PDF has more pages than Scrylux reads from one source."
+    hint: "Split it into several documents, or ask an operator to raise EXTRACT_MAX_PAGES."
+  too_large_chars:
+    message: "This document holds more characters of text than Scrylux reads from one source."
+    hint: "Split it into several documents, or ask an operator to raise SOURCE_MAX_CHARS."
+  too_large_unpacked:
+    message: "This file is far larger once it is unpacked than it was uploaded."
+    hint: "Save it again with fewer or smaller embedded images and parts, or ask an operator to raise EXTRACT_UNPACKED_MB."
+  unreadable:
+    message: "Reading this file took more time or memory than Scrylux allows."
+    hint: "Retry once, or split the document. An operator can raise EXTRACT_TIME_LIMIT or EXTRACT_MEMORY_MB."
+  unreadable_time:
+    message: "Reading this file took longer than the time limit for reading a document."
+    hint: "Retry once, or split the document. An operator can raise EXTRACT_TIME_LIMIT."
+  unreadable_memory:
+    message: "Reading this file needed more memory than the limit for reading a document."
+    hint: "Split the document, or ask an operator to raise EXTRACT_MEMORY_MB."
+  storage_unavailable:
+    message: "The stored copy of this document could not be read, or storage could not be reached."
+    hint: "Check that the storage volume or bucket is available to the worker (STORAGE_BACKEND and the STORAGE_ settings), then retry."
+  document_space_full:
+    message: "Adding this document would pass the space this install allows for documents."
+    hint: "Delete sources that are no longer needed, or ask an operator to raise DOCUMENT_SPACE, then retry."
+
+# A hint that depends on the job kind. A model that refuses a chunk as too large is a different problem for an embedding of
+# a document than for the provider check (Milestone 1's hint is about the check's few words).
+kinds:
+  ingest_source:
+    input_too_large: "This embedding model does not accept Scrylux's chunk size of 2,000 characters. Choose an embedding model that accepts at least 2,048 tokens: EMBEDDING_MODEL. For Ollama, keep the context at 2,048 or more."
+  refresh_embeddings:
+    input_too_large: "This embedding model does not accept Scrylux's chunk size of 2,000 characters. Choose an embedding model that accepts at least 2,048 tokens: EMBEDDING_MODEL. For Ollama, keep the context at 2,048 or more."
+
+# What a source shows when its ingestion was cancelled from the Jobs page (FR-044). Nothing failed.
+source:
+  cancelled:
+    message: "Processing was cancelled before this document was ready."
+    hint: "Retry to process it again."

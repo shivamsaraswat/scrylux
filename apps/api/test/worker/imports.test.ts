@@ -102,6 +102,42 @@ describe('the API process (FR-070)', () => {
   });
 });
 
+// Phase 3 Milestone 3, FR-010: the files of a document are read by the worker, in a child that holds no secret, and by nothing
+// else. The API process never reaches the readers or the parsers, and the child reaches no module that knows the database,
+// the configuration, the storage or a provider.
+const PARSERS = ['pdfjs-dist', 'yauzl', 'saxes'];
+
+describe('reading documents (FR-010)', () => {
+  it('is never reachable from the API process: no extract module, no parser', () => {
+    const server = reach('server.ts');
+    expect(relative(server.files).filter((f) => f.startsWith('extract/'))).toEqual([]);
+    expect([...server.packages].filter((p) => PARSERS.includes(p))).toEqual([]);
+  });
+
+  it('is started by the worker, which does not load the parsers itself, so the walk is real', () => {
+    const worker = reach('worker.ts');
+    expect(relative(worker.files)).toContain('extract/run.ts');
+    expect(relative(worker.files).filter((f) => f === 'extract/child.ts' || f === 'extract/pdf.ts' || f === 'extract/docx.ts')).toEqual([]);
+    expect([...worker.packages].filter((p) => PARSERS.includes(p))).toEqual([]);
+  });
+
+  it('is done by a child that reaches only the readers, their types and the parsers', () => {
+    const child = reach('extract/child.ts');
+    expect(relative(child.files)).toEqual(['extract/child.ts', 'extract/docx.ts', 'extract/pdf.ts', 'extract/types.ts']);
+    const packages = [...child.packages].filter((p) => !p.startsWith('node:'));
+    expect(packages.sort()).toEqual([...PARSERS].sort());
+  });
+
+  it('is done by a child that imports no workspace package, because it runs with no environment and no build conditions', () => {
+    expect([...reach('extract/child.ts').packages].filter((p) => p.startsWith('@scrylux/'))).toEqual([]);
+  });
+
+  it('is done by a child that reaches no configuration, database, storage, provider or logging module', () => {
+    const files = relative(reach('extract/child.ts').files);
+    expect(files.filter((f) => /^(config|db|migrate|auth|llm|storage|jobs|worker|sources|v1)/.test(f) || f.includes('log'))).toEqual([]);
+  });
+});
+
 describe('the walk itself', () => {
   it('sees an import and a re-export, a type import and a renamed name', () => {
     const text = [

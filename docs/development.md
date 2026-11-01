@@ -14,9 +14,9 @@ The API is there too: `GET /health` returns `200 {"status":"ok"}`, and [API.md](
 
 Override the defaults by exporting variables before `docker compose up` (or putting them in a `.env` file next to `docker-compose.yml`): `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `PORT`.
 
-Compose starts three services: `db`, `app`, and a `worker` that runs background jobs (the provider check on the **Jobs** page) from the same image. Nothing else needs the worker, so `docker compose up --build app db` is enough for everything except jobs. From source, `pnpm --filter @scrylux/api worker` starts one; see [Running the worker](install.md#running-the-worker). `pnpm test` runs the job tests one file at a time (they share the database with whatever else is queued), and the browser test for jobs starts its own app, worker and stand-in provider.
+Compose starts three services: `db`, `app`, and a `worker` that runs background jobs from the same image: the provider check on the **Jobs** page and the reading of documents added to a threat model (which also needs an embedding provider). Nothing else needs the worker, so `docker compose up --build app db` is enough for everything except jobs and documents. From source, `pnpm --filter @scrylux/api worker` starts one; see [Running the worker](install.md#running-the-worker). `pnpm test` runs the job and document tests one file at a time (they share the database with whatever else is queued). The browser tests for jobs and for documents each start their own app, worker and stand-in provider, and `pnpm test:e2e` runs them after the other browser tests, one at a time, because a worker takes any job in the shared database; the documents one makes a certificate for its stand-in provider with `openssl`, which CI's runner has.
 
-Data lives in the `pgdata` volume. `docker compose down -v` wipes it.
+Data lives in the `pgdata` volume, and the originals of documents that are still being read in the `storage` volume. `docker compose down -v` wipes both.
 
 If you're used to this project's pre-Phase-1 npm commands, here's the mapping:
 
@@ -38,7 +38,7 @@ This is a pnpm workspace. The packages are:
 | `packages/db` | The forward-only SQL migrations (the threat-model schema), the migration runner, and the tests that check the schema's integrity rules against a real Postgres |
 | `packages/core` | The shared definitions of projects, threat models, elements, threats and mitigations (Zod schemas, value lists, risk scoring). It has no Node.js dependencies, so the web app can use it too |
 | `packages/threat-library` | The STRIDE-per-element threat rules, as plain YAML files, and the code that checks them and works out which candidate threats apply to a diagram element. The rule engine reads it from Phase 2 Milestone 3. See its [README](../packages/threat-library/README.md) |
-| `packages/llm` | How Scrylux asks a language model for a validated structured result or for embeddings, behind one interface and four provider adapters (Anthropic, OpenAI-compatible, Amazon Bedrock, Google Gemini), with the prices and prompts it needs as plain files. Nothing sends user content through it yet |
+| `packages/llm` | How Scrylux asks a language model for a validated structured result or for embeddings, behind one interface and four provider adapters (Anthropic, OpenAI-compatible, Amazon Bedrock, Google Gemini), with the prices and prompts it needs as plain files. The worker sends the chunks of the documents added to a threat model through it, to make their embeddings; nothing else sends user content yet |
 
 Workspace packages are read as TypeScript source by the type checker, the linter, the tests and
 `tsx`, and as compiled JavaScript inside the Docker image. Running this takes no extra build step.

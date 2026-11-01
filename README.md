@@ -26,9 +26,9 @@ Draw your system, get STRIDE threats, and work them to a decision.
 
 Then take the result with you: a Markdown or print-ready report, or a Scrylux, [Open Threat Model](https://github.com/iriusrisk/OpenThreatModel) or OWASP Threat Dragon file, in and out.
 
-Everything runs on your own machine: one container and a PostgreSQL database, with a documented REST API.
+Everything runs on your own machine: one container and a PostgreSQL database, with a documented REST API. A threat model can also hold the design documents it was built from (`.md`, `.txt`, `.pdf`, `.docx`), which Scrylux reads and embeds with an embedding provider you choose, a local one included; an existing install should read [Upgrading to v0.2](docs/install.md#upgrading-to-v02) first.
 
-> **Next, planned and not built:** AI drafts from your documents and code, always with citations and a human accept step, on the LLM you choose, a local one included. See the [roadmap](docs/roadmap.md).
+> **Next, planned and not built:** AI drafts from your documents (which Scrylux can already read, but does not yet draft from) and code, always with citations and a human accept step, on the LLM you choose, a local one included. See the [roadmap](docs/roadmap.md).
 
 ## Quickstart
 

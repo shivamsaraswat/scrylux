@@ -12,6 +12,7 @@ try {
 }
 
 const PORT = '3100';
+const WORKER_SPECS = /(jobs|sources)\.spec\.ts$/;
 // Set PLAYWRIGHT_BASE_URL to run a spec against an app that is already running, such as
 // `docker compose up` on http://localhost:3000. No server is started then.
 const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL;
@@ -25,7 +26,14 @@ export default defineConfig({
     baseURL: externalBaseUrl ?? `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
+  // The specs that start a worker of their own run after the others, one file at a time: a worker takes any job in the shared
+  // database, so two of them at once (or one beside a spec that expects none) would answer each other's jobs. Everything else
+  // runs with no worker and no provider (Phase 3 Milestone 2 SC-001, Milestone 3 SC-001).
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' }, testIgnore: WORKER_SPECS },
+    { name: 'jobs', use: { browserName: 'chromium' }, testMatch: /jobs\.spec\.ts$/, dependencies: ['chromium'] },
+    { name: 'sources', use: { browserName: 'chromium' }, testMatch: /sources\.spec\.ts$/, dependencies: ['jobs'] },
+  ],
   // The *built* app: only it has the CSP headers and serves the UI. The Vite dev server applies neither.
   webServer: externalBaseUrl
     ? undefined

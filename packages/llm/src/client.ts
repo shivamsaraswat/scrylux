@@ -17,7 +17,7 @@ export const DEFAULT_MAX_OUTPUT_TOKENS = 16_000;
 const MAX_OUTPUT_TOKENS = 32_000;
 export const DEFAULT_ATTEMPT_LIMIT = 3;
 const SCHEMA_NAME = /^[a-zA-Z0-9_-]{1,64}$/;
-// A guard against an accidental unbounded call; Milestone 3 may change it when it knows its chunk counts.
+// A guard against an accidental unbounded call. Ingestion sends 64 chunks per request (apps/api/src/worker/embed-all.ts), far under it.
 const MAX_EMBEDDING_TEXTS = 1000;
 
 /** Where the adapters send their requests instead of the provider's own address. Tests only; see @scrylux/llm/testing. */

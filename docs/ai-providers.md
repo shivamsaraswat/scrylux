@@ -2,7 +2,7 @@
 
 Scrylux can ask a language model for structured answers and for embeddings. You choose where the model runs, with environment values, and you can run without one. This page says how to set each provider up, what leaves your install, and what a request costs. The variables are listed in [Install and run](install.md#environment-variables).
 
-No Scrylux feature sends your content to a model yet. The [check](#checking-the-configuration) is the only thing that sends a request, with fixed text and none of your data. It runs from the **Jobs** page, in the background, in a separate [worker](install.md#running-the-worker) process: the worker is the only process that talks to a provider, and the only one that holds its key.
+Two things send a request. The [check](#checking-the-configuration) sends fixed text and none of your data. **Adding a document** (from v0.2) sends the document's text to your embedding provider, in chunks, to make its embeddings: [Documents](#documents) says what that means for where your data goes. No Scrylux feature sends your content to a generation provider yet; that starts with the AI features of a later milestone. Every request is made in the background, in a separate [worker](install.md#running-the-worker) process: the worker is the only process that talks to a provider, and the only one that holds its key.
 
 ## Running without AI
 
@@ -147,7 +147,20 @@ Each request reports its tokens and what it cost. Scrylux ships a list of prices
 - **Time.** One request to a provider may take at most `LLM_TIMEOUT` (default five minutes). A request that fails because the provider is overloaded or does not answer is tried again at most twice more, after one and two seconds; a provider that asks for a longer wait than a minute is not waited for.
 - **Output.** A request asks for at most 16,000 tokens of answer unless the feature asks for more, and never more than 32,000. An answer cut off at the limit is not asked for again.
 - **Asking again.** An answer that does not match the required shape is asked for again, up to three times in all.
-- **Embeddings.** One request holds at most 1,000 texts, which Scrylux splits into the batches each provider accepts.
+- **Embeddings.** One request holds at most 1,000 texts, which Scrylux splits into the batches each provider accepts. A document's chunks are sent 64 at a time, and each request counts against the job's caps like any other.
+
+## Documents
+
+The documents of a threat model ([Documents and storage](install.md#documents-and-storage)) are read by the worker, cut into chunks and embedded. Four things follow for the model you choose:
+
+- **Adding documents needs an embedding provider.** Without `EMBEDDING_PROVIDER`, the Sources tab says so, and the API refuses to add a document (409). Documents added earlier stay readable.
+- **A chunk holds at most 2,000 characters.** Scrylux cuts the text at paragraph, line and sentence ends where it can, with no overlap between chunks. Your embedding model must accept at least **2,048 tokens** for one input, and every common embedding model does. A model that refuses a chunk fails the document as "input too large", and it cannot be retried until you choose another model, because the refusal would repeat.
+- **Ollama's context must be 2,048 tokens or more.** Ollama's embedding models are often set to 2,048 by default, which is enough; a smaller `num_ctx` or `OLLAMA_CONTEXT_LENGTH` shortens inputs silently, and Scrylux cannot see that happen.
+- **Dense scripts use more tokens.** A chunk of 2,000 characters of English is a few hundred tokens, but the same count of Chinese, Japanese or Korean text can be several times more. A large document in one of those scripts may reach `JOB_TOKEN_CAP` before it is done; the document then fails as "cap reached", writes nothing, and can be retried after an operator raises the cap.
+
+**Where a document's text goes.** To the embedding provider, from the worker, as the chunks are embedded; to your database, as the text and the embeddings; and nowhere else. When the embedding provider is hosted, the text leaves your install, and the Sources tab says so before a document can be added, naming the provider, every time. When the generation provider is hosted, the same page adds that the AI features of later releases will send a document's text there too. With only local providers, the page says the text stays in your install. From the milestone that generates with documents (Milestone 4), the generation provider will receive chunks as well; the notice already says so.
+
+When you change `EMBEDDING_MODEL`, existing documents keep their embeddings and the Sources tab marks them **out of date**; **Refresh embeddings** replaces them with the new model's, without changing a chunk. A document never holds the embeddings of two models.
 
 ## Variables Scrylux refuses
 

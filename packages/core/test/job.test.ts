@@ -49,6 +49,8 @@ const job = (over: Record<string, unknown> = {}) => ({
   progress: { step: 'generation' },
   failure: null,
   totals: totals(),
+  threat_model_id: null,
+  source_id: null,
   ...over,
 });
 
@@ -120,7 +122,7 @@ describe('JobRecord', () => {
     expect(JobRecord.safeParse(job(over)).success).toBe(false);
   });
 
-  it('knows the fourteen failure categories a job can carry', () => {
+  it('knows the twenty-three failure categories a job can carry: Milestone 2’s fourteen and the nine of ingestion', () => {
     expect([...JOB_FAILURE_CATEGORIES].sort()).toEqual(
       [
         'cap_reached',
@@ -137,8 +139,35 @@ describe('JobRecord', () => {
         'rejected',
         'timed_out',
         'worker_lost',
+        // Phase 3 Milestone 3.
+        'damaged',
+        'document_space_full',
+        'encrypted',
+        'no_text_found',
+        'storage_unavailable',
+        'too_large',
+        'too_large_unpacked',
+        'unreadable',
+        'unsupported_type',
       ].sort(),
     );
+  });
+
+  it('parses an ingestion job, which belongs to a threat model and a source, and one whose source was deleted', () => {
+    const threatModel = randomUUID();
+    const source = randomUUID();
+    const ingestion = job({ kind: 'ingest_source', threat_model_id: threatModel, source_id: source, progress: { step: 'embed', done: 3, total: 10 } });
+    expect(JobRecord.parse(ingestion)).toMatchObject({ threat_model_id: threatModel, source_id: source });
+    expect(JobRecord.parse({ ...ingestion, source_id: null }).source_id).toBeNull();
+  });
+
+  it('refuses a job without its threat_model_id and source_id, which the API always sends', () => {
+    const withoutThreatModel: Record<string, unknown> = job();
+    delete withoutThreatModel.threat_model_id;
+    expect(JobRecord.safeParse(withoutThreatModel).success).toBe(false);
+    const withoutSource: Record<string, unknown> = job();
+    delete withoutSource.source_id;
+    expect(JobRecord.safeParse(withoutSource).success).toBe(false);
   });
 });
 
@@ -162,17 +191,25 @@ describe('JobDetail', () => {
       ...job({ state: 'succeeded', finished_at: AT }),
       usage: [usageRow(), usageRow({ id: 13, operation: 'embed', temperature_applied: null, output_tokens: 0, cost_usd: null, price_source: 'none' })],
       result: { generation: operation(), embeddings: { status: 'not_configured' } },
+      ingestion: null,
     });
     expect(detail.usage).toHaveLength(2);
     expect(detail.result?.embeddings.status).toBe('not_configured');
   });
 
   it('accepts a job with no result yet', () => {
-    expect(JobDetail.parse({ ...job(), usage: [], result: null }).result).toBeNull();
+    expect(JobDetail.parse({ ...job(), usage: [], result: null, ingestion: null }).result).toBeNull();
   });
 
   it('refuses an extra field in a usage row', () => {
-    expect(JobDetail.safeParse({ ...job(), usage: [usageRow({ api_key: 'k' })], result: null }).success).toBe(false);
+    expect(JobDetail.safeParse({ ...job(), usage: [usageRow({ api_key: 'k' })], result: null, ingestion: null }).success).toBe(false);
+  });
+
+  it('keeps what an ingestion kept of its run apart from a provider check’s result, as counts only (FR-051)', () => {
+    const detail = JobDetail.parse({ ...job({ kind: 'ingest_source' }), usage: [], result: null, ingestion: { chunks: 12, pages_without_text: 2 } });
+    expect(detail.ingestion).toEqual({ chunks: 12, pages_without_text: 2 });
+    expect(JobDetail.safeParse({ ...job(), usage: [], result: null, ingestion: { chunks: 12, pages_without_text: null, text: 'a document' } }).success).toBe(false);
+    expect(JobDetail.safeParse({ ...job(), usage: [], result: null }).success).toBe(false);
   });
 });
 

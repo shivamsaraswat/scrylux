@@ -33,6 +33,10 @@ COPY --from=builder /app/apps/api/data ./data
 COPY --from=builder /prod/api/package.json ./package.json
 COPY --from=builder /app/apps/web/dist /app/apps/web/dist
 
+# Where the originals of documents that are not ready are kept with STORAGE_BACKEND=local, the default: a named volume is mounted
+# here by the compose files, and takes this directory's owner on first use. Created before USER node, so that node may write it.
+RUN mkdir -p storage && chown node:node storage
+
 USER node
 EXPOSE 3000
 CMD ["node", "dist/server.js"]

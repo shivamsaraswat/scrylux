@@ -104,8 +104,9 @@ describe('rejecting invalid requests (FR-005, FR-006, FR-007, FR-009, FR-010, FR
   }
 
   it('covers every resource operation', () => {
-    // 32 operations on the five records, and the 5 job operations of Phase 3 Milestone 2, which jobs.test.ts covers.
-    expect(resourceOperations).toHaveLength(37);
+    // 32 operations on the five records, the 5 job operations of Phase 3 Milestone 2, which jobs.test.ts covers, and the 8 source
+    // operations of Milestone 3, which sources.test.ts and its siblings cover.
+    expect(resourceOperations).toHaveLength(45);
   });
 
   describe('path ids', () => {
@@ -134,9 +135,16 @@ describe('rejecting invalid requests (FR-005, FR-006, FR-007, FR-009, FR-010, FR
 
     it('answers 404, naming the entity, for a well-formed id that matches nothing', async () => {
       // The batch endpoint needs a valid body to get past validation; elements-batch.test.ts covers its 404.
-      const records = resourceOperations.filter((o) => o.path.includes(':id') && o.operationId !== 'batchElements' && keys.includes(resourceOf(o.path)));
-      // A job is not one of the five records: its 404 is checked in jobs.test.ts.
-      expect(resourceOperations.filter((o) => o.path.includes(':id') && !records.includes(o) && o.operationId !== 'batchElements').map((o) => o.operationId)).toEqual(['getJob', 'cancelJob']);
+      // The source operations take a file or a body of their own: their 404s are checked in sources*.test.ts.
+      const sourceOperations = ['listSources', 'uploadSource', 'pasteSource', 'getSource', 'listChunks', 'retrySource', 'refreshSource', 'deleteSource'];
+      const records = resourceOperations.filter((o) => o.path.includes(':id') && o.operationId !== 'batchElements' && !sourceOperations.includes(o.operationId) && keys.includes(resourceOf(o.path)));
+      // A job and a source are not one of the five records: their 404s are checked in jobs.test.ts and sources*.test.ts.
+      expect(
+        resourceOperations
+          .filter((o) => o.path.includes(':id') && !records.includes(o) && o.operationId !== 'batchElements')
+          .map((o) => o.operationId)
+          .sort(),
+      ).toEqual(['cancelJob', 'getJob', ...sourceOperations].sort());
       for (const op of records) {
         const key = resourceOf(op.path);
         // The report and the export are asked for in a format; the id and the format are checked before the threat model is looked up.

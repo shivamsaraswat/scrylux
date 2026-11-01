@@ -16,6 +16,8 @@ export interface Timings {
   aliveWithinMs: number;
   /** How long a stopping worker lets its jobs go on before it hands them back (FR-007). */
   graceMs: number;
+  /** How often the worker removes what storage holds that no source needs (Phase 3 Milestone 3, FR-055). */
+  sweepMs: number;
 }
 
 export const defaultTimings: Readonly<Timings> = {
@@ -25,6 +27,7 @@ export const defaultTimings: Readonly<Timings> = {
   reportMs: 10_000,
   aliveWithinMs: 30_000,
   graceMs: 30_000,
+  sweepMs: 10 * 60 * 1000,
 };
 
 /** A worker row not seen for this long is removed when a worker starts, so restarts do not pile up rows. */

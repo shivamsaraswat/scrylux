@@ -1,4 +1,4 @@
-// Kysely table types for the five domain tables and the three job tables. Types only: the tables themselves are
+// Kysely table types for the five domain tables, the three job tables and the two source tables. Types only: the tables themselves are
 // defined by the SQL files in migrations/, and test/schema-types.test.ts checks these against the real columns.
 //
 // ColumnType<Select, Insert, Update>: `never` marks a column the database owns (set on insert, or
@@ -9,6 +9,7 @@ import type {
   ElementType,
   Impact,
   JobFailureCategory,
+  JobFailureDetail,
   JobKind,
   JobState,
   JsonValue,
@@ -16,6 +17,7 @@ import type {
   Methodology,
   MitigationStatus,
   RiskLevel,
+  SourceType,
   StaleReason,
   StrideCategory,
   ThreatModelStatus,
@@ -130,8 +132,12 @@ interface JobsTable {
   cancelled_by: Mutable<number | null>;
   progress: Mutable<JsonObject | null>;
   failure_category: Mutable<JobFailureCategory | null>;
-  failure_detail: Mutable<'cap_below_one_request' | null>;
+  failure_detail: Mutable<JobFailureDetail | null>;
   result: Mutable<JsonObject | null>;
+  // Set on the two kinds of ingestion, null on a provider check (jobs_scope_check). A job is deleted with its threat model;
+  // it keeps its record when its source is deleted, with source_id set to NULL by the foreign key (Phase 3 Milestone 3).
+  threat_model_id: Fixed<string | null>;
+  source_id: ColumnType<string | null, string | null | undefined, never>;
 }
 
 // One row per model request a job made: Milestone 1's usage record. Never updated.
@@ -164,6 +170,47 @@ interface WorkersTable {
   stopping: Mutable<boolean>;
 }
 
+// One design document of a threat model (Phase 3 Milestone 3, data-model.md). Its status is read from its latest ingestion
+// job while it is not ready. `original_key` is cleared, with the facts of the ingestion set, in the one commit that makes
+// the source ready; only the worker does that (FR-057).
+interface SourcesTable {
+  id: Generated<string>;
+  threat_model_id: Fixed<string>;
+  name: Fixed<string>;
+  type: Fixed<SourceType>;
+  size_bytes: Fixed<number>;
+  digest: Fixed<Buffer>;
+  added_by: Fixed<number>;
+  added_at: Timestamp;
+  original_key: Mutable<string | null>;
+  // BIGINT: a string when read, and either when written.
+  stored_bytes: ColumnType<string, number | string, number | string>;
+  ready_at: Mutable<Date | null>;
+  text_chars: Mutable<number | null>;
+  chunk_count: Mutable<number | null>;
+  pages_without_text: Mutable<number | null>;
+  embedding_model: Mutable<string | null>;
+  embedding_dimension: Mutable<number | null>;
+}
+
+// One consecutive slice of a source's text. Everything but the embedding is fixed once the chunk is written: its id and
+// text are cited by later milestones (FR-023). The embedding is a pgvector `vector` of any dimension, read and written in
+// pgvector's text form, '[1,2,3]', always as a bound parameter; a refresh replaces it.
+interface ChunksTable {
+  id: Generated<string>;
+  source_id: Fixed<string>;
+  position: Fixed<number>;
+  start_offset: Fixed<number>;
+  end_offset: Fixed<number>;
+  text: Fixed<string>;
+  page_first: Fixed<number | null>;
+  page_last: Fixed<number | null>;
+  line_first: Fixed<number | null>;
+  line_last: Fixed<number | null>;
+  heading: Fixed<string | null>;
+  embedding: ColumnType<string, string, string>;
+}
+
 export interface Database {
   projects: ProjectsTable;
   threat_models: ThreatModelsTable;
@@ -173,4 +220,6 @@ export interface Database {
   jobs: JobsTable;
   job_usage: JobUsageTable;
   workers: WorkersTable;
+  sources: SourcesTable;
+  chunks: ChunksTable;
 }

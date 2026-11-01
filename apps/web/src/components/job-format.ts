@@ -3,7 +3,7 @@ import type { JobProgress, JobRecord, JobTotals } from '@scrylux/core';
 // How a job is written on the Jobs pages (Phase 3 Milestone 2, contracts/ui.md). Everything here returns plain text; the
 // pages render it as text, so nothing the API sends can become markup (FR-066).
 
-export const KIND_LABEL: Record<JobRecord['kind'], string> = { provider_check: 'Provider check' };
+export const KIND_LABEL: Record<JobRecord['kind'], string> = { provider_check: 'Provider check', ingest_source: 'Process a document', refresh_embeddings: 'Refresh embeddings' };
 
 const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -14,7 +14,13 @@ export function stateLabel(job: Pick<JobRecord, 'state' | 'cancel_requested' | '
   return capitalize(job.state);
 }
 
-const STEP_LABEL: Record<JobProgress['step'], string> = { generation: 'Checking generation', embeddings: 'Checking embeddings' };
+const STEP_LABEL: Record<JobProgress['step'], string> = {
+  generation: 'Checking generation',
+  embeddings: 'Checking embeddings',
+  extract: 'Reading the document',
+  chunk: 'Splitting the text',
+  embed: 'Embedding the chunks',
+};
 
 export function progressLabel(progress: JobProgress): string {
   const step = STEP_LABEL[progress.step];

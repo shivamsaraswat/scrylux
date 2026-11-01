@@ -5,8 +5,16 @@ import { defineConfig } from 'vitest/config';
 const HEAVY = 'test/contract/v1/exchange-bound.test.ts';
 
 // The job and worker tests. A worker claims any queued job in the shared test database, so these files must not run
-// beside each other or beside a file that queues jobs: they run one at a time, after the others have finished.
-const JOBS = ['test/jobs/**/*.test.ts', 'test/worker/**/*.test.ts', 'test/contract/v1/jobs*.test.ts'];
+// beside each other or beside a file that queues jobs: they run one at a time, after the others have finished. The source
+// tests (Phase 3 Milestone 3) queue ingestion jobs too, so the files that add sources or run an ingestion are in the group.
+const JOBS = [
+  'test/jobs/**/*.test.ts',
+  'test/worker/**/*.test.ts',
+  'test/contract/v1/jobs*.test.ts',
+  'test/contract/v1/sources*.test.ts',
+  'test/sources/store*.test.ts',
+  'test/sources/ingest*.test.ts',
+];
 
 export default defineConfig({
   resolve: {

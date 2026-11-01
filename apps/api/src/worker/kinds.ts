@@ -1,8 +1,12 @@
-import type { JobFailureCategory, JobKind, JobProgress, JsonValue, ProviderCheckOperation } from '@scrylux/core';
+import type { JobFailureCategory, JobFailureDetail, JobKind, JobProgress, JsonValue, ProviderCheckOperation } from '@scrylux/core';
+import type { Database } from '@scrylux/db';
+import type { Kysely } from 'kysely';
 import type { Llm, LlmConfig, Usage } from '@scrylux/llm';
-import type { ClaimedJob } from '../jobs/store.js';
+import type { ClaimedJob, RunCommit } from '../jobs/store.js';
 import type { StopReason } from './stop.js';
 import { runProviderCheck, type CheckResult } from '../provider-check.js';
+import { ingestSource } from './ingest.js';
+import { refreshEmbeddings } from './refresh.js';
 
 // The job kinds the worker can run (Phase 3 Milestone 2, FR-013): a fixed list that ships with Scrylux. This milestone has
 // one, the provider check. Each kind says whether it calls a model, and does its work through the context the run gives
@@ -12,6 +16,8 @@ type JsonObject = Record<string, JsonValue>;
 
 export interface RunContext {
   job: ClaimedJob;
+  /** The database, for the kinds that read what they work on (Phase 3 Milestone 3). */
+  db: Kysely<Database>;
   llm: Llm;
   llmConfig: LlmConfig;
   /** Aborts when a cancel is asked, the deadline passes, the job is lost or the worker hands it back. */
@@ -31,7 +37,11 @@ export interface RunContext {
 export interface KindOutcome {
   result: JsonObject;
   /** Set when the kind's work ended in a failure that is not a stop; the first such failure of the run. */
-  failure?: { category: JobFailureCategory };
+  failure?: { category: JobFailureCategory; detail?: JobFailureDetail };
+  /** What to write in the transaction that ends the job, when it succeeds (Phase 3 Milestone 3, research #2). */
+  commit?: RunCommit;
+  /** Runs after the commit has committed and the job has succeeded, for what must not happen inside a transaction. A failure is the sweep's. */
+  afterCommit?: () => Promise<void>;
 }
 
 export interface Kind {
@@ -84,4 +94,4 @@ const providerCheck: Kind = {
   },
 };
 
-export const kinds: Record<JobKind, Kind> = { provider_check: providerCheck };
+export const kinds: Record<JobKind, Kind> = { provider_check: providerCheck, ingest_source: ingestSource, refresh_embeddings: refreshEmbeddings };

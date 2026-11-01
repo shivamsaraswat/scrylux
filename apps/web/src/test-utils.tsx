@@ -20,11 +20,14 @@ interface FakeCall {
   method: string;
   path: string;
   body: unknown;
+  // An upload is multipart form data, not JSON (Phase 3 Milestone 3).
+  form: FormData | undefined;
 }
 
 interface FakeContext {
   params: Record<string, string>;
   body: unknown;
+  form: FormData | undefined;
   query: URLSearchParams;
 }
 
@@ -59,15 +62,16 @@ export function installFakeApi(handlers: FakeHandlers = {}) {
     const url = new URL(urlOf(input), 'http://localhost');
     const method = (init?.method ?? 'GET').toUpperCase();
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
+    const form = init?.body instanceof FormData ? init.body : undefined;
     if (url.pathname === '/api/session/refresh' && !compiled.some((c) => c.regex.test('/api/session/refresh'))) {
       return json(200, SESSION);
     }
-    calls.push({ method, path: url.pathname, body });
+    calls.push({ method, path: url.pathname, body, form });
     for (const route of compiled) {
       const match = route.regex.exec(url.pathname);
       if (match && route.method === method) {
         const params = Object.fromEntries(route.names.map((name, i) => [name, match[i + 1] ?? '']));
-        return route.handler({ params, body, query: url.searchParams });
+        return route.handler({ params, body, form, query: url.searchParams });
       }
     }
     throw new Error(`Unexpected request: ${method} ${url.pathname}`);
@@ -206,15 +210,77 @@ export const job = (overrides: Record<string, unknown> = {}) => ({
   progress: null,
   failure: null,
   totals: jobTotals(),
+  threat_model_id: null,
+  source_id: null,
   ...overrides,
 });
 
-// A job with its usage records and result (JobDetail).
-export const jobDetail = (overrides: Record<string, unknown> = {}) => ({ ...job(), usage: [], result: null, ...overrides });
+// A job with its usage records and result (JobDetail). `ingestion` is what an ingestion kept of its run: counts only.
+export const jobDetail = (overrides: Record<string, unknown> = {}) => ({ ...job(), usage: [], result: null, ingestion: null, ...overrides });
 
 export const jobsStatus = (overrides: Record<string, unknown> = {}) => ({
   worker_alive: true,
   ai: { generation: { provider: 'openai-compatible', model: 'llama3.2', hosted: false }, embedding: null },
   provider_check: { offered: true, next_allowed_at: null },
+  ...overrides,
+});
+
+// ---- sources (Phase 3 Milestone 3) ----
+
+export const SOURCE_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+export const SOURCE_ID_2 = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+export const CHUNK_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+
+// A source as the API sends it (SourceRecord): just added, waiting for the worker.
+export const source = (overrides: Record<string, unknown> = {}) => ({
+  id: SOURCE_ID,
+  threat_model_id: MODEL_ID,
+  name: 'design.md',
+  type: 'md',
+  size_bytes: 1200,
+  added_by: { id: 7, username: 'ada' },
+  added_at: '2026-11-01T10:00:00.000Z',
+  status: 'waiting',
+  progress: null,
+  failure: null,
+  ready: null,
+  refresh: null,
+  refresh_failure: null,
+  refreshable: false,
+  ...overrides,
+});
+
+export const readySource = (overrides: Record<string, unknown> = {}) =>
+  source({
+    status: 'ready',
+    ready: { at: '2026-11-01T10:05:00.000Z', text_chars: 4000, chunk_count: 3, pages_without_text: null, embedding: { model: 'nomic-embed-text', dimension: 768, state: 'current' } },
+    ...overrides,
+  });
+
+/** A ready source whose embeddings are in this state ('current', 'out_of_date' or 'no_provider'). */
+export const readySourceWith = (state: string, overrides: Record<string, unknown> = {}) =>
+  source({
+    status: 'ready',
+    ready: { at: '2026-11-01T10:05:00.000Z', text_chars: 4000, chunk_count: 3, pages_without_text: null, embedding: { model: 'nomic-embed-text', dimension: 768, state } },
+    ...overrides,
+  });
+
+export const failedSource = (failure: Record<string, unknown> = {}, overrides: Record<string, unknown> = {}) =>
+  source({ status: 'failed', failure: { category: 'damaged', message: 'This file could not be opened.', hint: 'Open it in the program that made it and save a fresh copy.', retryable: false, ...failure }, ...overrides });
+
+export const sourceList = (sources: unknown[] = [], limits: Record<string, unknown> = {}) => ({
+  sources,
+  limits: { max_bytes: 10 * 1024 * 1024, per_threat_model: 20, used_bytes: 0, document_space_bytes: 2 * 1024 ** 3, ...limits },
+});
+
+export const chunk = (overrides: Record<string, unknown> = {}) => ({
+  id: CHUNK_ID,
+  position: 0,
+  start_offset: 0,
+  end_offset: 35,
+  text: 'The gateway forwards each request.',
+  pages: null,
+  lines: { first: 1, last: 1 },
+  heading: null,
   ...overrides,
 });

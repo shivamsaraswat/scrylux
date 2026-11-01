@@ -84,3 +84,65 @@ describe('a configuration that does not start', () => {
     expect(checkWorkerStartup({ ...ANTHROPIC, JOB_MAX_RUNS: '9' }, {}).line).toContain('LLM_API_KEY');
   });
 });
+
+// Phase 3 Milestone 3 (FR-052): the worker reads the originals and extracts them, so it checks the source, extraction and storage
+// settings as the API does, and names the variable and never its value.
+describe('the source and storage settings (FR-052)', () => {
+  const S3: Env = { STORAGE_BACKEND: 's3', STORAGE_S3_BUCKET: 'a-bucket', STORAGE_S3_REGION: 'eu-west-1' };
+
+  it('starts on the local volume when none is set, and says so in its settings', () => {
+    const result = checkWorkerStartup({}, {});
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.storage).toMatchObject({ backend: 'local' });
+      expect(result.sources).toMatchObject({ extractMemoryMb: 1024 });
+    }
+  });
+
+  it('starts with an S3-compatible service and its keys, from the environment or the secret', () => {
+    expect(checkWorkerStartup(S3, {}).ok).toBe(true);
+    expect(checkWorkerStartup({ ...S3, STORAGE_S3_ACCESS_KEY_ID: 'AKIA', STORAGE_S3_SECRET_ACCESS_KEY: 'shh' }, {}).ok).toBe(true);
+    expect(checkWorkerStartup(S3, { storageS3AccessKeyId: 'AKIA', storageS3SecretAccessKey: 'shh' }).ok).toBe(true);
+  });
+
+  it.each([
+    ['SOURCE_MAX_CHARS', '999'],
+    ['EXTRACT_TIME_LIMIT', '5s'],
+    ['EXTRACT_MEMORY_MB', '64'],
+    ['EXTRACT_UNPACKED_MB', '0.5'],
+    ['EXTRACT_MAX_PAGES', 'lots'],
+    ['DOCUMENT_SPACE', '2 gigabytes'],
+    ['STORAGE_BACKEND', 'azure'],
+  ])('refuses a bad %s, naming it and not its value', (name, value) => {
+    const result = checkWorkerStartup({ [name]: value }, {});
+    expect(result.ok).toBe(false);
+    expect(result.line).toContain(name);
+    expect(result.line.startsWith('Startup failed:')).toBe(true);
+    expect(result.line).not.toContain(value);
+  });
+
+  it.each([
+    ['no bucket', { STORAGE_BACKEND: 's3', STORAGE_S3_REGION: 'eu-west-1' }, 'STORAGE_S3_BUCKET'],
+    ['no region', { STORAGE_BACKEND: 's3', STORAGE_S3_BUCKET: 'a-bucket' }, 'STORAGE_S3_REGION'],
+    ['one key of two', { ...S3, STORAGE_S3_ACCESS_KEY_ID: 'AKIA' }, 'STORAGE_S3_SECRET_ACCESS_KEY'],
+    ['a plain http address for a public host', { ...S3, STORAGE_S3_ENDPOINT: 'http://storage.example.com' }, 'STORAGE_S3_ENDPOINT'],
+    ['an address the AWS client would read on its own', { ...S3, AWS_ENDPOINT_URL: 'https://elsewhere.example' }, 'AWS_ENDPOINT_URL'],
+    ['a service-specific AWS address', { ...S3, AWS_ENDPOINT_URL_S3: 'https://elsewhere.example' }, 'AWS_ENDPOINT_URL_S3'],
+  ])('refuses the S3 backend with %s, naming the variable', (_label, env, name) => {
+    const result = checkWorkerStartup(env, {});
+    expect(result.ok).toBe(false);
+    expect(result.line).toContain(name);
+    expect(result.line).not.toContain('elsewhere.example');
+    expect(result.line).not.toContain('storage.example.com');
+  });
+
+  it('does not refuse an AWS variable when the backend is the local volume, which the AWS client never reads', () => {
+    expect(checkWorkerStartup({ AWS_ENDPOINT_URL: 'https://elsewhere.example' }, {}).ok).toBe(true);
+  });
+
+  it('reports a provider problem before a source or storage setting, and a job setting before either', () => {
+    expect(checkWorkerStartup({ ...ANTHROPIC, SOURCE_MAX_CHARS: '1' }, {}).line).toContain('LLM_API_KEY');
+    expect(checkWorkerStartup({ JOB_MAX_RUNS: '9', SOURCE_MAX_CHARS: '1' }, {}).line).toContain('JOB_MAX_RUNS');
+  });
+});
+

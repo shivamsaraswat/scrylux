@@ -1,4 +1,5 @@
 import { formatValidationError, uuid } from '@scrylux/core';
+import type { Request } from 'express';
 import type { z } from 'zod';
 import { HttpError } from './errors.js';
 import type { RecordType } from './write-log.js';
@@ -19,6 +20,8 @@ interface OperationContext<B, Q> {
   // The query string, already parsed with the operation's schema.
   query: Q;
   accountId: number;
+  // The request itself, for an operation that reads its own body (`deferBody`): a document that is checked before it is read.
+  request: Request;
 }
 
 // The policy a downloaded document is sent with, in place of the app's own. The app's policy is for the pages it
@@ -51,6 +54,14 @@ export interface Operation<B = never, Q = unknown> {
   // The most bytes the request body may hold. Defaults to DEFAULT_BODY_LIMIT. The body is read only after the request
   // is authenticated (research #2), so a raised limit costs the server nothing for anyone without an account.
   bodyLimit?: number;
+  // The body is not read before the handler, which reads it after its own checks (Phase 3 Milestone 3, research #9): a request
+  // for a threat model that does not exist, or for a feature that is not configured, is answered without reading a document.
+  // The handler parses and validates the body itself, with `body.schema`.
+  deferBody?: boolean;
+  // The body is a file, in one multipart part named `file`. Described as multipart/form-data in the OpenAPI document.
+  upload?: boolean;
+  // At most a few bodies of this kind are read at once in a process; one more is refused with 503 (FR-004).
+  limitConcurrentBodies?: boolean;
   // The query string. The schema is a shared one from core and carries its own error message, which is the 400.
   query?: { name: string; schema: z.ZodType<Q> };
   response?: { name: string; schema: z.ZodType; list?: boolean };

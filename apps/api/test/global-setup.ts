@@ -1,3 +1,5 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
@@ -18,6 +20,11 @@ export default async function setup(): Promise<() => Promise<void>> {
   } catch {
     // Missing file or unsupported Node version — fall back to whatever the shell already exports.
   }
+
+  // The directory that holds the temporary storage of every test process (env.setup.ts), so that one removal at the end of the run
+  // leaves none behind. The workers start after this and inherit it. Skipped when the shell chose where originals go.
+  const storageParent = process.env.STORAGE_DIR ? undefined : mkdtempSync(path.join(tmpdir(), 'scrylux-test-storage-'));
+  if (storageParent !== undefined) process.env.SCRYLUX_TEST_STORAGE_PARENT = storageParent;
 
   // config.ts reads process.env into a module-level object at import time, not lazily. A static
   // top-level `import` here would be hoisted and evaluated before the env-loading code above
@@ -54,6 +61,7 @@ export default async function setup(): Promise<() => Promise<void>> {
   // sessions and projects they own, go too. Nothing here touches any other user, or anything
   // created before the run started, except what a crashed earlier run left under an m6-test-* account.
   return async function teardown(): Promise<void> {
+    if (storageParent !== undefined) rmSync(storageParent, { recursive: true, force: true });
     const pool = new pg.Pool(config.db);
     try {
       await pool.query('DELETE FROM browser_sessions WHERE created_at >= $1', [startedAt]);

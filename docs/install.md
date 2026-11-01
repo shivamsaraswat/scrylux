@@ -24,7 +24,7 @@ A published version never changes. `latest` exists too, for those who ask for it
 
 **Upgrading.** Back up first: `docker compose exec db pg_dump -U postgres threats > backup.sql`. Then choose the next version and start it.
 Migrations only move forward and run when the app starts; there is no downgrade. The [changelog](../CHANGELOG.md) says what each release
-changes.
+changes. **Going from v0.1 or from a build before v0.2 to v0.2 changes the database image:** read [Upgrading to v0.2](#upgrading-to-v02) first.
 
 > **Before you expose this anywhere else**
 >
@@ -39,7 +39,7 @@ changes.
 
 ## Run without Docker
 
-Requires Node 22+, pnpm, and a reachable PostgreSQL **13 or newer** (CI and `docker compose` use 16).
+Requires Node 22+, pnpm, and a reachable PostgreSQL **13 or newer** (CI and `docker compose` use 16) that has the **pgvector** extension, which documents store their embeddings in. The migrations enable it (`CREATE EXTENSION vector`), so the database user needs the right to, or an administrator runs that once; without it Scrylux stops at start-up and says so ([Upgrading to v0.2](#upgrading-to-v02)).
 
 ```sh
 pnpm install
@@ -49,7 +49,7 @@ pnpm --filter @scrylux/api start
 
 The app does not read `.env` itself — export the variables (e.g. `set -a; source .env; set +a`) or set them in your process manager.
 
-On startup the app applies any pending SQL files from `packages/db/migrations/` (tracked in a `schema_migrations` table) and creates/updates the admin user. `pnpm --filter @scrylux/api migrate` runs only the migrations. `pnpm run test` runs the whole workspace's test suite.
+On startup the app applies any pending SQL files from `packages/db/migrations/` (tracked in a `schema_migrations` table) and creates/updates the admin user. `pnpm --filter @scrylux/api migrate` runs only the migrations. Background jobs and the reading of documents are done by a second process, which you start yourself: `pnpm --filter @scrylux/api worker` ([Running the worker](#running-the-worker)). With the default `STORAGE_BACKEND=local`, both processes must be able to write the directory `STORAGE_DIR` (default `storage`, relative to the directory they run in) and must see the same one; see [Documents and storage](#documents-and-storage). `pnpm run test` runs the whole workspace's test suite.
 
 The original threat tracker was removed in Phase 1 Milestone 5. On the first start after upgrading, a migration drops its entries (the `threat_entries` table) and the `legacy_threat_links` table, and deletes the "Imported" project that an earlier version created from those entries, with everything inside it. Nothing is exported first: those entries were throwaway data. User accounts, and any project that did not come from that import, are untouched.
 
@@ -100,8 +100,25 @@ The original threat tracker was removed in Phase 1 Milestone 5. On the first sta
 | `PROVIDER_CHECK_COOLDOWN` | no | `5m` | How long an account must wait between provider checks, counted from when the last one was queued, even if it was cancelled: `0` turns it off, otherwise a whole number and `s`, `m` or `h`, up to `24h` |
 | `WORKER_CONCURRENCY` | no | `1` | How many jobs one worker runs at once, from 1 to 32 (the worker reads it) |
 | `WORKER_HEALTH_PORT` | no | `3001` | The port of the worker's `/health` (the worker reads it). The compose files check port 3001: change both together |
+| `SOURCE_MAX_MB` | no | `10` | The largest file that may be added as a document, from 1 to 100 MB. See [Documents and storage](#documents-and-storage) |
+| `SOURCES_PER_THREAT_MODEL` | no | `20` | How many documents one threat model may hold, from 1 to 200 |
+| `INGESTION_JOBS_PER_ACCOUNT` | no | `20` | How many documents one account may have waiting or being processed at once, from 1 to 1,000. It is separate from `JOBS_PER_ACCOUNT`, which does not count them |
+| `DOCUMENT_SPACE` | no | `2GB` | What every document may take together, text and embeddings counted, as a whole number and `MB` or `GB`: from `100MB` to `10000GB`. The app refuses a document that would pass it, and the worker refuses to make one ready that would |
+| `SOURCE_MAX_CHARS` | no | `1000000` | The most text one document may hold once read, from 1,000 to 10,000,000 characters (the worker reads it). A longer one fails as too large; no part of it is kept |
+| `EXTRACT_TIME_LIMIT` | no | `120s` | The longest reading one PDF or Word file may take: a whole number and `s` or `m`, from `10s` to `30m` (the worker reads it) |
+| `EXTRACT_MEMORY_MB` | no | `1024` | The most memory reading one file may use, from 128 to 8,192. A 10 MB PDF needs about 640 MB however little text it holds, and a Word file of a million characters about 320 MB (the worker reads it) |
+| `EXTRACT_UNPACKED_MB` | no | `50` | The most the parts of a Word file that are read may unpack to, from 1 to 1,000 MB (the worker reads it) |
+| `EXTRACT_MAX_PAGES` | no | `2000` | The most pages of one PDF, from 1 to 100,000 (the worker reads it) |
+| `STORAGE_BACKEND` | no | `local` | Where the files that are being processed are kept: `local` (a directory) or `s3` (an S3-compatible service). Both processes need the same value |
+| `STORAGE_DIR` | no | `storage` | `local` only: a directory, relative to the working directory (`/app/apps/api/storage` in the image) or absolute. Both processes must be able to write it, which the `storage` volume of the compose files does |
+| `STORAGE_S3_BUCKET` | with `s3` | — | The bucket. Give Scrylux a bucket of its own, or a prefix of its own in one: it deletes what it finds under its prefix that has the shape of its files |
+| `STORAGE_S3_PREFIX` | no | `scrylux/` | `s3` only: ends with `/`, letters, digits, `-`, `_` and `/` |
+| `STORAGE_S3_REGION` | with `s3` | — | The bucket's region |
+| `STORAGE_S3_ENDPOINT` | no | — | `s3` only: the address of a service other than AWS S3 (MinIO, Ceph, R2…): `https://`, or `http://` for a host on a private network |
+| `STORAGE_S3_FORCE_PATH_STYLE` | no | `false` | `s3` only: `true` for services that need `host/bucket/key` addresses |
+| `STORAGE_S3_ACCESS_KEY_ID`, `STORAGE_S3_SECRET_ACCESS_KEY` | no | — | **Secrets**, `s3` only, both or neither. Also read from the `DB_SECRET_ID` secret. Without them the AWS SDK's default chain is used: the instance or task role. Both processes use them |
 
-Scrylux refuses to start with a bad AI or job setting, and says which variable. The worker also needs the provider key that the provider takes; the app starts without it. It also refuses while a provider is configured and a variable that the provider libraries read on their own is set (for example `OPENAI_API_KEY`); [AI providers](ai-providers.md) lists them.
+Scrylux refuses to start with a bad AI, job, document or storage setting, and says which variable, never its value. The worker also needs the provider key that the provider takes; the app starts without it. It also refuses while a provider is configured and a variable that the provider libraries read on their own is set (for example `OPENAI_API_KEY`); [AI providers](ai-providers.md) lists them.
 
 ### Behind a load balancer or reverse proxy
 
@@ -137,14 +154,81 @@ Both compose files already run it as a `worker` service next to `app`. To run mo
 | **`LLM_API_KEY`, `EMBEDDING_API_KEY`** | **no** | **yes** |
 | `JOB_*`, `JOBS_PER_ACCOUNT`, `PROVIDER_CHECK_COOLDOWN` | yes: it copies the caps, runs and time limit onto each job and checks the limits | yes: it checks them |
 | `WORKER_CONCURRENCY`, `WORKER_HEALTH_PORT` | checked | used |
+| `SOURCE_MAX_MB`, `SOURCES_PER_THREAT_MODEL`, `INGESTION_JOBS_PER_ACCOUNT` | yes: it checks the limits when a document is added | no |
+| `DOCUMENT_SPACE` | yes | yes |
+| `SOURCE_MAX_CHARS`, `EXTRACT_*` | no | yes |
+| `STORAGE_*` | yes: it stores the uploads | yes: it reads them and removes them |
+| **`STORAGE_S3_ACCESS_KEY_ID`, `STORAGE_S3_SECRET_ACCESS_KEY`** | **yes** (it stores uploads) | **yes** |
 
 The worker is the only process that sends a request to a provider, so it is the only one that needs a key. Give the keys to the `worker` service alone, as both compose files do. A key kept in the secret named by `DB_SECRET_ID` is the exception: both processes read that secret for the database credentials, so a key in it reaches the app as well, though the app never uses it. To keep a key from the app, set it in the worker's environment instead.
 
 With the keys on the worker, `docker compose exec app node dist/llm-check.js` reports a missing key, which is expected. Run the operator's check in the worker's container: `docker compose exec worker node dist/llm-check.js` ([AI providers](ai-providers.md)).
 
+## Documents and storage
+
+From v0.2 a threat model can hold **documents**: design documents, as `.md`, `.txt`, `.pdf` and `.docx` files or pasted text. Scrylux reads each one, cuts its text into chunks of at most 2,000 characters and gives each chunk an embedding, which later releases search. **Adding documents needs an embedding provider** (`EMBEDDING_PROVIDER`, [AI providers](ai-providers.md)) and a running worker; without them, everything else works as before and the Sources tab says what is missing.
+
+### Storage
+
+A file is stored only while it is being processed. The worker deletes it as soon as the document is ready, and the text and chunks stay in the database; a person can never download the original. What is kept until then is where `STORAGE_BACKEND` points.
+
+- **`local`** (the default) keeps files in `STORAGE_DIR`. The app and the worker must both write it, so they must share a host or a filesystem. The compose files mount the named volume `storage` at `/app/apps/api/storage` in both, and the image creates that directory owned by the `node` user.
+- **`s3`** keeps them in an S3-compatible service: AWS S3, MinIO, Ceph, R2 and others. Give Scrylux **a bucket of its own, or a prefix of its own** (`STORAGE_S3_PREFIX`): the worker lists that prefix and deletes the objects it finds there that have the shape of Scrylux's files (`<prefix>sources/<uuid>`), and nothing else. Neither process contacts the service when it starts, and each refuses to start while a variable the AWS client would read on its own (`AWS_ENDPOINT_URL`, `AWS_ENDPOINT_URL_*`, `AWS_S3_*`, `AWS_USE_DUALSTACK_ENDPOINT`, `AWS_USE_FIPS_ENDPOINT`) is set, so that no environment variable can send a document somewhere you did not choose.
+
+Give each process the least access that its job needs. For a bucket `my-bucket` and the default prefix, the app needs
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{ "Effect": "Allow", "Action": ["s3:PutObject", "s3:DeleteObject"], "Resource": "arn:aws:s3:::my-bucket/scrylux/sources/*" }]
+}
+```
+
+and the worker needs
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Effect": "Allow", "Action": ["s3:GetObject", "s3:DeleteObject"], "Resource": "arn:aws:s3:::my-bucket/scrylux/sources/*" },
+    { "Effect": "Allow", "Action": "s3:ListBucket", "Resource": "arn:aws:s3:::my-bucket", "Condition": { "StringLike": { "s3:prefix": "scrylux/sources/*" } } }
+  ]
+}
+```
+
+Turn on the bucket's encryption at rest (AWS S3 does by default); Scrylux adds none of its own. If the bucket uses a customer-managed KMS key, the app also needs `kms:GenerateDataKey` and the worker `kms:Decrypt` on that key; the policies above do not grant them. Deleting removes the current object only: a bucket with **versioning**, or a snapshot of the volume, keeps older copies by design, so keep versioning off for this prefix or expire old versions. Both processes also hold the bucket's credentials when you give them as `STORAGE_S3_ACCESS_KEY_ID` and `STORAGE_S3_SECRET_ACCESS_KEY`; with an instance or task role they hold none.
+
+**Deleting.** Deleting a document, a threat model or a project removes its originals at once. If storage is down at that moment, the deletion still succeeds, and the worker's sweep, which runs when it starts and every 10 minutes, removes anything older than an hour that no document needs. So a file is gone at most **1 hour 10 minutes** after its deletion, provided a worker is running.
+
+### The document space
+
+`DOCUMENT_SPACE` bounds what every document takes in the database, text and embeddings together. A chunk takes its text (about 1.5 KB for a full one) plus 4 bytes for each dimension of its embedding, so the default `2GB` holds about 400 MB of text at 1,536 dimensions, about 220 MB at 3,072 dimensions, and about 670 MB at 768. Raise it only with the database's disk in mind; Scrylux counts what it stores, not what Postgres uses on disk.
+
+### Reading files safely
+
+The worker reads each PDF or Word file in a child process of its own, started with no environment, so it holds no database password, provider key or storage credential, and a flaw in a parser has none to lose. The child is stopped when it passes `EXTRACT_TIME_LIMIT`, `EXTRACT_MEMORY_MB`, `EXTRACT_UNPACKED_MB` (the parts of a Word file are checked against what their headers declare, and against what they really unpack to) or `EXTRACT_MAX_PAGES`; the document fails with the bound it passed, and the worker's other jobs go on. Nothing a file points at is fetched or run: not a link, an external image, a font, a macro or a script.
+
+- **Memory.** Plan for the worker to need `EXTRACT_MEMORY_MB` (1 GiB by default) for each file being read, on top of about 110 MB for the worker itself, and `WORKER_CONCURRENCY` files can be read at once. The bounds are Scrylux's own; **a memory limit on the container remains the last line**.
+- **Network.** The child still has the worker's network access, because Node offers no sandbox for it. If that matters, limit the worker's egress to your embedding provider and your storage with a container network policy.
+- **Order of work.** A document takes minutes at most: the largest default (10 MB) is ready within five minutes on a small host, most in seconds, and `JOB_TOKEN_CAP` bounds what its embeddings may use. Text in scripts that take many tokens per character (Chinese, Japanese, Korean) reaches that cap sooner, so a large document in one of them may need a higher `JOB_TOKEN_CAP`.
+
+## Upgrading to v0.2
+
+v0.2 stores embeddings in PostgreSQL with the **pgvector** extension, and pgvector's only published image is Debian-based, where v0.1 and Milestone 2 ran on `postgres:16-alpine`. Moving the same data volume from one to the other is supported, with these things to know:
+
+1. **Back up first**: `docker compose exec db pg_dump -U postgres threats > backup.sql`. There is no downgrade.
+2. **Keep the volume.** Do not use `docker compose down -v`. Download the new `docker-compose.yml`, whose `db` service uses the pgvector image, and `docker compose up -d`. The image re-owns the data directory for its own `postgres` user when it starts as root, which is the official image's behavior, so nothing needs changing by hand. The file also adds the `storage` volume for [documents](#documents-and-storage).
+3. **The first start rebuilds every index.** Debian sorts text by its own rules and Alpine by another, so the indexes of a moved volume are in the wrong order and would silently return wrong answers. Migration `017_sources.sql` rebuilds the indexes of every table that exists before it, inside its own transaction: a few seconds for an ordinary install. The app and the worker migrate before they seed the admin user or serve anything, and CI proves on a volume made by the old image that every index is repaired and no row is lost ([how](ci.md#the-database-upgrade-check)).
+4. **A database you manage yourself** (RDS, Cloud SQL, your own server) needs the `vector` extension. Run `CREATE EXTENSION vector;` in the Scrylux database **as an administrator** before starting v0.2, if the user Scrylux connects as may not do it. Check that your service offers pgvector. Without it, Scrylux stops at start-up with one of two messages and changes nothing:
+   - `This database does not have the pgvector extension, which Scrylux needs from v0.2. See docs/install.md#upgrading-to-v02` — the server has no pgvector installed.
+   - `This database has the pgvector extension, but the database user Scrylux connects as may not enable it. Run CREATE EXTENSION vector; in this database as an administrator, then start Scrylux again. See docs/install.md#upgrading-to-v02` — it is installed, and an administrator has to enable it once.
+5. **PostgreSQL 13 or newer** is still enough, with pgvector installed.
+
+The first start with documents adds new variables, all optional ([Environment variables](#environment-variables)); an install that sets none of them runs as before, on the local volume, and only needs an embedding provider to add documents.
+
 ## Deployment
 
-- Config is entirely environment variables; nothing is read from local files.
+- Config is entirely environment variables; nothing is read from local files. The one thing Scrylux keeps on disk is the originals of documents that are still being read, with `STORAGE_BACKEND=local`, in `STORAGE_DIR`. The app and the worker must share it, so on more than one host (an app and a worker on separate instances or tasks) set `STORAGE_BACKEND=s3` instead ([Documents and storage](#documents-and-storage)). Give the worker memory for reading files: 1 GiB for each at the default `EXTRACT_MEMORY_MB`.
 - Logs go to stdout/stderr.
 - Point the load balancer health check at `/health`. A worker has its own, on `WORKER_HEALTH_PORT` (see [Running the worker](#running-the-worker)).
 - The compose defaults for `JWT_SECRET` and passwords are for local use only — set real values in any deployed environment.
@@ -155,4 +239,4 @@ A reference deployment (ALB → private EC2 → RDS, Secrets Manager, CloudWatch
 
 ## Licenses in the image
 
-The container image carries the license notices of the web app's bundled dependencies, at `apps/web/dist/.vite/license.md`. Scrylux itself is under the [Apache License 2.0](../LICENSE).
+The container image carries the license notices of the web app's bundled dependencies, at `apps/web/dist/.vite/license.md`, and each dependency of the API and the worker keeps its own license file in its folder under `node_modules` in the image (for example `node_modules/pdfjs-dist/LICENSE`, Apache-2.0). The libraries v0.2 adds to read documents and talk to storage are pdf.js (Apache-2.0), yauzl (MIT), saxes (ISC), busboy (MIT) and the AWS SDK for S3 (Apache-2.0). Scrylux itself is under the [Apache License 2.0](../LICENSE).

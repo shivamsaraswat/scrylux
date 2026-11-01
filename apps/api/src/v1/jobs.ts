@@ -2,7 +2,7 @@ import { JobCreateInput, JobDetail, JobList, JobListQuery, JobRecord, JobsStatus
 import { parseLlmStatus } from '@scrylux/llm';
 import { kdb } from '../db.js';
 import { currentJobConfig } from '../jobs/config.js';
-import { CALLS_MODEL } from '../jobs/kinds.js';
+import { NEEDS, isOffered } from '../jobs/kinds.js';
 import { logJobAction } from '../jobs/log.js';
 import { JobFinishedError, JobLimitError, cancelJob, enqueue, getDetail, getJob, listJobs, nextAllowedAt, workerAlive } from '../jobs/store.js';
 import { HttpError, orNotFound } from './errors.js';
@@ -66,10 +66,7 @@ export const jobOperations: Operation<unknown>[] = [
     errors: [400, 409, 429],
     // No recordType: the router would log a write of a record type the write log does not have. The handler logs the start.
     handler: async ({ body, accountId }) => {
-      if (CALLS_MODEL[body.kind]) {
-        const ai = parseLlmStatus(process.env);
-        if (ai.generation === null && ai.embedding === null) throw new HttpError(409, 'AI is not configured on this install');
-      }
+      if (!isOffered(NEEDS[body.kind], parseLlmStatus(process.env))) throw new HttpError(409, 'AI is not configured on this install');
       let id: string;
       try {
         id = await enqueue(kdb, { kind: body.kind, input: body.input, accountId }, currentJobConfig());

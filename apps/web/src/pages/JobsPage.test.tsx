@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { JOB_ID, JOB_ID_2, installFakeApi, job, jobTotals, jobsStatus, json, renderApp } from '../test-utils.js';
+import { JOB_ID, JOB_ID_2, MODEL_ID, SOURCE_ID, installFakeApi, job, jobTotals, jobsStatus, json, renderApp } from '../test-utils.js';
 
 // The Jobs page (Phase 3 Milestone 2, contracts/ui.md; spec FR-047, FR-061, FR-061a, FR-062, FR-063, FR-066): whether AI is
 // configured and where its data goes, the check, and every job newest first.
@@ -266,5 +266,45 @@ describe('JobsPage: refreshing (FR-061)', () => {
     const settled = reads;
     await vi.advanceTimersByTimeAsync(10_000);
     expect(reads).toBe(settled);
+  });
+});
+
+
+describe('JobsPage: the jobs of documents (Phase 3 Milestone 3)', () => {
+  it('names the two kinds of ingestion in words a person reads, and links each to its page', async () => {
+    installFakeApi({
+      'GET /api/v1/jobs/status': () => json(200, jobsStatus()),
+      'GET /api/v1/jobs': () =>
+        list([
+          job({ id: JOB_ID, kind: 'ingest_source', threat_model_id: MODEL_ID, source_id: SOURCE_ID }),
+          job({ id: JOB_ID_2, kind: 'refresh_embeddings', threat_model_id: MODEL_ID, source_id: SOURCE_ID }),
+        ]),
+    });
+    renderApp('/jobs');
+    expect((await screen.findByRole('link', { name: 'Process a document' })).getAttribute('href')).toBe(`/jobs/${JOB_ID}`);
+    expect(screen.getByRole('link', { name: 'Refresh embeddings' }).getAttribute('href')).toBe(`/jobs/${JOB_ID_2}`);
+  });
+
+  it('says which step a running ingestion is on, and how many chunks are done', async () => {
+    installFakeApi({
+      'GET /api/v1/jobs/status': () => json(200, jobsStatus()),
+      'GET /api/v1/jobs': () =>
+        list([
+          job({ id: JOB_ID, kind: 'ingest_source', state: 'running', progress: { step: 'embed', done: 3, total: 10 } }),
+          job({ id: JOB_ID_2, kind: 'ingest_source', state: 'running', progress: { step: 'extract' } }),
+        ]),
+    });
+    renderApp('/jobs');
+    expect(await screen.findByText('Embedding the chunks (3 of 10)')).toBeTruthy();
+    expect(screen.getByText('Reading the document')).toBeTruthy();
+  });
+
+  it('shows what an ingestion used, as it shows what a provider check used', async () => {
+    installFakeApi({
+      'GET /api/v1/jobs/status': () => json(200, jobsStatus()),
+      'GET /api/v1/jobs': () => list([job({ kind: 'ingest_source', state: 'succeeded', totals: jobTotals({ requests: 3, input_tokens: 1200, cost_usd: 0.0004, cost_known_usd: 0.0004 }) })]),
+    });
+    renderApp('/jobs');
+    expect(await screen.findByText('1200 in, 0 out')).toBeTruthy();
   });
 });

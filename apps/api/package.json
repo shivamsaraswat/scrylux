@@ -19,27 +19,34 @@
     "worker": "tsx --conditions=@scrylux/source src/worker.ts"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13"
   },
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.1158.0",
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/client-secrets-manager": "^3.1161.0",
     "@scrylux/core": "workspace:*",
     "@scrylux/db": "workspace:*",
     "@scrylux/llm": "workspace:*",
     "@scrylux/threat-library": "workspace:*",
     "bcryptjs": "^3.0.3",
+    "busboy": "^1.6.0",
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "kysely": "^0.29.7",
+    "pdfjs-dist": "6.4.299",
     "pg": "^8.23.1",
+    "saxes": "^6.0.0",
     "yaml": "^2.9.1",
+    "yauzl": "^3.4.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@seriousme/openapi-schema-validator": "^2.11.0",
+    "@types/busboy": "^1.5.5",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/pg": "^8.23.1",
+    "@types/yauzl": "^3.4.0",
     "ajv": "^8.20.0",
     "micromark": "^4.0.3",
     "micromark-extension-gfm": "^3.0.0"

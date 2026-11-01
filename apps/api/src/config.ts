@@ -30,6 +30,8 @@ interface SecretPayload {
   ADMIN_PASSWORD?: string;
   LLM_API_KEY?: string;
   EMBEDDING_API_KEY?: string;
+  STORAGE_S3_ACCESS_KEY_ID?: string;
+  STORAGE_S3_SECRET_ACCESS_KEY?: string;
 }
 
 // Browser sessions, sign-in throttling and the proxy setting (Phase 1 Milestone 6). Durations are in
@@ -55,6 +57,8 @@ export interface Config extends SessionConfig {
   // reads comes from the environment, through parseLlmConfig in @scrylux/llm.
   llmApiKey?: string;
   embeddingApiKey?: string;
+  storageS3AccessKeyId?: string;
+  storageS3SecretAccessKey?: string;
   load: (opts?: LoadOptions) => Promise<Config>;
 }
 
@@ -135,12 +139,14 @@ const config: Config = {
   adminPassword: process.env.ADMIN_PASSWORD,
   llmApiKey: process.env.LLM_API_KEY,
   embeddingApiKey: process.env.EMBEDDING_API_KEY,
+  storageS3AccessKeyId: process.env.STORAGE_S3_ACCESS_KEY_ID,
+  storageS3SecretAccessKey: process.env.STORAGE_S3_SECRET_ACCESS_KEY,
   ...sessionConfigFromEnv(),
   load,
 };
 
 // Secret keys: host, port, dbname, username, password, JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD, LLM_API_KEY,
-// EMBEDDING_API_KEY
+// EMBEDDING_API_KEY, STORAGE_S3_ACCESS_KEY_ID, STORAGE_S3_SECRET_ACCESS_KEY
 async function fetchSecret(secretId: string, client?: SecretClient): Promise<SecretPayload> {
   const { SecretsManagerClient, GetSecretValueCommand } = await import('@aws-sdk/client-secrets-manager');
   const resolvedClient = client ?? new SecretsManagerClient({});
@@ -169,6 +175,8 @@ async function load(opts: LoadOptions = {}): Promise<Config> {
   if (s.ADMIN_PASSWORD) config.adminPassword = s.ADMIN_PASSWORD;
   if (s.LLM_API_KEY) config.llmApiKey = s.LLM_API_KEY;
   if (s.EMBEDDING_API_KEY) config.embeddingApiKey = s.EMBEDDING_API_KEY;
+  if (s.STORAGE_S3_ACCESS_KEY_ID) config.storageS3AccessKeyId = s.STORAGE_S3_ACCESS_KEY_ID;
+  if (s.STORAGE_S3_SECRET_ACCESS_KEY) config.storageS3SecretAccessKey = s.STORAGE_S3_SECRET_ACCESS_KEY;
   return config;
 }
 

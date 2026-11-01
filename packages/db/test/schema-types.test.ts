@@ -82,6 +82,8 @@ const COLUMNS = {
     failure_category: true,
     failure_detail: true,
     result: true,
+    threat_model_id: true,
+    source_id: true,
   },
   job_usage: {
     id: true,
@@ -103,18 +105,52 @@ const COLUMNS = {
     recorded_at: true,
   },
   workers: { id: true, started_at: true, last_seen_at: true, stopping: true },
+  sources: {
+    id: true,
+    threat_model_id: true,
+    name: true,
+    type: true,
+    size_bytes: true,
+    digest: true,
+    added_by: true,
+    added_at: true,
+    original_key: true,
+    stored_bytes: true,
+    ready_at: true,
+    text_chars: true,
+    chunk_count: true,
+    pages_without_text: true,
+    embedding_model: true,
+    embedding_dimension: true,
+  },
+  chunks: {
+    id: true,
+    source_id: true,
+    position: true,
+    start_offset: true,
+    end_offset: true,
+    text: true,
+    page_first: true,
+    page_last: true,
+    line_first: true,
+    line_last: true,
+    heading: true,
+    embedding: true,
+  },
 } satisfies { [T in keyof Database]: Record<keyof Database[T], true> };
 
 afterAll(closePool);
 
 describe('the Kysely table types match the database (research #1)', () => {
-  it('describes exactly the five domain tables and the three job tables', () => {
+  it('describes exactly the five domain tables, the three job tables and the two source tables', () => {
     expect(Object.keys(COLUMNS).sort()).toEqual([
+      'chunks',
       'elements',
       'job_usage',
       'jobs',
       'mitigations',
       'projects',
+      'sources',
       'threat_models',
       'threats',
       'workers',

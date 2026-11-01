@@ -39,7 +39,8 @@ updates:
       compose-minor-patch:
         update-types: ["minor", "patch"]
     ignore:
-      - dependency-name: "postgres"
+      # The database is pgvector's image (Phase 3 Milestone 3). A major update of it is a person's decision.
+      - dependency-name: "pgvector/pgvector"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"

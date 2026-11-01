@@ -13,3 +13,5 @@ apps/api/test
 packages/*/test
 **/test-results
 **/playwright-report
+# Never copy a development run's stored originals into an image build.
+apps/api/storage

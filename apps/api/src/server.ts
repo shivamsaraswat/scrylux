@@ -6,6 +6,11 @@ import migrate from './migrate.js';
 import { seedAdminUser } from './auth.js';
 import { checkJobConfig } from './jobs/config.js';
 import { checkLlmConfig } from './llm-startup.js';
+import { checkSourceConfig } from './sources/config.js';
+import { checkStorageConfig, storageEnvironment } from './storage/config.js';
+import { createStorage } from './storage/index.js';
+import { useStorage } from './storage/instance.js';
+import { isRefusal, startupFailureLine } from './startup-failure.js';
 
 // The built web app, resolved relative to this module (never an absolute path, Principle IV). From
 // apps/api/src and from apps/api/dist this reaches apps/web/dist, and the image keeps that layout.
@@ -21,7 +26,8 @@ async function initDatabase(attempts = 10): Promise<void> {
       await seedAdminUser();
       return;
     } catch (err) {
-      if (i >= attempts) throw err;
+      // A refusal an operator has to act on is not a database that is still starting.
+      if (i >= attempts || isRefusal(err)) throw err;
       const message = err instanceof Error ? err.message : String(err);
       console.warn(`Database not ready (attempt ${i}/${attempts}): ${message}`);
       await sleep(2000);
@@ -62,6 +68,21 @@ async function main(): Promise<void> {
     process.exit(1);
     return;
   }
+  // The source and storage settings (Phase 3 Milestone 3): the API enforces the limits and stores the originals, so a bad
+  // value stops it here, naming the variable and never its value.
+  const sources = checkSourceConfig(process.env);
+  if (!sources.ok) {
+    console.error(sources.line);
+    process.exit(1);
+    return;
+  }
+  const storage = checkStorageConfig(storageEnvironment(process.env, config));
+  if (!storage.ok) {
+    console.error(storage.line);
+    process.exit(1);
+    return;
+  }
+  useStorage(createStorage(storage.config));
   await initDatabase();
 
   // Without a build, such as the API run alone in development, only the API is served. The line is
@@ -82,11 +103,12 @@ async function main(): Promise<void> {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-main().catch(() => {
+main().catch((error: unknown) => {
   // No error detail logged here on purpose: this is the top-level catch-all, and any
   // property of the caught value could carry driver-attached data derived from
   // env-sourced config (connection string, query text). The DB-readiness retry loop
-  // above already logs its own failures in detail before giving up.
-  console.error('Startup failed');
+  // above already logs its own failures in detail before giving up. A migration that
+  // stopped on purpose is the one exception: its message was written for the operator.
+  console.error(startupFailureLine('Startup failed', error));
   process.exit(1);
 });

@@ -1,3 +1,4 @@
+import { JOB_TRANSIENT_CATEGORIES, type JobFailureCategory } from '@scrylux/core';
 import { worstCase, type Llm, type LlmConfig } from '@scrylux/llm';
 import type { Database } from '@scrylux/db';
 import type { Kysely } from 'kysely';
@@ -23,6 +24,9 @@ export interface RunDeps {
   /** Aborts when the worker is abandoned (reason `lost`: write nothing) or hands its jobs back (reason `handback`). */
   workerSignal: AbortSignal;
 }
+
+const TRANSIENT: readonly JobFailureCategory[] = JOB_TRANSIENT_CATEGORIES;
+const isTransient = (category: JobFailureCategory): category is Extract<RunOutcome, { kind: 'transient' }>['category'] => TRANSIENT.includes(category);
 
 const stopReasons: readonly StopReason[] = ['cancelled', 'timed_out', 'cap_reached', 'lost', 'handback'];
 const asReason = (value: unknown): StopReason | undefined => stopReasons.find((r) => r === value);
@@ -79,6 +83,7 @@ export async function runJob(deps: RunDeps, job: ClaimedJob): Promise<'ended' | 
   let kept: KindOutcome['result'] | undefined;
   const context: RunContext = {
     job,
+    db,
     llm: deps.llm,
     llmConfig: deps.llmConfig,
     signal: controller.signal,
@@ -139,14 +144,19 @@ export async function runJob(deps: RunDeps, job: ClaimedJob): Promise<'ended' | 
     const failure = failureOf(new RunStopped(reason, stopDetail));
     end = { kind: 'failed', category: failure?.category ?? 'job_error', ...(failure?.detail === undefined ? {} : { detail: failure.detail }), ...withResult };
   } else if (thrown !== undefined) end = { kind: 'failed', category: 'job_error', ...withResult };
-  else if (outcome?.failure?.category === 'provider_unavailable' || outcome?.failure?.category === 'rate_limited') {
-    // A failure that may pass (FR-020): the job runs again after a wait while it has runs left.
+  else if (outcome?.failure !== undefined && isTransient(outcome.failure.category)) {
+    // A failure that may pass (FR-020, and FR-013 of Milestone 3): the job runs again after a wait while it has runs left.
     end = { kind: 'transient', category: outcome.failure.category, ...withResult };
-  } else if (outcome?.failure !== undefined) end = { kind: 'failed', category: outcome.failure.category, ...withResult };
+  } else if (outcome?.failure !== undefined) {
+    end = { kind: 'failed', category: outcome.failure.category, ...(outcome.failure.detail === undefined ? {} : { detail: outcome.failure.detail }), ...withResult };
+  }
   else end = { kind: 'succeeded', ...withResult };
 
-  const state = await finishRun(db, job, end);
+  // A commit writes only if the run really succeeded and this worker still holds the job; the others ignore it (finishRun).
+  const state = await finishRun(db, job, end, outcome?.commit);
   if (state === 'lost') return 'ended';
+  // Once the job has really succeeded: the original of a source that is ready is removed. If that fails, the sweep removes it.
+  if (state === 'succeeded') await outcome?.afterCommit?.().catch(() => undefined);
   await logState(db, job, state, state === 'failed' && (end.kind === 'failed' || end.kind === 'transient') ? end.category : undefined);
   return 'ended';
 }

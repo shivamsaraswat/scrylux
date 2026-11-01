@@ -1,6 +1,8 @@
 import type {
+  IngestionResult,
   JobDetail,
   JobFailureCategory,
+  JobFailureDetail,
   JobKind,
   JobProgress,
   JobRecord,
@@ -12,7 +14,7 @@ import type {
 } from '@scrylux/core';
 import type { Database } from '@scrylux/db';
 import { FAILURE_MESSAGES, type Usage } from '@scrylux/llm';
-import { sql, type Kysely } from 'kysely';
+import { sql, type Kysely, type Transaction } from 'kysely';
 import type { JobConfig } from './config.js';
 import { describeFailure, providerHint, type Prefix } from './failures.js';
 
@@ -49,9 +51,9 @@ export interface ClaimedJob extends Held {
 /** How a run ended. The state a job is left in follows from it, and from whether a cancel was asked (research #4). */
 export type RunOutcome =
   | { kind: 'succeeded'; result?: JsonObject }
-  | { kind: 'failed'; category: JobFailureCategory; detail?: 'cap_below_one_request'; result?: JsonObject }
+  | { kind: 'failed'; category: JobFailureCategory; detail?: JobFailureDetail; result?: JsonObject }
   /** A failure that may pass (FR-020): the job runs again after a wait while it has runs left, and fails otherwise. */
-  | { kind: 'transient'; category: 'provider_unavailable' | 'rate_limited'; result?: JsonObject }
+  | { kind: 'transient'; category: 'provider_unavailable' | 'rate_limited' | 'storage_unavailable'; result?: JsonObject }
   | { kind: 'cancelled'; result?: JsonObject };
 
 const FINAL_STATES: readonly JobState[] = ['succeeded', 'failed', 'cancelled'];
@@ -65,7 +67,7 @@ export const isFinal = (state: JobState): boolean => FINAL_STATES.includes(state
  */
 export class JobLimitError extends Error {
   constructor(
-    readonly reason: 'limit' | 'cooldown',
+    readonly reason: 'limit' | 'cooldown' | 'ingestion',
     readonly retryAfterSeconds: number,
     message: string,
   ) {
@@ -78,6 +80,18 @@ export class JobLimitError extends Error {
 // its own key, and Postgres keeps the two key spaces apart, so no account id can collide with a migration.
 const START_LOCK_NAMESPACE = 0x6a6f62;
 const LIMIT_RETRY_SECONDS = 30;
+
+/**
+ * Takes the lock that serializes everything an account starts, for the rest of the transaction. Queueing a job takes it
+ * itself; a caller that must take other locks in the documented order (research #2: the source, then this one, then the
+ * document space) takes it first, and taking it again in the same transaction costs nothing.
+ */
+export async function lockAccount(trx: Transaction<Database>, accountId: number): Promise<void> {
+  await sql`SELECT pg_advisory_xact_lock(${START_LOCK_NAMESPACE}::int, ${accountId}::int)`.execute(trx);
+}
+
+/** The two kinds of ingestion (Phase 3 Milestone 3). They are counted apart from Milestone 2's limit (FR-043), and a person queues them only through the source routes (FR-045a). */
+export const INGESTION_KINDS = ['ingest_source', 'refresh_embeddings'] as const satisfies readonly JobKind[];
 
 /** How long to wait, in the words a person reads: seconds under a minute, minutes under an hour, hours beyond (rounded up). */
 function waitPhrase(seconds: number): string {
@@ -117,7 +131,8 @@ export async function enqueue(
     await sql`SELECT pg_advisory_xact_lock(${START_LOCK_NAMESPACE}::int, ${job.accountId}::int)`.execute(trx);
 
     const { rows } = await sql<{ active: number }>`
-      SELECT count(*)::int AS active FROM jobs WHERE created_by = ${job.accountId} AND state IN ('queued', 'running')`.execute(trx);
+      SELECT count(*)::int AS active FROM jobs
+      WHERE created_by = ${job.accountId} AND state IN ('queued', 'running') AND kind NOT IN (${sql.join([...INGESTION_KINDS])})`.execute(trx);
     if ((rows[0]?.active ?? 0) >= settings.jobsPerAccount) {
       const n = settings.jobsPerAccount;
       throw new JobLimitError('limit', LIMIT_RETRY_SECONDS, `You already have ${n} ${n === 1 ? 'job' : 'jobs'} queued or running. Wait for one to finish, or cancel one.`);
@@ -149,6 +164,47 @@ export async function enqueue(
   });
 }
 
+/** What queueing an ingestion job needs besides the caps of every job: the account's own limit (FR-043). */
+export type IngestionSettings = JobSettings & { ingestionJobsPerAccount: number };
+
+/**
+ * Queues an ingestion or a refresh of one source, inside the transaction that adds or changes the source, so that a source
+ * never exists without its job, and a refused job leaves no source. It takes the same lock on the account as every start, and
+ * counts only the account's ingestion jobs against `ingestionJobsPerAccount`, apart from Milestone 2's limit (FR-043). The
+ * job's input refers to the source by identifier only (FR-041, M2 FR-051). Caps, runs and time limit are copied from the
+ * settings, as for every job (FR-042).
+ */
+export async function enqueueIngestion(
+  trx: Transaction<Database>,
+  job: { kind: (typeof INGESTION_KINDS)[number]; sourceId: string; threatModelId: string; accountId: number },
+  settings: IngestionSettings,
+): Promise<string> {
+  await sql`SELECT pg_advisory_xact_lock(${START_LOCK_NAMESPACE}::int, ${job.accountId}::int)`.execute(trx);
+  const { rows } = await sql<{ active: number }>`
+    SELECT count(*)::int AS active FROM jobs
+    WHERE created_by = ${job.accountId} AND state IN ('queued', 'running') AND kind IN (${sql.join([...INGESTION_KINDS])})`.execute(trx);
+  if ((rows[0]?.active ?? 0) >= settings.ingestionJobsPerAccount) {
+    const n = settings.ingestionJobsPerAccount;
+    throw new JobLimitError('ingestion', LIMIT_RETRY_SECONDS, `You already have ${n} ${n === 1 ? 'document' : 'documents'} being processed. Wait for one to finish.`);
+  }
+  const row = await trx
+    .insertInto('jobs')
+    .values({
+      kind: job.kind,
+      input: { source_id: job.sourceId },
+      created_by: job.accountId,
+      max_runs: settings.maxRuns,
+      time_limit_ms: settings.timeLimitMs,
+      token_cap: settings.tokenCap,
+      cost_cap_usd: settings.costCapUsd,
+      threat_model_id: job.threatModelId,
+      source_id: job.sourceId,
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  return row.id;
+}
+
 interface JobRow {
   id: string;
   kind: JobKind;
@@ -170,8 +226,10 @@ interface JobRow {
   cost_cap_usd: string;
   progress: JobProgress | null;
   failure_category: JobFailureCategory | null;
-  failure_detail: 'cap_below_one_request' | null;
+  failure_detail: JobFailureDetail | null;
   result: Record<string, { status?: string } | undefined> | null;
+  threat_model_id: string | null;
+  source_id: string | null;
   requests: number;
   input_tokens: number;
   output_tokens: number;
@@ -191,7 +249,7 @@ const JOB_SELECT = sql`
          j.queued_at, j.started_at, j.finished_at,
          CASE WHEN j.state = 'queued' AND j.next_run_at > now() THEN j.next_run_at END AS next_run_at,
          j.deadline_at, j.run, j.max_runs, j.token_cap, j.cost_cap_usd, j.progress,
-         j.failure_category, j.failure_detail, j.result,
+         j.failure_category, j.failure_detail, j.result, j.threat_model_id, j.source_id,
          t.requests, t.input_tokens, t.output_tokens, t.tokens_estimated, t.cost_unknown, t.cost_known, t.cost_estimated, t.duration_ms
   FROM jobs j
   JOIN users u ON u.id = j.created_by
@@ -210,8 +268,12 @@ const JOB_SELECT = sql`
 
 const iso = (date: Date | null): string | null => (date === null ? null : date.toISOString());
 
-/** The operation a failed provider check failed on, so that the hint names its settings: LLM or EMBEDDING. */
+/**
+ * The operation a failed job failed on, so that the hint names its settings: LLM or EMBEDDING. A provider check records
+ * which of its two operations failed; ingestion and refresh only ever call the embedding provider.
+ */
 function failedPrefix(row: JobRow): Prefix {
+  if (row.kind !== 'provider_check') return 'EMBEDDING';
   const failed = row.failure_category;
   if (row.result?.generation?.status === failed) return 'LLM';
   if (row.result?.embeddings?.status === failed) return 'EMBEDDING';
@@ -239,7 +301,7 @@ function toRecord(row: JobRow): JobRecord {
     failure:
       row.failure_category === null
         ? null
-        : { category: row.failure_category, ...describeFailure(row.failure_category, row.failure_detail, failedPrefix(row)) },
+        : { category: row.failure_category, ...describeFailure(row.failure_category, row.failure_detail, failedPrefix(row), row.kind) },
     totals: {
       requests: row.requests,
       input_tokens: row.input_tokens,
@@ -251,6 +313,8 @@ function toRecord(row: JobRow): JobRecord {
       cost_cap_applied: !row.cost_unknown,
       duration_ms: row.duration_ms,
     },
+    threat_model_id: row.threat_model_id,
+    source_id: row.source_id,
   };
 }
 
@@ -295,6 +359,10 @@ function describeOperation(operation: ProviderCheckOperation, prefix: Prefix): P
   return { ...operation, ...describeFailure(status, null, prefix) };
 }
 
+function describeCheck(result: ProviderCheckResult | null): ProviderCheckResult | null {
+  return result === null ? null : { generation: describeOperation(result.generation, 'LLM'), embeddings: describeOperation(result.embeddings, 'EMBEDDING') };
+}
+
 /** A job with its usage records, oldest first, and, for a provider check, each operation's message and hint (FR-091). */
 export async function getDetail(db: Db, id: string): Promise<JobDetail | undefined> {
   const record = await getJob(db, id);
@@ -304,11 +372,14 @@ export async function getDetail(db: Db, id: string): Promise<JobDetail | undefin
            cost_usd::float8 AS cost_usd, cost_estimated, price_source, temperature_applied, duration_ms, recorded_at
     FROM job_usage WHERE job_id = ${id} ORDER BY id`.execute(db);
   const stored = await db.selectFrom('jobs').select('result').where('id', '=', id).executeTakeFirst();
-  const result = stored?.result as ProviderCheckResult | null | undefined;
+  const result = stored?.result ?? null;
   return {
     ...record,
     usage: rows.map((r) => ({ ...r, recorded_at: r.recorded_at.toISOString() })),
-    result: result === null || result === undefined ? null : { generation: describeOperation(result.generation, 'LLM'), embeddings: describeOperation(result.embeddings, 'EMBEDDING') },
+    // A provider check keeps each operation's outcome, to which the message and hint are added here; an ingestion keeps
+    // counts only, which are shown as they are (FR-051).
+    result: record.kind === 'provider_check' ? describeCheck(result as ProviderCheckResult | null) : null,
+    ingestion: record.kind === 'provider_check' ? null : (result as IngestionResult | null),
   };
 }
 
@@ -464,6 +535,44 @@ export async function writeProgress(db: Db, job: Held, progress: JobProgress): P
 const BACKOFF = sql`now() + (CASE run WHEN 1 THEN 30 WHEN 2 THEN 120 WHEN 3 THEN 480 ELSE 600 END * (1 + random() * 0.25)) * interval '1 second'`;
 
 /**
+ * What a run writes in the transaction that ends its job (Phase 3 Milestone 3, FR-024, research #2): the chunks of a source with
+ * their embeddings, which must appear all at once, only if this worker still holds the job, and never twice. Three steps, in this order:
+ *  - `lock` takes the locks of the rows it will write, the source first (the lock order of research #2), and says whether they are still
+ *    there; a source that was deleted ends the job as cancelled, with nothing written;
+ *  - `check` says whether what must hold still does (the install's document space, FR-009), as a failure for the job, or nothing;
+ *  - `write` runs only if the fenced update really ended the job as succeeded, so a lost run, a cancel and a failure write nothing,
+ *    and if it throws, nothing of the transaction stays, the job included.
+ * All three run on the one transaction.
+ */
+export interface RunCommit {
+  lock(trx: Transaction<Database>): Promise<boolean>;
+  check(trx: Transaction<Database>): Promise<{ category: JobFailureCategory; detail?: JobFailureDetail } | undefined>;
+  write(trx: Transaction<Database>): Promise<void>;
+}
+
+/**
+ * Ends a run by the rules of endRun below, and, for a run that succeeded, lets its `commit` write in the same transaction (the three steps above).
+ */
+export async function finishRun(db: Db, job: Held, outcome: RunOutcome, commit?: RunCommit): Promise<JobState | 'lost'> {
+  if (commit === undefined) return endRun(db, job, outcome);
+  return db.transaction().execute(async (trx) => {
+    let effective = outcome;
+    if (outcome.kind === 'succeeded') {
+      const kept = outcome.result === undefined ? {} : { result: outcome.result };
+      if (!(await commit.lock(trx))) {
+        effective = { kind: 'cancelled', ...kept };
+      } else {
+        const failure = await commit.check(trx);
+        if (failure !== undefined) effective = { kind: 'failed', category: failure.category, ...(failure.detail === undefined ? {} : { detail: failure.detail }), ...kept };
+      }
+    }
+    const state = await endRun(trx, job, effective);
+    if (state === 'succeeded') await commit.write(trx);
+    return state;
+  });
+}
+
+/**
  * Ends a run, in one fenced statement, and returns the state the job is left in, or `lost` when this worker no longer holds
  * it, in which case nothing was written.
  *  - A cancel that was asked wins over every ending (research #4): the job ends as cancelled, with no failure, and its result
@@ -471,7 +580,7 @@ const BACKOFF = sql`now() + (CASE run WHEN 1 THEN 30 WHEN 2 THEN 120 WHEN 3 THEN
  *  - A failure that may pass queues the job again after a wait while it has runs left, and fails it on the last run.
  *  - `finished_at` is set only when the job ends: a job queued again has not finished.
  */
-export async function finishRun(db: Db, job: Held, outcome: RunOutcome): Promise<JobState | 'lost'> {
+async function endRun(db: Db, job: Held, outcome: RunOutcome): Promise<JobState | 'lost'> {
   const kind = outcome.kind;
   const category = outcome.kind === 'failed' || outcome.kind === 'transient' ? outcome.category : null;
   const detail = outcome.kind === 'failed' ? (outcome.detail ?? null) : null;

@@ -4,6 +4,29 @@ What changed in each release of Scrylux, newest first. Versions are `MAJOR.MINOR
 
 ## [Unreleased]
 
+### Documents in a threat model, with no AI feature yet
+
+A threat model can now hold the design documents it was built from. Add `.md`, `.txt`, `.pdf` and `.docx` files, or paste text, on the new **Sources** tab. Scrylux reads each one, cuts its text into chunks of at most 2,000 characters and gives every chunk an embedding, which later releases will search. **Nothing is drafted from a document yet, and nothing sends a document to a generation model.** Adding a document needs an embedding provider; without one, everything else works as before.
+
+- **Where your text goes is stated first.** Before a document can be added, the tab names the embedding provider and says the text leaves your install when that provider is hosted (and that later releases' AI features will send it to a hosted generation provider too), or that it stays when every provider is local. It says so on every visit, in the form and again above the list.
+- **Read what Scrylux read.** A document's page shows its chunks in order, with their pages or lines and headings, as text; a PDF says how many pages had no text.
+- **Files are read safely.** A file's type comes from its content. A PDF or Word file is read in a separate process that holds no password or key, under a time, a memory, an unpacked-size and a page limit; nothing in a file is run or fetched. A document that cannot be read says why and what to do, and **Retry** is offered only where trying again can help.
+- **The original is kept only until the document is ready.** It waits on a volume or in an S3-compatible bucket (MinIO, R2, AWS S3), is deleted when the document is ready, and is never returned. Deleting a document, a threat model or a project removes its originals, text and chunks.
+- **Keep embeddings in step.** After you change the embedding model, a document says its embeddings are out of date and **Refresh embeddings** replaces them without changing a chunk. A document never holds the embeddings of two models.
+- **Limits you can see.** A file is at most 10 MB, a threat model holds 20 documents, an account may have 20 waiting or processing, and all documents together may take 2 GB of the database (text and embeddings counted), all settable.
+
+### Upgrading to this release
+
+Read [Upgrading to v0.2](docs/install.md#upgrading-to-v02) first. The short version:
+
+- **The database image changes** from `postgres:16-alpine` to `pgvector/pgvector:0.8.7-pg16-trixie`, which is Debian-based. Keep your `pgdata` volume and back it up first. The new file does the rest, and **the first start rebuilds every text index** (a few seconds), because the two images sort text differently and the old indexes would silently return wrong answers. CI proves on a volume made by the old image that every index is repaired and no row is lost.
+- **The pgvector extension is now required.** On a database you manage yourself, run `CREATE EXTENSION vector;` as an administrator if the user Scrylux connects as may not. Without it Scrylux stops at start-up and says so, and changes nothing.
+- A new `storage` volume holds the originals of documents that are still being read (or point `STORAGE_BACKEND=s3` at a bucket of its own; [Storage](docs/install.md#storage) has the IAM policy for each process). Give the worker memory for reading files: 1 GiB for each at the default.
+- Eighteen new environment variables, all optional, are in [Install and run](docs/install.md#environment-variables). The secrets-manager secret may also hold `STORAGE_S3_ACCESS_KEY_ID` and `STORAGE_S3_SECRET_ACCESS_KEY`; both the app and the worker hold them.
+- Exports, imports and reports carry no documents.
+
+### AI providers and a worker, with no AI feature yet
+
 ### AI providers and a worker, with no AI feature yet
 
 This groundwork for Phase 3 adds the layer that later AI features will use to reach a language model, and the worker that will run them in the background. **Nothing in Scrylux sends your content to a model yet**, and with no AI setting made, Scrylux behaves exactly as v0.1 does.

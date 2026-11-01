@@ -1,43 +1,54 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.14.0 → 1.15.0
-Rationale: Phase 3 Milestone 2 (the worker and its jobs, specs/phase-3/milestone-2-worker-jobs/) adds a second process, the worker,
-  and five job routes under `/api/v1`. The worker is the only process that talks to an LLM provider and the only one that holds
-  its key; the API holds none. It adds assets (job records and their usage records, which hold no content), entry points (the
-  five routes: start, list, read and cancel a job, and the Jobs page's status), a process, and a change in what any signed-in
-  account can do (see and cancel every job, and start a provider check, which spends on the provider). Principle V requires the
-  Threat Model section, and the committed model, to say so in the same change. This is a MINOR: materially expanded guidance
-  (assets, entry points, a process, and the risks below) and a corrected layout rule. It adds no principle and no UI beyond the
-  Jobs pages.
+Version change: 1.15.0 → 1.16.0
+Rationale: Phase 3 Milestone 3 (document ingestion, specs/phase-3/milestone-3-ingestion/) lets a person add design documents to a
+  threat model: `.md`, `.txt`, `.pdf` and `.docx` files and pasted text. It adds eight routes under `/api/v1` (list, upload, paste, read,
+  chunks, retry, refresh and delete a source), a place where the originals wait (a local volume or an S3-compatible bucket), a child
+  process that reads untrusted files with no secret, and the first user content sent to a provider (a document's chunks, to make their
+  embeddings). Principle V requires the Threat Model section, and the committed model, to say so in the same change. This is a MINOR:
+  materially expanded guidance (assets, a process, entry points, two boundaries and the risks below). It adds no principle; Principle VI's
+  notice that data leaves the install ships here, as it said it would.
 Modified principles:
-  - III: the target layout no longer names `apps/worker`. The worker is a second entry point of `apps/api` (`dist/worker.js`, the
-    same image with another command), so the image does not carry a second copy of the dependencies and one configuration loader
-    serves both processes (research #2 of the milestone). The maintainer decided this at planning. `plan.md` changes with it.
+  - VI (applied, not reworded): the notice that data leaves the install is now shown, in the form that adds a document and again above the
+    list, for every hosted provider that receives a source's text, on every visit (`apps/web/src/components/SourcesNotice.test.tsx`,
+    `apps/web/e2e/sources.spec.ts`). Principle VI's sentence says it shipped here.
   - V (applied, not reworded): the section and `docs/threat-model/` are updated in the same change.
 Added sections: none (existing section set retained: Core Principles, Threat Model (STRIDE),
   Development Workflow & Quality Gates, Governance)
 Removed sections: none
-Threat Model changes: assets (job records and their usage records; the provider keys, now held by the worker alone), a process
-  (the worker, started from the same image, with a health port that serves no data), entry points (the five job routes) and
-  the outbound provider boundary, which the worker now uses, are added, with these risks:
-  - Tampering: a job run twice, by a worker that was only slow and one that took the job over (mitigated: every write a worker
-    makes is fenced by a claim number that only goes up; `apps/api/test/jobs/store.test.ts`, `apps/api/test/worker/recovery.test.ts`).
-  - Information Disclosure: a provider key kept in the shared secrets-manager secret reaches the API process, which never uses it
-    (accepted: both processes read that secret for the database credentials; set the keys in the worker's environment instead);
-    job and usage records hold no prompt, answer, key or address (mitigated; `apps/api/test/worker/canary.test.ts`).
-  - Denial of Service: runaway spend (partially mitigated: a token cap and a cost cap on every job, checked against the most the
-    next request could use before it is sent and counting every run; a limit on an account's active jobs; a cooldown between its
-    provider checks; a time limit on the whole job. Open: any account can create more accounts, and one request a crashed
-    worker was making may be uncounted); a job that never ends (mitigated: the job's deadline); the job tables growing (accepted:
-    kept indefinitely, small, and slowed by the cooldown).
-  - Elevation of Privilege: any signed-in account can now see and cancel every job and start a provider check (a justified
-    widening, until Phase 6 brings roles; bounded by the caps, the limit and the cooldown).
-Development Workflow: unchanged. The eval gate does not apply: no prompt, adapter or extraction pipeline changed.
+Threat Model changes: assets (sources, the originals while they wait, chunks, embeddings; the S3 credentials, held by the app and the
+  worker), a process (the extraction child, which holds no secret and reads untrusted files), entry points (the eight source routes,
+  open to every signed-in account), the inbound boundary for untrusted document content (current), the outbound provider boundary, which
+  now carries user content, and a new outbound boundary to the storage service when it is S3, with these risks:
+  - Tampering / Denial of Service: a malicious file (a PDF or Word file crafted to exhaust the worker or reach what it must not). Mitigated:
+    the file's type comes from its content; the worker reads it in a child process started with no environment, under a time, a memory, an
+    unpacked-size and a page bound; nothing a file points at is fetched or run; the API never loads a parser
+    (`apps/api/test/extract/failures.test.ts`, `apps/api/test/worker/imports.test.ts`). Accepted: the child still has the worker's network.
+  - Information Disclosure: data that outlives its deletion or its need. Mitigated: the original is deleted when the source is ready or
+    deleted, a sweep removes what a failed removal left (1 hour 10 minutes at most), and a threat model's or a project's deletion removes
+    the originals of everything under it (`apps/api/test/storage/sweep.test.ts`, `apps/api/test/contract/v1/sources-delete.test.ts`);
+    the original is never served; a shared bucket is defended by a dedicated prefix and a key pattern, and no other object is touched.
+  - Information Disclosure: a document's text sent to a hosted provider. Moved from "accepted for this milestone" to mitigated by the
+    notice (Principle VI); a fully local provider remains supported.
+  - Information Disclosure: a name, text or chunk in a log, a job record or an error. Mitigated: they appear only in the source's own
+    records (`apps/api/test/worker/canary.test.ts`).
+  - Denial of Service: runaway embedding spend and storage exhaustion. Partially mitigated: the job caps, an account's own limit on
+    documents waiting or processing (`INGESTION_JOBS_PER_ACCOUNT`), a count and a size limit, and the install-wide `DOCUMENT_SPACE`.
+    Open until Phase 6: any account can create more accounts, and one account can fill the space for all.
+  - Tampering: stored prompt injection. Documents are untrusted input, stored and shown as text and sent only to embeddings, which follow
+    no instructions; delimiting them in prompts is Milestone 4's, under Principle VI.
+  - Elevation of Privilege: any signed-in account can see, retry, refresh and delete every source (a justified widening until Phase 6).
+Development Workflow: unchanged. The eval gate does not apply: no prompt, adapter or generation pipeline changed, and the eval harness
+  arrives in Milestone 7.
 Development Workflow (kept): a pull request that updates the Threat Model section also updates `docs/threat-model/`.
 Deferred / TODO items: none
 Templates requiring follow-up: none checked in this run (scope of this change is the constitution file only; dependent
   templates read it at runtime per the scope guard).
+Previous change (1.14.0 → 1.15.0): Phase 3 Milestone 2 (the worker and its jobs) added a second process, the worker, which alone talks to
+  an LLM provider and holds its key, and five job routes; assets (job records and their usage records, which hold no content), an
+  entry point, a process, and the justified widening that any signed-in account can see and cancel every job and start a provider check.
+  A MINOR.
 Previous change (1.13.1 → 1.14.0): Phase 3 Milestone 1 (the LLM provider layer) added `packages/llm`, its four provider adapters, a
   configuration of 16 variables and an operator check command; an asset (LLM provider API keys, and the AWS role Bedrock uses),
   a trust boundary (the outbound connection to a hosted model provider) and four risks; the notice of Principle VI from the first
@@ -186,8 +197,9 @@ LLM provider integration MUST stay behind Scrylux's own provider-agnostic interf
 (`packages/llm`) — no feature may hard-depend on one vendor's API, and a fully local model
 (e.g. Ollama/vLLM) MUST remain a supported path. When a non-local, hosted provider is configured,
 the UI MUST clearly disclose that data leaves the install. That notice is required from the first milestone in which user content can
-reach a provider (Phase 3 Milestone 3, which sends document chunks for embedding); a request made only of fixed text that Scrylux
-ships, such as the operator's check of its configuration, holds no user content.
+reach a provider, which was Phase 3 Milestone 3 (document chunks, sent for embedding): the Sources tab shows it in the form that adds a
+document and again above the list, naming the provider, on every visit; a request made only of fixed text that Scrylux ships, such as
+the operator's check of its configuration, holds no user content.
 **Rationale**: This is Scrylux's core trust proposition (plan.md guiding principles: "AI output
 is a draft with provenance... nothing AI-generated enters the threat model silently", "private
 by default", "provider-agnostic LLM layer") — without it, an AI-assisted threat model is not
@@ -198,7 +210,7 @@ over a vendor-locked competitor.
 
 This section reflects the application as implemented today (Node.js/Express 5 API with a versioned
 JSON API under `/api/v1`, browser sessions under `/api/session`, the React web app it serves,
-PostgreSQL, optional AWS Secrets Manager, and an optional outbound connection to an LLM provider) and MUST be kept current per
+PostgreSQL, optional AWS Secrets Manager, an optional S3-compatible storage service, and an optional outbound connection to an LLM provider) and MUST be kept current per
 Principle V as each phase in plan.md lands. Phase boundaries that will change this section are
 called out inline below; they are not yet implemented and MUST NOT be treated as mitigated until
 they ship.
@@ -223,9 +235,15 @@ it (the run's `GITHUB_TOKEN` as held by its two publishing jobs; no other secret
 or the secrets-manager secret, never in the database) and, for Bedrock, the AWS role of the host. Since Phase 3 Milestone 2
 (`specs/phase-3/milestone-2-worker-jobs/`): job records and the usage record of every model request a job made (`jobs`, `job_usage`
 and `workers`, kept indefinitely), which hold no prompt, answer, key or address; and the provider keys are held by the worker
-process alone, which is the only one that sends a request to a provider.
-**Assets (planned, not yet implemented)**: from Phase 3 — uploaded design documents, extracted
-text chunks and embeddings, and the LLM outputs derived from them; from
+process alone, which is the only one that sends a request to a provider. Since Phase 3 Milestone 3
+(`specs/phase-3/milestone-3-ingestion/`): **sources**, the design documents of a threat model, which are confidential by nature: each
+source's record (its name, its type and its status), its **original** file while it waits to be read (on a local volume or in an
+S3-compatible bucket, and nowhere else; it is deleted when the source is ready or deleted, and never served), its extracted **text**
+as **chunks** of at most 2,000 characters, and each chunk's **embedding** (`sources` and `chunks`, kept until a person deletes the source,
+the threat model or the project), and the credentials of an S3-compatible storage service (`STORAGE_S3_ACCESS_KEY_ID` and
+`STORAGE_S3_SECRET_ACCESS_KEY`, from the environment or the secrets-manager secret, never in the database), which both the app, that
+stores uploads, and the worker, that reads and removes them, hold.
+**Assets (planned, not yet implemented)**: from Phase 3 — the LLM outputs derived from documents; from
 Phase 4 — read-only repository/IaC access tokens and cloned source code; from Phase 5 —
 third-party OAuth tokens (Jira, Confluence, Google Docs, Linear, Azure DevOps) and outbound
 webhook targets.
@@ -256,10 +274,21 @@ route, and the API never reaches the code that sends a provider request, `apps/a
 database credentials and the provider keys, and nothing of the web sign-in. Its health port (`WORKER_HEALTH_PORT`, 3001) answers
 `GET /health` with 200 and serves nothing else; the compose files do not publish it. The entry points it adds are five authenticated
 routes under `/api/v1`: `GET /jobs/status`, `GET /jobs`, `POST /jobs`, `GET /jobs/{id}` and `POST /jobs/{id}/cancel`. The OpenAPI document
-describes them. The only job kind is the provider check, which sends the layer's fixed request and takes no input from the person who
+describes them. The first job kind is the provider check, which sends the layer's fixed request and takes no input from the person who
 starts it.
-**Trust boundaries (planned)**: Phase 3 adds an inbound boundary for untrusted document content flowing into prompts
-(Milestone 3 onward; prompt-injection surface — see Principle VI). Phase 4 adds a boundary into external source-control/IaC systems (read-only,
+Since Phase 3 Milestone 3 three things are added. **The inbound boundary for untrusted document content** is current: a file or a pasted
+text arrives through the eight source routes of `/api/v1` (`GET`/`POST /threat-models/{id}/sources`, `POST …/sources/text`,
+`GET /sources/{id}`, `GET /sources/{id}/chunks`, `POST /sources/{id}/retry`, `POST /sources/{id}/refresh` and `DELETE /sources/{id}`), is read
+by the API only as far as its first bytes (which decide its type), and is read in full by the worker, in **the extraction child**, a
+process forked for one file from `dist/extract/child.js` with an empty environment and no standard streams, so that it holds no database
+password, provider key or storage credential, loads no module that reads them, and the API's import graph never contains it
+(`apps/api/test/worker/imports.test.ts`). **The outbound provider boundary now carries user content**: the worker sends a document's chunks to
+the embedding provider, in batches, and to nothing else; the Sources tab says so before a document can be added, when the provider is
+hosted. **The storage service is an outbound boundary when it is S3-compatible**: the app puts uploads there and the worker reads, lists
+and deletes them, with the least access each needs (`docs/install.md`, "Storage"), and neither process contacts it when it starts. All
+eight routes are open to every signed-in account (see Elevation of Privilege).
+**Trust boundaries (planned)**: Phase 3 Milestone 4 adds the boundary of untrusted document content flowing into prompts (the
+prompt-injection surface — see Principle VI); until then a document's text goes only to embeddings, which follow no instructions. Phase 4 adds a boundary into external source-control/IaC systems (read-only,
 code never executed). Phase 5 adds boundaries into external SaaS integrations and inbound
 webhooks.
 
@@ -278,9 +307,11 @@ webhooks.
   everywhere and live until they expire; a credential more than one rotation old matches nothing and
   is answered 401 without triggering reuse detection, because only the previous credential is stored
   (the holder gains nothing, so no token-family table is kept). *Planned*: from
-  Phase 3, indirect prompt injection from an ingested document could attempt to "spoof"
+  Phase 3 Milestone 4, indirect prompt injection from an ingested document could attempt to "spoof"
   instructions to the LLM (e.g. impersonate the system prompt); Principle VI's untrusted-input
-  handling is the primary mitigation and MUST be verified before Phase 3 ships.
+  handling is the primary mitigation and MUST be verified before that milestone ships. *Accepted (Phase 3 Milestone 3)*: a document
+  can hold text written to steer a model. Nothing in this milestone sends a source to generation: the text is stored as untrusted input,
+  shown as text, and sent only to the embedding provider, which follows no instruction in it.
   *Accepted risk (Phase 2 Milestone 6)*: provenance can be claimed by a file. A Scrylux file, or an OTM file carrying Scrylux's
   mark, may say a threat is rule-generated, with any rule reference, and Scrylux cannot check it: generation then treats
   that threat as its own, so it may flag it stale or match it instead of creating one. Nothing else follows from it. The
@@ -397,6 +428,18 @@ webhooks.
   that has ended can never change again (a trigger refuses it). Usage records are not fenced, because a request that was made counts
   against the job's caps whoever records it (`apps/api/test/jobs/store.test.ts`, `apps/api/test/worker/recovery.test.ts`). A job
   input is checked against its kind's schema before it is queued, a provider check takes none, and no caps can be set by a request.
+  *Mitigated (Phase 3 Milestone 3)*: a **malicious file** cannot make Scrylux run it, fetch from it, or believe what it says about itself.
+  A file's type comes from its first bytes, never its name or the browser's claim, and an encrypted Word file or an executable named
+  `.pdf` is refused at upload. The worker reads a PDF or Word file in a child process with an empty environment, so a flaw in a parser has
+  no credential to find; the file is parsed with no evaluation, rendering, macro, script, embedded object, external image, font or link
+  followed, and a Word file's parts are checked against both the sizes their headers declare and the sizes they really unpack to
+  (`apps/api/test/extract/failures.test.ts`, which also listens for a request from a file that points at an address and finds none). A
+  chunk is committed only with the source's other chunks, its embeddings and its ready state, in one transaction fenced by the job's claim,
+  so a worker that lost its job writes nothing, a source never holds a part of its text, and one never holds two models' embeddings
+  (`apps/api/test/sources/ingest.test.ts`, `ingest-refresh.test.ts`, `ingest-delete.test.ts`). *Accepted (Phase 3 Milestone 3)*: stored
+  **prompt injection**. A document is untrusted input that may hold text written to steer a model. It is stored and shown as text, and
+  its only use in this milestone is to make embeddings; delimiting it in prompts, and never letting it trigger an action, is
+  Milestone 4's, under Principle VI, and this item stays until that milestone verifies it.
 - **Repudiation**: *Open risk*: no audit trail persists who created, updated, or deleted a
   threat-model record or a user — the JWT's `sub` is known per-request but never written to storage.
   This is a notable gap precisely because Repudiation is one of the STRIDE categories the app
@@ -416,7 +459,10 @@ webhooks.
   kept, so a later change overwrites the decision. Any signed-in account can make it (there are no roles until
   Phase 6). Phase 6's audit log closes this. *Partially mitigated (Phase 2 Milestone 6)*: an import writes one stdout line
   with the account id, the project, the ids of the threat models it created and counts of what it created and left
-  out, never a name or any content of the file. The records it creates get no line of their own.
+  out, never a name or any content of the file. The records it creates get no line of their own. *Partially mitigated (Phase 3
+  Milestone 3)*: adding, retrying, refreshing and deleting a source each write one stdout line with the account id, the action, the source
+  and threat model ids, the source's type and its size, and never its name or any of its text. As for other records, nothing is
+  persisted, and who deleted a source is lost with it until Phase 6's audit log.
   *Open risk (Phase 2 Milestone 8)*: a user cannot tell who built an image, or from which commit, beyond its labels. The image carries
   its source repository and commit as labels (`scripts/release/versions.ts`), which the smoke run checks on both platforms before
   publishing and again after (`scripts/release/smoke.ts`). *Planned*: `plan.md` Phase 6, "Verifiable release images" (a signature, a build attestation and an SBOM).
@@ -434,10 +480,12 @@ webhooks.
   them for a fake key, fake document text and a fake password in an address). While a provider is configured, Scrylux refuses to
   start if a variable the provider libraries read on their own is set (a vendor key, address, extra header or logging switch), so
   none can reach a provider unchecked (`packages/llm/test/sdk-env.test.ts` keeps that list in step with the installed libraries).
-  *Accepted for this milestone*: a hosted (non-local) LLM provider is itself a disclosure path for any data included in a
-  prompt, and a fully local model MUST remain available for installs that cannot accept it. No user content is sent yet: only
-  the operator's check, with fixed text. Principle VI's notice that data leaves the install ships with the first milestone that
-  does send it (Phase 3 Milestone 3, which sends document chunks for embedding).
+  *Mitigated (Phase 3 Milestone 3)*: a hosted (non-local) LLM provider is itself a disclosure path for any data sent to it, and from
+  this milestone user content is sent: a document's chunks, for embedding. Principle VI's notice ships here. The Sources tab names the
+  provider and says the text leaves the install, in the form that adds a document and again above the list, on every visit, and says
+  that the generation provider will receive it from later milestones; with only local providers it says the text stays in the install
+  (`apps/web/src/components/SourcesNotice.test.tsx`, `apps/web/e2e/sources.spec.ts`). A fully local model remains a supported path. The
+  text goes to the embedding provider and to the database and nowhere else, and only the worker sends it.
   *Mitigated (Phase 1 Milestone 2)*: no CI job references a repository secret; the `test` job's
   credentials are throwaway, non-secret development defaults defined directly in the workflow, so
   pull requests from forks get identical, fully-functional results with nothing to leak. Every
@@ -470,6 +518,20 @@ webhooks.
   secret that `DB_SECRET_ID` names also reaches the API process, because both processes read that secret for the database credentials.
   The API never uses it. To keep a key from the API, set it in the worker's environment, as the compose files do; a separate secret
   for the worker would close the gap and is left for a later milestone.
+  *Mitigated (Phase 3 Milestone 3)*: **a document's content does not outlive its deletion or its need.** The original is deleted in the
+  commit that makes its source ready, or when the source is deleted, or when its threat model or project is, in the same request; if
+  storage cannot remove it then, the deletion still succeeds, and the worker's sweep (when it starts and every ten minutes) removes any
+  original older than an hour that no source still needs, so it is gone within an hour and ten minutes of its deletion while a worker runs
+  (`apps/api/test/storage/sweep.test.ts`, `apps/api/test/contract/v1/sources-delete.test.ts`). The original is never returned by any route;
+  a person reads the chunks. A storage key is a fresh random identifier, never derived from a name, so a file's name cannot choose a path.
+  **A shared bucket** does not put other objects at risk: the sweep and every deletion touch only keys of the exact shape Scrylux makes under
+  its own prefix, and the documentation says to give it a bucket or a prefix of its own and gives each process the least access
+  (`docs/install.md`). The bucket's own encryption at rest applies; Scrylux adds none. **The names and text of documents stay out of logs**:
+  a source's name, its text, a chunk and an error's text appear only in the source's own records and answers; the logs, the job and usage
+  records, and every error carry ids, types, sizes and counts (`apps/api/test/worker/canary.test.ts`). *Accepted (Phase 3 Milestone 3)*:
+  the app and the worker both hold the storage credentials when they are given as keys (the instance or task role holds none), and a key
+  kept in the shared secret reaches the app as the provider keys do; the stored text and embeddings are as readable by the database's
+  users as every other record, and a database backup holds them.
 - **Denial of Service**: JSON payloads are capped at 100kb (64 MiB for the two import operations); the `/api/v1` lists are not
   paginated, so a list returns every matching record (low risk at current expected scale, and
   specs/phase-1/milestone-5-rest-api-v1 SC-007 measures a threat model of 1,000 threats and 2,000 mitigations). *Partially mitigated (Phase 1 Milestone 6)*: failed sign-ins are throttled per address, never per
@@ -517,6 +579,21 @@ webhooks.
   deadline, which the heartbeat notices within seconds while a worker runs; with no worker alive, a job waiting past its deadline is
   failed by the next worker to start. *Accepted (Phase 3 Milestone 2)*: job and usage records are kept indefinitely and grow with
   every job; they are small, the cooldown slows provider checks, and the operator watches the storage as for other records.
+  *Partially mitigated (Phase 3 Milestone 3)*: a **malicious or enormous file** cannot take the worker down. An upload is limited in size
+  (`SOURCE_MAX_MB`, 10 MB) and read from the network in a bounded way, only a limited number at once; the worker reads it in a child that
+  is stopped by a time limit, a memory limit, an unpacked-size limit and a page limit, and a crash or an exhaustion of the child fails
+  that document alone (`apps/api/test/extract/failures.test.ts`). The container's own memory limit remains the last line. *Partially
+  mitigated (Phase 3 Milestone 3)*: **runaway embedding spend and storage exhaustion.** Every embedding request is gated by the job's token
+  and cost caps; an account may have only `INGESTION_JOBS_PER_ACCOUNT` documents waiting or processing at once, a threat model holds at most
+  `SOURCES_PER_THREAT_MODEL`, a text at most `SOURCE_MAX_CHARS`, and all documents together at most `DOCUMENT_SPACE`, a bound the app checks when
+  a document is added and the worker checks again before making it ready (`apps/api/test/sources/store.test.ts`,
+  `apps/api/test/sources/ingest-failures.test.ts`). *Open risk (Phase 3 Milestone 3)*: the same as for jobs, until Phase 6: any signed-in
+  account can create more accounts, each with its own limits, so the caps and limits bound a document, an account and the space, not what
+  a determined person can add through many accounts; and **one account can fill the document space for everybody**. The operator's answers are
+  a spending limit at the provider and a `DOCUMENT_SPACE` they can afford, and deleting what is not wanted frees the space at once. *Accepted
+  (Phase 3 Milestone 3)*: the extraction child has the worker's network access, because Node offers no sandbox for it; a crafted file that
+  achieved code execution in it could reach what the worker's network reaches, though it would find no credential. Limiting the
+  worker's egress to the provider and the storage is the operator's (`docs/install.md`, "Reading files safely").
 - **Elevation of Privilege**: *Open risk, by design, currently unmitigated*: there is no role
   model. Any authenticated user can create additional users (`POST /api/users`) and, since Phase 1
   Milestone 5, can read, change and delete every project, threat model, element, threat and
@@ -566,6 +643,13 @@ webhooks.
   before Phase 6, a job is not private to its starter, and a provider check spends little: it is bounded by the caps, the limit on an
   account's active jobs and the cooldown, and the Jobs page says which provider is used and whether its data leaves the install. The
   widening was called out in the milestone's spec (FR-065) and is accepted until Phase 6.
+  *Justified widening (Phase 3 Milestone 3, Principle V)*: any signed-in account can now add a document to any threat model, and see its
+  chunks, retry, refresh and delete any source, whoever added it, and the documents are confidential by nature. There are no roles
+  before Phase 6 and any signed-in account can already read, change and delete every threat model, so a document is no more private than
+  the model it belongs to; what an account can do to it is bounded by the limits above, and a source's record says who added it and when.
+  The widening was called out in the milestone's spec (FR-065, FR-080) and is accepted until Phase 6. *No widening*: the extraction child
+  and the storage add no way to reach another account's data, and the worker, which already held the provider keys, gains only the
+  storage credentials.
 
 Any change that adds an endpoint, a new external integration, or a new credential type MUST add
 or update a bullet above in the same PR, whether or not the surrounding phase has been reached.
@@ -608,4 +692,4 @@ rather than silently merged. This file is the source of truth for "why" a rule e
 implementation-level how-to guidance belongs in `README.md`, `API.md`, `CONTRIBUTING.md`, `SECURITY.md`, `plan.md`, and code
 comments, not here.
 
-**Version**: 1.15.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-11-01
+**Version**: 1.16.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-11-01

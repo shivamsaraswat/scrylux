@@ -25,6 +25,8 @@ const STATUS_DESCRIPTIONS: Record<number, string> = {
   409: 'The request conflicts with existing records',
   429: 'Too many jobs, or too soon after the last provider check; Retry-After says how long to wait',
   415: 'The content encoding is not supported',
+  503: 'The server is busy reading other uploads, or document storage is unavailable; Retry-After says how long to wait',
+  507: 'The install has no document space left',
   500: 'An unexpected failure',
 };
 
@@ -80,7 +82,9 @@ function limitText(bytes: number): string {
 }
 
 function documentedResponse(op: Operation<unknown>, status: number): JsonObject {
-  const description = status === 413 ? `The body is over ${limitText(op.bodyLimit ?? DEFAULT_BODY_LIMIT)}` : (STATUS_DESCRIPTIONS[status] ?? 'An error');
+  // An upload is as large as the operator allows (SOURCE_MAX_MB), so no fixed number is stated for it.
+  const tooLarge = op.upload === true ? 'The file is larger than this install allows (SOURCE_MAX_MB, 10 MB by default)' : `The body is over ${limitText(op.bodyLimit ?? DEFAULT_BODY_LIMIT)}`;
+  const description = status === 413 ? tooLarge : (STATUS_DESCRIPTIONS[status] ?? 'An error');
   if (status !== op.status) return { description, content: { 'application/json': { schema: ref('Error') } } };
   if (status === 204) return { description };
   // A download is text, in one of the media types the operation lists.
@@ -109,7 +113,7 @@ function queryParameters(op: Operation<unknown>): JsonObject[] {
 
 function documentedOperation(op: Operation<unknown>): JsonObject {
   // 401 and 500 are possible on every operation, and 400, 413 and 415 on every body.
-  const statuses = new Set([op.status, 401, 500, ...op.errors, ...(op.body ? [400, 413, 415] : [])]);
+  const statuses = new Set([op.status, 401, 500, ...op.errors, ...(op.body || op.upload ? [400, 413, 415] : []), ...(op.limitConcurrentBodies ? [503] : [])]);
   const responses: JsonObject = {};
   for (const status of [...statuses].sort((a, b) => a - b)) responses[String(status)] = documentedResponse(op, status);
 
@@ -127,7 +131,19 @@ function documentedOperation(op: Operation<unknown>): JsonObject {
     summary: op.summary,
     ...(op.description === undefined ? {} : { description: op.description }),
     ...(parameters.length === 0 ? {} : { parameters }),
-    ...(op.body === undefined
+    ...(op.upload === true
+      ? {
+          requestBody: {
+            required: true,
+            // One part, named file. Its size is the operator's setting (SOURCE_MAX_MB), so no fixed number is stated here.
+            content: {
+              'multipart/form-data': {
+                schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'], additionalProperties: false },
+              },
+            },
+          },
+        }
+      : op.body === undefined
       ? {}
       : {
           requestBody: {

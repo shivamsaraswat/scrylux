@@ -50,6 +50,15 @@ const OPERATION_IDS = [
   'createJob',
   'getJob',
   'cancelJob',
+  // Phase 3 Milestone 3, contracts/http-api.md.
+  'listSources',
+  'uploadSource',
+  'pasteSource',
+  'getSource',
+  'listChunks',
+  'retrySource',
+  'refreshSource',
+  'deleteSource',
   'getOpenApiDocument',
 ];
 const METHODS = ['get', 'post', 'patch', 'delete'] as const;
@@ -164,8 +173,9 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
     });
 
     it('states the order of each of the 6 lists (FR-003)', () => {
-      // The jobs list states its own order (Phase 3 Milestone 2).
-      const lists = operationsOf(doc()).filter(({ op }) => op.operationId.startsWith('list') && op.operationId !== 'listJobs');
+      // The jobs list states its own order (Phase 3 Milestone 2), and so do the source and chunk lists (Milestone 3).
+      const own = ['listJobs', 'listSources', 'listChunks'];
+      const lists = operationsOf(doc()).filter(({ op }) => op.operationId.startsWith('list') && !own.includes(op.operationId));
       expect(lists).toHaveLength(6);
       for (const { op } of lists) expect(op.description, op.operationId).toBe(LIST_ORDER_DESCRIPTION);
     });
@@ -240,9 +250,16 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
         if (!op.requestBody) continue;
         const isImport = op.operationId === 'checkImport' || op.operationId === 'importThreatModel';
         const limit = (op.requestBody as Record<string, unknown>)['x-max-body-bytes'];
-        expect(limit, op.operationId).toBe(isImport ? 67_108_864 : 102_400);
+        // An upload is as large as the operator allows, so it states no fixed number (Phase 3 Milestone 3).
+        if (op.operationId === 'uploadSource') {
+          expect(limit, op.operationId).toBeUndefined();
+          expect((op.responses['413'] as { description?: string }).description).toContain('SOURCE_MAX_MB');
+          continue;
+        }
+        const documented = isImport ? 67_108_864 : op.operationId === 'pasteSource' ? 20_971_520 : 102_400;
+        expect(limit, op.operationId).toBe(documented);
         expect((op.responses['413'] as { description?: string }).description, op.operationId).toBe(
-          isImport ? 'The body is over 64 MiB' : 'The body is over 100 KiB',
+          isImport ? 'The body is over 64 MiB' : op.operationId === 'pasteSource' ? 'The body is over 20 MiB' : 'The body is over 100 KiB',
         );
       }
     });
@@ -250,7 +267,7 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
     it('documents a query parameter on no other operation', () => {
       for (const { op } of operationsOf(doc())) {
         const inQuery = (op.parameters ?? []).filter((p) => p.in === 'query');
-        if (!['getThreatModelReport', 'exportThreatModel', 'listJobs'].includes(op.operationId)) expect(inQuery, op.operationId).toEqual([]);
+        if (!['getThreatModelReport', 'exportThreatModel', 'listJobs', 'listChunks'].includes(op.operationId)) expect(inQuery, op.operationId).toEqual([]);
       }
     });
 
@@ -270,6 +287,35 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
       for (const name of ['JobsStatus', 'JobRecord', 'JobDetail', 'JobList', 'JobCreateInput']) expect(document.components.schemas[name], name).toBeDefined();
       // The records can hold neither a key nor an address (FR-051, FR-091).
       expect(JSON.stringify([document.components.schemas.JobsStatus, document.components.schemas.JobDetail])).not.toMatch(/api_key|base_url|apiKey|baseUrl/);
+    });
+
+    it('documents the source operations: a multipart upload, a pasted body, their refusals, and no stored key (Phase 3 Milestone 3, contracts/http-api.md)', () => {
+      const document = doc();
+      const upload = document.paths['/api/v1/threat-models/{id}/sources']?.post;
+      const content = (upload?.requestBody as { content?: Record<string, { schema: Record<string, unknown> }> } | undefined)?.content;
+      expect(Object.keys(content ?? {})).toEqual(['multipart/form-data']);
+      expect(content?.['multipart/form-data']?.schema).toMatchObject({ properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] });
+      expect(Object.keys(upload?.responses ?? {}).sort()).toEqual(['201', '400', '401', '404', '409', '413', '415', '429', '500', '503', '507']);
+      const paste = document.paths['/api/v1/threat-models/{id}/sources/text']?.post;
+      expect(Object.keys((paste?.requestBody as { content: object }).content)).toEqual(['application/json']);
+      expect(Object.keys(paste?.responses ?? {})).toEqual(expect.arrayContaining(['201', '400', '409', '413', '429', '503', '507']));
+      expect(Object.keys(document.paths['/api/v1/sources/{id}']?.delete?.responses ?? {}).sort()).toEqual(['204', '400', '401', '404', '500']);
+      const chunks = document.paths['/api/v1/sources/{id}/chunks']?.get;
+      expect(chunks?.parameters?.map((p) => [p.name, p.in, p.required]).filter(([, where]) => where === 'query')).toEqual([['limit', 'query', false], ['offset', 'query', false]]);
+      expect(Object.keys(chunks?.responses ?? {})).toContain('409');
+      for (const name of ['SourceRecord', 'SourceList', 'ChunkPage', 'SourceTextInput']) expect(document.components.schemas[name], name).toBeDefined();
+      // Neither a record nor a chunk can name where an original is kept, or hold an embedding (FR-068).
+      expect(JSON.stringify([document.components.schemas.SourceRecord, document.components.schemas.SourceList, document.components.schemas.ChunkPage])).not.toMatch(/original_key|bucket|digest/);
+      // A chunk has no vector; a source says only which model made its vectors, and how large they are.
+      expect(JSON.stringify(document.components.schemas.ChunkPage)).not.toContain('embedding');
+      expect(JSON.stringify(document.components.schemas.SourceRecord)).toContain('"dimension"');
+      // No source operation answers with a file: only JSON (FR-068).
+      for (const [path, item] of Object.entries(document.paths)) {
+        if (!/\/(sources|threat-models\/\{id\}\/sources)/.test(path)) continue;
+        for (const operation of Object.values(item as Record<string, { responses: Record<string, { content?: Record<string, unknown> }> }>)) {
+          for (const response of Object.values(operation.responses)) expect(Object.keys(response.content ?? {}).filter((type) => type !== 'application/json'), path).toEqual([]);
+        }
+      }
     });
 
     it('documents generateThreats with its {} body, its counts and its errors (contracts/generate-threats-api.md)', () => {

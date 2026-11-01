@@ -9,6 +9,9 @@ import {
   JobsStatus,
   MitigationRecord,
   ProjectRecord,
+  ChunkPage,
+  SourceList,
+  SourceRecord,
   ThreatGenerationResult,
   ThreatModelRecord,
   ThreatRecord,
@@ -18,12 +21,13 @@ import {
   type MitigationUpdateInput,
   type ProjectCreateInput,
   type ProjectUpdateInput,
+  type SourceTextInput,
   type ThreatCreateInput,
   type ThreatModelCreateInput,
   type ThreatModelUpdateInput,
   type ThreatUpdateInput,
 } from '@scrylux/core';
-import { apiDelete, apiGet, apiPatch, apiPost } from './client.js';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm } from './client.js';
 import { ApiError, isGone } from './errors.js';
 
 // One query per v1 read, and one mutation per write (research #15). Nothing here is optimistic (spec FR-016):
@@ -44,6 +48,9 @@ export const keys = {
   jobs: ['jobs'] as const,
   jobsStatus: ['jobs-status'] as const,
   job: (id: string) => ['job', id] as const,
+  sources: (threatModelId: string) => ['sources', threatModelId] as const,
+  source: (id: string) => ['source', id] as const,
+  chunks: (id: string) => ['chunks', id] as const,
 };
 
 // Changes a list the page holds, with what the server answered. A list that was never loaded is left alone. A read
@@ -366,5 +373,99 @@ export function useCancelJob(id: string) {
   return useMutation({
     mutationFn: () => apiPost(`/api/v1/jobs/${id}/cancel`, JobRecord, undefined),
     onSettled: () => Promise.all([client.invalidateQueries({ queryKey: keys.job(id) }), client.invalidateQueries({ queryKey: keys.jobs })]),
+  });
+}
+
+
+// ---- sources (Phase 3 Milestone 3) ----
+//
+// A source that is waiting, being processed or being refreshed changes under the person's eyes, so the list is read again every
+// JOB_POLL_MS while any of them is, and not at all otherwise (FR-063). Only a threat model's Sources tab reads it. A write
+// changes what is shown only after the server has confirmed it, and the list is read again either way, because a refusal (a
+// limit, a duplicate) can change what the server will accept next.
+
+export const isBusySource = (source: Pick<SourceRecord, 'status' | 'refresh'>): boolean =>
+  source.status === 'waiting' || source.status === 'processing' || source.refresh !== null;
+
+export function useSources(threatModelId: string) {
+  return useQuery({
+    queryKey: keys.sources(threatModelId),
+    queryFn: () => apiGet(`/api/v1/threat-models/${threatModelId}/sources`, SourceList),
+    refetchInterval: (query) => (query.state.data?.sources.some(isBusySource) ? JOB_POLL_MS : false),
+  });
+}
+
+// One file, as its own request: several files are sent one after another, each with its own answer (FR-004).
+export function useUploadSource(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append('file', file, file.name);
+      return apiPostForm(`/api/v1/threat-models/${threatModelId}/sources`, SourceRecord, form);
+    },
+    onSettled: () => client.invalidateQueries({ queryKey: keys.sources(threatModelId) }),
+  });
+}
+
+export function usePasteSource(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SourceTextInput) => apiPost(`/api/v1/threat-models/${threatModelId}/sources/text`, SourceRecord, input),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.sources(threatModelId) }),
+  });
+}
+
+const CHUNKS_PAGE_SIZE = 50;
+
+/** One source, read again while it is busy so that its page follows it to ready (FR-063). */
+export function useSource(id: string) {
+  return useQuery({
+    queryKey: keys.source(id),
+    queryFn: () => apiGet(`/api/v1/sources/${id}`, SourceRecord),
+    refetchInterval: (query) => (query.state.data !== undefined && isBusySource(query.state.data) ? JOB_POLL_MS : false),
+  });
+}
+
+/** A ready source's chunks in order, 50 at a time: "Show more" asks from the number already shown. They never change (FR-023). */
+export function useChunks(id: string, enabled: boolean) {
+  return useInfiniteQuery({
+    queryKey: keys.chunks(id),
+    enabled,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => apiGet(`/api/v1/sources/${id}/chunks?limit=${CHUNKS_PAGE_SIZE}&offset=${pageParam}`, ChunkPage),
+    getNextPageParam: (last, pages) => (last.has_more ? pages.reduce((sum, page) => sum + page.chunks.length, 0) : undefined),
+  });
+}
+
+/** Deletes a source, its chunks and its stored original. The list and the page are read again either way (FR-054). */
+export function useDeleteSource(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiDelete(`/api/v1/sources/${id}`),
+    onSuccess: (_, id) => {
+      client.removeQueries({ queryKey: keys.source(id) });
+      client.removeQueries({ queryKey: keys.chunks(id) });
+    },
+    // A source that is already gone (404) is what was wanted, so the list is read again whatever the answer.
+    onSettled: () => client.invalidateQueries({ queryKey: keys.sources(threatModelId) }),
+  });
+}
+
+/** Queues a new job for a source that failed, or whose last refresh failed. A refusal says why (FR-045); the list is read again either way. */
+export function useRetrySource(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiPost(`/api/v1/sources/${id}/retry`, SourceRecord, undefined),
+    onSettled: (_, __, id) => Promise.all([client.invalidateQueries({ queryKey: keys.sources(threatModelId) }), client.invalidateQueries({ queryKey: keys.source(id) })]),
+  });
+}
+
+/** Queues a refresh of the embeddings of a ready source whose embeddings are out of date (FR-034). Read again either way: a refusal says what changed. */
+export function useRefreshSource(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiPost(`/api/v1/sources/${id}/refresh`, SourceRecord, undefined),
+    onSettled: (_, __, id) => Promise.all([client.invalidateQueries({ queryKey: keys.sources(threatModelId) }), client.invalidateQueries({ queryKey: keys.source(id) })]),
   });
 }

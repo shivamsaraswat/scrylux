@@ -14,3 +14,6 @@ coverage/
 
 # The roadmap stays local and is never committed.
 /plan.md
+
+# A development run stores the originals of added documents here. They can be confidential (Phase 3 Milestone 3).
+/apps/api/storage/

@@ -136,6 +136,12 @@ them. OTM does not define this, so a file from another tool may draw differently
 A mitigation's text is its `description` when that starts with its `name`; otherwise the `name`, a blank line, then the
 `description`; and the `name` alone when there is no description.
 
+## Documents are not exported or imported
+
+An OTM file written by Scrylux describes the system, its threats and its mitigations. It holds none of the **documents** added to the
+threat model (Phase 3 Milestone 3): not the files, not the text read from them, not their chunks or embeddings. An import never creates
+one either. Add the documents again to the imported threat model.
+
 ## What an import does not carry over
 
 Everything in the file that says something about the system and has no place in a Scrylux threat model is listed in the

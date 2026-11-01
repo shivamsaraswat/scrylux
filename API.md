@@ -27,6 +27,7 @@ All paths below are under `/api/v1`. Ids are UUIDs.
 | Elements | `POST /elements`, `GET`/`PATCH`/`DELETE /elements/{id}`, `POST /threat-models/{id}/elements/batch` (`batchElements`) |
 | Threats | `POST /threats`, `GET`/`PATCH`/`DELETE /threats/{id}`, `GET /threats/{id}/mitigations` |
 | Mitigations | `POST /mitigations`, `GET`/`PATCH`/`DELETE /mitigations/{id}` |
+| Sources (documents) | `GET /threat-models/{id}/sources` (`listSources`), `POST /threat-models/{id}/sources` (`uploadSource`, a multipart upload of one `.md`, `.txt`, `.pdf` or `.docx` file in the field `file`), `POST /threat-models/{id}/sources/text` (`pasteSource`, `{"title","text"}`), `GET /sources/{id}` (`getSource`), `GET /sources/{id}/chunks` (`listChunks`, `limit` 1 to 100 and `offset`), `POST /sources/{id}/retry`, `POST /sources/{id}/refresh`, `DELETE /sources/{id}`. The text is read in the background by the worker, so a new source is `waiting`; the answer to `GET /sources/{id}` says when it is `ready` or `failed`, and why. They need an embedding provider ([AI providers](docs/ai-providers.md#documents)). The original file is never returned |
 | Document | `GET /openapi.json` |
 
 How they behave:
@@ -226,6 +227,7 @@ curl -s "${H[@]}" -OJ "localhost:3000/api/v1/threat-models/$MODEL/report?format=
 - The **Markdown** draws the diagram as a Mermaid flowchart, which GitHub and many wikis show as a picture. A diagram too big for them (more than 400 flows, or a flowchart of more than 40,000 characters) is replaced by a note that says so, because they show an error in its place; the element sections give the same structure as text, and the HTML report draws all of it.
 - The **HTML** is one self-contained file. It opens and prints the same offline, with no Scrylux session and no network, and runs no script. Use the browser's *Print* and choose *Save as PDF* for a PDF. It draws the diagram where the editor shows it.
 - What was typed is shown as typed in both: a name, title or note that contains Markdown, HTML or a Mermaid keyword is text, not markup. A ticket is a link only if it is an `http` or `https` address.
+- A report does not include the threat model's **documents**, their text or their chunks (Phase 3 Milestone 3), nor does an export.
 - The same unchanged threat model gives the same document each time, apart from the export time in its header, so a report kept in a repository shows what changed.
 - A report is read in one snapshot, so it never mixes two states of the threat model. It changes nothing, writes no log line, and holds no credential or account name. `404` if the threat model does not exist.
 

@@ -6,7 +6,7 @@ import { timestamp, uuid } from '../fields.js';
 // what it receives. Nothing here can hold a key, a base address, a prompt, an answer or a raw provider error (FR-051).
 // Every object is strict.
 
-export const JOB_KINDS = ['provider_check'] as const;
+export const JOB_KINDS = ['provider_check', 'ingest_source', 'refresh_embeddings'] as const;
 export const JobKind = z.enum(JOB_KINDS);
 export type JobKind = z.infer<typeof JobKind>;
 
@@ -34,12 +34,29 @@ export const JOB_FAILURE_CATEGORIES = [
   'timed_out',
   'worker_lost',
   'job_error',
+  'unsupported_type',
+  'encrypted',
+  'damaged',
+  'no_text_found',
+  'too_large',
+  'too_large_unpacked',
+  'unreadable',
+  'storage_unavailable',
+  'document_space_full',
 ] as const;
 export const JobFailureCategory = z.enum(JOB_FAILURE_CATEGORIES);
 export type JobFailureCategory = z.infer<typeof JobFailureCategory>;
 
-/** The categories a job retries (FR-020): the provider was unavailable or limiting requests. */
-export const JOB_TRANSIENT_CATEGORIES = ['provider_unavailable', 'rate_limited'] as const satisfies readonly JobFailureCategory[];
+/** The categories a job retries (FR-020, and FR-013 of Phase 3 Milestone 3): the provider was unavailable or limiting requests, or storage could not be reached. */
+export const JOB_TRANSIENT_CATEGORIES = ['provider_unavailable', 'rate_limited', 'storage_unavailable'] as const satisfies readonly JobFailureCategory[];
+
+/**
+ * What chooses the message of a failure that names a bound: which cap was lower than one request (FR-044), which limit a
+ * document passed while it was read (FR-011): time or memory for `unreadable`, pages or characters for `too_large`.
+ */
+export const JOB_FAILURE_DETAILS = ['cap_below_one_request', 'time', 'memory', 'pages', 'chars'] as const;
+export const JobFailureDetail = z.enum(JOB_FAILURE_DETAILS);
+export type JobFailureDetail = z.infer<typeof JobFailureDetail>;
 
 export const PROVIDER_NAMES = ['anthropic', 'openai-compatible', 'bedrock', 'gemini'] as const;
 export const ProviderName = z.enum(PROVIDER_NAMES);
@@ -49,10 +66,19 @@ export const PROVIDER_CHECK_STEPS = ['generation', 'embeddings'] as const;
 export const ProviderCheckStep = z.enum(PROVIDER_CHECK_STEPS);
 export type ProviderCheckStep = z.infer<typeof ProviderCheckStep>;
 
+/** The steps of ingesting and refreshing: extract the text, split it into chunks, embed them (FR-040). */
+export const INGESTION_STEPS = ['extract', 'chunk', 'embed'] as const;
+export const IngestionStep = z.enum(INGESTION_STEPS);
+export type IngestionStep = z.infer<typeof IngestionStep>;
+
+/** Every step a job can be on, from a fixed list for its kind (FR-015). */
+export const JobStep = z.enum([...PROVIDER_CHECK_STEPS, ...INGESTION_STEPS]);
+export type JobStep = z.infer<typeof JobStep>;
+
 const count = z.number().int().min(0);
 
 export const JobProgress = z.strictObject({
-  step: ProviderCheckStep,
+  step: JobStep,
   done: count.optional(),
   total: count.optional(),
 });
@@ -103,6 +129,10 @@ export const JobRecord = z.strictObject({
   progress: JobProgress.nullable(),
   failure: JobFailure.nullable(),
   totals: JobTotals,
+  /** The threat model an ingestion job belongs to; null for a provider check, which belongs to none (FR-054). */
+  threat_model_id: uuid.nullable(),
+  /** The source an ingestion job works on; null for a provider check, and once the source was deleted. */
+  source_id: uuid.nullable(),
 });
 export type JobRecord = z.infer<typeof JobRecord>;
 
@@ -162,9 +192,16 @@ export type ProviderCheckOperation = z.infer<typeof ProviderCheckOperation>;
 export const ProviderCheckResult = z.strictObject({ generation: ProviderCheckOperation, embeddings: ProviderCheckOperation });
 export type ProviderCheckResult = z.infer<typeof ProviderCheckResult>;
 
+/** What an ingestion keeps of its run: counts only, never text (FR-051). */
+export const IngestionResult = z.strictObject({ chunks: count, pages_without_text: count.nullable() });
+export type IngestionResult = z.infer<typeof IngestionResult>;
+
 export const JobDetail = JobRecord.extend({
   usage: JobUsageRecord.array(),
+  /** Each operation of a provider check; null for every other kind, and until the check has a result. */
   result: ProviderCheckResult.nullable(),
+  /** What an ingestion or a refresh kept of its run; null for every other kind, and until it has a result. */
+  ingestion: IngestionResult.nullable(),
 });
 export type JobDetail = z.infer<typeof JobDetail>;
 

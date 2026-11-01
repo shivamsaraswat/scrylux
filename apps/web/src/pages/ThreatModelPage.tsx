@@ -126,7 +126,7 @@ function ThreatModelView({ id }: { id: string }) {
       {confirming && (
         <ConfirmDialog
           title="Delete threat model"
-          message={`Delete threat model "${record.name}"? This permanently deletes its elements, threats and mitigations.`}
+          message={`Delete threat model "${record.name}"? This permanently deletes its elements, threats, mitigations and documents.`}
           confirmLabel="Delete"
           onConfirm={() => void onDelete()}
           onCancel={() => setConfirming(false)}
@@ -137,6 +137,7 @@ function ThreatModelView({ id }: { id: string }) {
         <NavLink to={`/threat-models/${id}`} end>
           Threats
         </NavLink>
+        <NavLink to={`/threat-models/${id}/sources`}>Sources</NavLink>
       </nav>
       <DiagramEditorProvider key={id} threatModelId={id}>
         <GenerateThreats threatModelId={id} />

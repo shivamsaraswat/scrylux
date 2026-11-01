@@ -23,11 +23,11 @@ vulnerability, read [SECURITY.md](SECURITY.md) and **never** open a public issue
 
 You need Node.js 22 or newer, [Corepack](https://github.com/nodejs/corepack), and PostgreSQL 13 or
 newer. Corepack comes with Node.js 22 and 24. From Node.js 25 it no longer does, so install it
-first with `npm install -g corepack`. The simplest way to get a database is Docker Compose.
+first with `npm install -g corepack`. The simplest way to get a database is Docker Compose. A PostgreSQL of your own needs the [pgvector](https://github.com/pgvector/pgvector) extension installed, and a role that may run `CREATE EXTENSION vector` (the migrations enable it, and refuse to run without it), because documents store their embeddings there. The compose `db` service is pgvector's image, so it has both.
 
 ```sh
 corepack enable                     # gives you the exact pnpm version this repo pins
-docker compose up -d db             # only the database; or point DB_HOST at your own PostgreSQL 13+
+docker compose up -d db             # only the database (it has the pgvector extension); or point DB_HOST at your own PostgreSQL 13+ that has it
 pnpm install --frozen-lockfile
 ```
 

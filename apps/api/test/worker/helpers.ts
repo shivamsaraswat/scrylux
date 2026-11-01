@@ -20,7 +20,7 @@ export const SETTINGS: JobSettings = {
 };
 
 /** Fast timings, so a test of a lease, a heartbeat or a poll does not sleep. */
-export const FAST: Timings = { pollMs: 15, heartbeatMs: 25, leaseMs: 400, reportMs: 40, aliveWithinMs: 250, graceMs: 300 };
+export const FAST: Timings = { pollMs: 15, heartbeatMs: 25, leaseMs: 400, reportMs: 40, aliveWithinMs: 250, graceMs: 300, sweepMs: 3_600_000 };
 
 export async function makeUser(): Promise<number> {
   const { rows } = await db.query<{ id: number }>('INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id', [

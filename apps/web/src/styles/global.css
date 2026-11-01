@@ -288,3 +288,29 @@ dialog::backdrop {
 .job-facts dd {
   margin: 0;
 }
+
+/* A source's chunks (Phase 3 Milestone 3): the text of each keeps its line breaks and is never read as markup. */
+.chunks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chunk {
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.chunk h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.chunk-text {
+  margin: 0.5rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+}

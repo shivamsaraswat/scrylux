@@ -87,6 +87,9 @@ demo.
   pretend to restore when a record was made.
 - **Accounts**: no account name, account id or credential. An import belongs to the account that makes it.
 - **Ids of the threat model and the project.**
+- **Documents** (sources): neither the files that were added to the threat model, nor the text read from them, nor their chunks or
+  embeddings. A file exported from a threat model that has documents describes the system and its threats, not what they were built
+  from, and an import brings none back (Phase 3 Milestone 3). Add the documents again to the imported threat model.
 
 ## What an import checks
 

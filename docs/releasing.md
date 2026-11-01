@@ -179,9 +179,20 @@ Nothing refreshes these for you, and each is a supply-chain pin:
   docker buildx imagetools inspect moby/buildkit:<tag> --format '{{.Manifest.Digest}}'
   ```
 
-- **PostgreSQL**, in [`docker-compose.release.yml`](../docker-compose.release.yml): the same digest `ci.yml` pins for its service
-  container. Dependabot is configured to propose it (the `docker-compose` entry); whether it reads a file with this name is not yet
-  confirmed, so check after the first Monday and refresh by hand if it did not.
+- **The database image** (pgvector's, `pgvector/pgvector:<version>-pg16-trixie@sha256:<digest>`), pinned by one digest in three places that
+  must agree: [`docker-compose.release.yml`](../docker-compose.release.yml), the `test` job's service container in
+  [`ci.yml`](../.github/workflows/ci.yml), and `NEW_IMAGE` in [`scripts/check-db-upgrade.sh`](../scripts/check-db-upgrade.sh); a test
+  (`scripts/compose.test.ts`) fails if they differ. Dependabot is configured to propose the compose file's (the `docker-compose` entry), and it
+  does not read the other two, so change all three in one pull request. Find a digest with:
+
+  ```sh
+  docker buildx imagetools inspect pgvector/pgvector:<tag> --format '{{.Manifest.Digest}}'
+  ```
+
+  Keep the PostgreSQL major in the tag (`pg16`): moving to another major is a data migration, not a refresh. The script's `OLD_IMAGE`, the
+  Alpine PostgreSQL that v0.1 shipped, is **never refreshed**: the check exists to prove an upgrade from exactly that image, so its digest
+  stays what v0.1 pinned. Whether Dependabot reads a file named `docker-compose.release.yml` is not yet confirmed; check after the first
+  Monday and refresh by hand if it did not.
 - **The base image**, in the `Dockerfile` (Dependabot's `docker` entry).
 - **First-party actions** are pinned by commit and refreshed by Dependabot's `github-actions` entry.
 

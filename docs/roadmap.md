@@ -13,4 +13,6 @@ Built one phase at a time; each phase ends with something usable.
 | 6 | Enterprise readiness: RBAC, SSO (OIDC/SAML), audit log, versioning and approvals, Helm chart | v1.0 |
 | 7 | More methodologies and frameworks: LINDDUN, MAESTRO (agentic AI), attack trees, ATT&CK/CAPEC/CWE mapping, compliance mapping | v1.x |
 
+Phase 3 is built a milestone at a time. So far on the main branch: the provider layer and the worker that runs jobs, and, as the third milestone, **documents**: a threat model can hold `.md`, `.txt`, `.pdf` and `.docx` files and pasted text, which Scrylux reads, cuts into chunks and gives embeddings (nothing is drafted from them yet; that is the next milestone, and v0.2 is not yet released). See [Documents and storage](install.md#documents-and-storage).
+
 Back to the [README](../README.md).

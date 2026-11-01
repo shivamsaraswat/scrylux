@@ -9,6 +9,9 @@ without redrawing them. Import only: Scrylux does not export Threat Dragon files
 - **Version 2 only.** A version 1 model keeps its diagram in `diagramJson`; open it in Threat Dragon 2 and save it,
   which converts it, then import that file. Scrylux refuses a version 1 file and says so.
 
+Threat Dragon files hold no documents, and an import creates none. Documents added to a Scrylux threat model (Phase 3 Milestone 3) are not
+carried by any export or import format.
+
 ## One threat model per diagram
 
 A Threat Dragon file can hold several diagrams; a Scrylux threat model has one. So an import creates **one threat model

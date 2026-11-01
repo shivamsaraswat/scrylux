@@ -10,7 +10,7 @@ every repository setting that isn't a file in this repo.
 | --- | --- | --- | --- |
 | `typecheck` | `pnpm typecheck` (`tsc --noEmit` in every package and in `scripts/`) | `pnpm typecheck` | 10 min |
 | `lint` | `pnpm lint` (ESLint in every package and in `scripts/`, then the [license check](#license-check)), then the [lockfile-format guard](#lockfile-format) | `pnpm lint` | 10 min |
-| `test` | `pnpm test` (Vitest in every package and in `scripts/`; a `globalSetup` migrates the database and seeds the admin user) against a real `postgres:16-alpine` service container, then the `Threat model warnings` step (two test files, Scrylux's own threat model and the demo's, run alone as one project so that their annotations attach, [below](#scryluxs-own-threat-model)), then `pnpm build`, the built-output check (`pnpm --filter @scrylux/web verify:build`: no inline script or style, no `data:` URIs), and the Playwright browser tests against the built app (`pnpm test:e2e`, Chromium) | `docker compose up -d db && pnpm test && pnpm build && pnpm --filter @scrylux/web verify:build && pnpm test:e2e` (once: `pnpm --filter @scrylux/web exec playwright install chromium`) | 25 min |
+| `test` | `pnpm test` (Vitest in every package and in `scripts/`; a `globalSetup` migrates the database and seeds the admin user) against a real service container of the pgvector image, `pgvector/pgvector:0.8.7-pg16-trixie` pinned by digest (the image `docker-compose.yml` uses, [why](#the-database-upgrade-check)), then the [database upgrade check](#the-database-upgrade-check), then the `Threat model warnings` step (two test files, Scrylux's own threat model and the demo's, run alone as one project so that their annotations attach, [below](#scryluxs-own-threat-model)), then `pnpm build`, the built-output check (`pnpm --filter @scrylux/web verify:build`: no inline script or style, no `data:` URIs), and the Playwright browser tests against the built app (`pnpm test:e2e`, Chromium) | `docker compose up -d db && pnpm test && scripts/check-db-upgrade.sh && pnpm build && pnpm --filter @scrylux/web verify:build && pnpm test:e2e` (once: `pnpm --filter @scrylux/web exec playwright install chromium`) | 25 min |
 | `docker-build` | `docker build --pull .` (never pushed anywhere) | `docker build .` | 15 min |
 
 All four run on every pull request to `main`, on every push to `main`, and on demand
@@ -54,6 +54,32 @@ or a secret.
   valid, imports with nothing left out, no stale threat, and the shape the spec lists. A stale threat fails the build; a threat
   a new rule would add is a warning. The *Threat model warnings* step runs **both** test files, each as one project, so that
   both files' `::warning` lines become annotations.
+
+## The database upgrade check
+
+Until v0.1 and Phase 3 Milestone 2, Scrylux's database ran on `postgres:16-alpine`. From v0.2 it runs on
+`pgvector/pgvector:0.8.7-pg16-trixie`, because the vector extension that later milestones search with is only published for
+Debian. The two images do not agree on how to sort text. Alpine's C library (musl) orders text by code point, and Debian's (glibc)
+orders `en_US.utf8` text by linguistic rules, so `alpha`, `Beta` and `Élan` come in a different order. A data volume moved from
+one image to the other keeps its B-tree indexes in the old order, and an index in the wrong order silently returns wrong answers.
+Migration `017_sources.sql` rebuilds every index of every earlier table for that reason.
+
+`scripts/check-db-upgrade.sh` (a step of the `test` job, after the unit tests) shows that it works, on a volume of its own:
+
+1. It creates a volume on the old image, pinned by digest, applies migrations 001 to 016 with Scrylux's own migrator, and inserts
+   rows whose text sorts differently in the two orders (users, projects and threat models with mixed case and accents).
+2. Migration 017 refuses there, with its message, because the old image has no pgvector. After the refusal `schema_migrations` has
+   no 017 row and no `sources` table exists: a refused migration changes no table.
+3. It starts the new image on the same volume. Before 017, `amcheck`'s `bt_index_check(index, true)` **must report broken indexes**.
+   This is the negative control: without it, a clean result after 017 would not show that the reindex repaired anything. If it
+   finds none, the script prints `datlocprovider`, `datcollate` and `datctype` of both images and stops with status 2. Do not tune
+   the data until it does. Ask the maintainer, because the reindex would then rest on a wrong premise.
+4. It applies 017. Every B-tree index must now pass `bt_index_check(index, true)`, and every table must hold the rows it held.
+
+Run it yourself with `scripts/check-db-upgrade.sh`. It needs Docker, `pnpm` and an installed workspace, takes about fifteen
+seconds once the two images are local, and removes its containers and its volume when it ends, even when it fails. It touches no
+database that you started. The service container of the `test` job and `docker-compose.yml` use the new image, so everything else
+in CI runs where a v0.2 install does.
 
 ## Release pipeline
 
@@ -236,8 +262,11 @@ cooldown on new releases (`cooldown.default-days: 3`):
   propose digest refreshes (patch releases, security rebuilds of the same tag). Node major-version
   bumps are ignored deliberately — moving to a new Node major is a human decision, and CI follows
   it automatically once the Dockerfile changes.
-- **docker-compose** (`/`) — keeps the PostgreSQL digest of `docker-compose.release.yml` (and the tag in the contributor's `docker-compose.yml`) current. PostgreSQL major-version
-  bumps are ignored deliberately: moving a database to a new major is a human decision with a data migration. Whether this ecosystem reads a file named
+- **docker-compose** (`/`) — keeps the pgvector image digest of `docker-compose.release.yml` (and the tag in the contributor's `docker-compose.yml`) current. A major
+  update of `pgvector/pgvector` is ignored deliberately (a test holds that rule: `scripts/compose.test.ts`). Its tag also names the PostgreSQL major
+  (`-pg16-`), which Dependabot keeps as it is when it proposes a newer tag, and a move to another PostgreSQL major is a human decision with a data migration:
+  refuse the pull request by hand if one ever proposes it. The `test` job's service container and `scripts/check-db-upgrade.sh` pin the same digest, which
+  Dependabot does not read, so a refreshed digest is applied to all three together ([`releasing.md`](releasing.md#refreshing-the-pins)). Whether this ecosystem reads a file named
   `docker-compose.release.yml` is not yet confirmed; check after the first Monday and refresh the digest by hand if it did not
   ([`releasing.md`](releasing.md#refreshing-the-pins)).
 - **github-actions** (`/` and `/.github/actions/*`) — keeps the pinned commit SHAs (and their

@@ -67,6 +67,18 @@ function JobView({ id }: { id: string }) {
         <dd>{stateLabel(job)}</dd>
         <dt>Started by</dt>
         <dd>{job.started_by.username}</dd>
+        {job.kind !== 'provider_check' && (
+          <>
+            <dt>Document</dt>
+            <dd>
+              {job.threat_model_id !== null && job.source_id !== null ? (
+                <Link to={`/threat-models/${job.threat_model_id}/sources/${job.source_id}`}>Open the document</Link>
+              ) : (
+                'The document was deleted'
+              )}
+            </dd>
+          </>
+        )}
         <dt>Queued at</dt>
         <dd>{time(job.queued_at)}</dd>
         {job.started_at !== null && (
@@ -157,6 +169,16 @@ function JobView({ id }: { id: string }) {
           <h2 id="result-heading">Result</h2>
           <OperationResult title="Generation" operation={job.result.generation} usage={job.usage} />
           <OperationResult title="Embeddings" operation={job.result.embeddings} usage={job.usage} />
+        </section>
+      )}
+
+      {job.ingestion !== null && (
+        <section aria-labelledby="ingestion-heading">
+          <h2 id="ingestion-heading">Result</h2>
+          <p>{`${job.ingestion.chunks} ${job.ingestion.chunks === 1 ? 'chunk' : 'chunks'}`}</p>
+          {job.ingestion.pages_without_text !== null && job.ingestion.pages_without_text > 0 && (
+            <p>{`${job.ingestion.pages_without_text} ${job.ingestion.pages_without_text === 1 ? 'page' : 'pages'} without text`}</p>
+          )}
         </section>
       )}
 

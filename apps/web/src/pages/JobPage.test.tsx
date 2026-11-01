@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { JOB_ID, installFakeApi, jobDetail, json, renderApp } from '../test-utils.js';
+import { JOB_ID, MODEL_ID, SOURCE_ID, installFakeApi, jobDetail, json, renderApp } from '../test-utils.js';
 
 // One job (Phase 3 Milestone 2, contracts/ui.md; spec US1, FR-015, FR-061, FR-064, FR-066).
 
@@ -418,5 +418,45 @@ describe('JobPage: a job that is not there', () => {
     renderApp(`/jobs/${JOB_ID}`);
     expect(await screen.findByText('Internal server error')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+  });
+});
+
+
+describe('JobPage: the job of a document (Phase 3 Milestone 3)', () => {
+  it('names the kind, and links to the document it works on, on its own page', async () => {
+    open({ kind: 'ingest_source', threat_model_id: MODEL_ID, source_id: SOURCE_ID });
+    expect(await screen.findByRole('heading', { name: 'Process a document' })).toBeTruthy();
+    const link = screen.getByRole('link', { name: 'Open the document' });
+    expect(link.getAttribute('href')).toBe(`/threat-models/${MODEL_ID}/sources/${SOURCE_ID}`);
+  });
+
+  it('says that the document was deleted when its source is gone, and offers no link to it', async () => {
+    open({ kind: 'ingest_source', threat_model_id: MODEL_ID, source_id: null });
+    expect(await screen.findByText('The document was deleted')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Open the document' })).toBeNull();
+  });
+
+  it('says nothing about a document for a provider check, which belongs to none', async () => {
+    open({ kind: 'provider_check' });
+    await screen.findByRole('heading', { name: 'Provider check' });
+    expect(screen.queryByText('The document was deleted')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Open the document' })).toBeNull();
+  });
+
+  it('shows what an ingestion kept of its run: counts, and the pages that had no text', async () => {
+    open({ kind: 'ingest_source', state: 'succeeded', threat_model_id: MODEL_ID, source_id: SOURCE_ID, ingestion: { chunks: 12, pages_without_text: 2 } });
+    expect(await screen.findByText('12 chunks')).toBeTruthy();
+    expect(screen.getByText('2 pages without text')).toBeTruthy();
+  });
+
+  it('says the step a running refresh is on', async () => {
+    open({ kind: 'refresh_embeddings', state: 'running', progress: { step: 'embed', done: 64, total: 150 }, threat_model_id: MODEL_ID, source_id: SOURCE_ID });
+    expect(await screen.findByText('Embedding the chunks (64 of 150)')).toBeTruthy();
+  });
+
+  it('shows the failure of an ingestion in the words of its category, as text', async () => {
+    open({ kind: 'ingest_source', state: 'failed', threat_model_id: MODEL_ID, source_id: SOURCE_ID, failure: { category: 'encrypted', message: 'This PDF is protected with a password.', hint: 'Remove the protection and upload it again.' } });
+    expect(await screen.findByText('This PDF is protected with a password.')).toBeTruthy();
+    expect(screen.getByText('Reason: encrypted')).toBeTruthy();
   });
 });

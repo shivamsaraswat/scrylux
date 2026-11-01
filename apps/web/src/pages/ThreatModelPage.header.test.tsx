@@ -90,7 +90,7 @@ describe('ThreatModelPage header', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
 
     expect(
-      screen.getByText('Delete threat model "Checkout v2"? This permanently deletes its elements, threats and mitigations.'),
+      screen.getByText('Delete threat model "Checkout v2"? This permanently deletes its elements, threats, mitigations and documents.'),
     ).toBeTruthy();
     const dialog = document.querySelector('dialog') as HTMLElement;
     await userEvent.click(dialog.querySelector('button.danger') as HTMLElement);

@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import type { JobFailureCategory } from '@scrylux/core';
+import type { JobFailureCategory, JobFailureDetail, JobKind } from '@scrylux/core';
 import { FAILURE_MESSAGES, type FailureCategory } from '@scrylux/llm';
 import { isAlias, isNode, parseDocument, visit } from 'yaml';
 import { z } from 'zod';
@@ -32,7 +32,27 @@ const fileSchema = z.strictObject({
     timed_out: entry,
     worker_lost: entry,
     job_error: entry,
+    unsupported_type: entry,
+    encrypted: entry,
+    damaged: entry,
+    no_text_found: entry,
+    too_large: entry,
+    too_large_pages: entry,
+    too_large_chars: entry,
+    too_large_unpacked: entry,
+    unreadable: entry,
+    unreadable_time: entry,
+    unreadable_memory: entry,
+    storage_unavailable: entry,
+    document_space_full: entry,
   }),
+  // A hint for one of Milestone 1's categories that is different for this kind of job.
+  kinds: z.strictObject({
+    ingest_source: z.strictObject({ input_too_large: text }),
+    refresh_embeddings: z.strictObject({ input_too_large: text }),
+  }),
+  // What a source shows when its ingestion was cancelled: its category is not a job's (FR-044).
+  source: z.strictObject({ cancelled: entry }),
 });
 
 export type Failures = z.infer<typeof fileSchema>;
@@ -73,14 +93,47 @@ export function providerHint(category: FailureCategory, prefix: Prefix): string 
   return loadFailures().provider[category].replaceAll(PLACEHOLDER, prefix);
 }
 
-/** The message and hint a job shows for its failure. `detail` chooses the “lower than one request” text of a cap (FR-044). */
+const isProviderCategory = (category: JobFailureCategory): category is FailureCategory & JobFailureCategory => category in FAILURE_MESSAGES;
+
+/**
+ * The message and hint a job shows for its failure. `detail` chooses the text that names a bound: the cap that was lower than
+ * one request (FR-044), the limit a document passed (FR-011). A detail that is not the category's own is ignored. `kind`
+ * chooses a hint that is different for ingestion and refresh, for a model that refuses the chunk size.
+ */
 export function describeFailure(
   category: JobFailureCategory,
-  detail: 'cap_below_one_request' | null,
+  detail: JobFailureDetail | null,
   prefix: Prefix,
+  kind?: JobKind,
 ): { message: string; hint: string } {
-  const { job } = loadFailures();
-  if (category === 'cap_reached') return detail === 'cap_below_one_request' ? job.cap_below_one_request : job.cap_reached;
-  if (category === 'timed_out' || category === 'worker_lost' || category === 'job_error') return job[category];
+  const { job, kinds } = loadFailures();
+  switch (category) {
+    case 'cap_reached':
+      return detail === 'cap_below_one_request' ? job.cap_below_one_request : job.cap_reached;
+    case 'unreadable':
+      return detail === 'time' ? job.unreadable_time : detail === 'memory' ? job.unreadable_memory : job.unreadable;
+    case 'too_large':
+      return detail === 'pages' ? job.too_large_pages : detail === 'chars' ? job.too_large_chars : job.too_large;
+    case 'timed_out':
+    case 'worker_lost':
+    case 'job_error':
+    case 'unsupported_type':
+    case 'encrypted':
+    case 'damaged':
+    case 'no_text_found':
+    case 'too_large_unpacked':
+    case 'storage_unavailable':
+    case 'document_space_full':
+      return job[category];
+    default:
+      break;
+  }
+  if (!isProviderCategory(category)) return job.job_error;
+  if (category === 'input_too_large' && (kind === 'ingest_source' || kind === 'refresh_embeddings')) {
+    return { message: FAILURE_MESSAGES.input_too_large, hint: kinds[kind].input_too_large };
+  }
   return { message: FAILURE_MESSAGES[category], hint: providerHint(category, prefix) };
 }
+
+/** What a source shows when its ingestion was cancelled from the Jobs page (FR-044). */
+export const describeSourceCancelled = (): { message: string; hint: string } => loadFailures().source.cancelled;

@@ -12,7 +12,9 @@
 # the release it is attached to.
 services:
   db:
-    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+    # pgvector stores the embeddings of Phase 3 Milestone 3. Its image is Debian-based, not Alpine: a volume made by v0.1's image is
+    # repaired by migration 017's reindex, and docs/install.md#upgrading-to-v02 says what to do.
+    image: pgvector/pgvector:0.8.7-pg16-trixie@sha256:9cf8b511f0e9a2c209b61430fc139f1ab9c75edbb31fb1751db6617b246a897a
     environment:
       POSTGRES_DB: threats
       POSTGRES_USER: postgres
@@ -65,6 +67,25 @@ services:
       PROVIDER_CHECK_COOLDOWN: ${PROVIDER_CHECK_COOLDOWN:-}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-}
       WORKER_HEALTH_PORT: ${WORKER_HEALTH_PORT:-}
+      # Documents (Phase 3 Milestone 3, docs/install.md). All empty by default, which uses the defaults. The app checks the sizes
+      # and counts, and stores the uploads; the worker reads them, extracts the text and embeds it. The document space and the
+      # storage settings are the same for both.
+      SOURCE_MAX_MB: ${SOURCE_MAX_MB:-}
+      SOURCES_PER_THREAT_MODEL: ${SOURCES_PER_THREAT_MODEL:-}
+      INGESTION_JOBS_PER_ACCOUNT: ${INGESTION_JOBS_PER_ACCOUNT:-}
+      DOCUMENT_SPACE: ${DOCUMENT_SPACE:-}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET:-}
+      STORAGE_S3_PREFIX: ${STORAGE_S3_PREFIX:-}
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION:-}
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT:-}
+      STORAGE_S3_FORCE_PATH_STYLE: ${STORAGE_S3_FORCE_PATH_STYLE:-}
+      STORAGE_S3_ACCESS_KEY_ID: ${STORAGE_S3_ACCESS_KEY_ID:-}
+      STORAGE_S3_SECRET_ACCESS_KEY: ${STORAGE_S3_SECRET_ACCESS_KEY:-}
+    volumes:
+      # The stored originals of the documents that are not ready yet, with STORAGE_BACKEND=local (the default). Shared by the app
+      # and the worker; unused, and empty, with an S3-compatible service.
+      - storage:/app/apps/api/storage
     extra_hosts:
       # So a model server on the host (Ollama) is reachable as host.docker.internal on Linux too.
       - "host.docker.internal:host-gateway"
@@ -112,6 +133,27 @@ services:
       PROVIDER_CHECK_COOLDOWN: ${PROVIDER_CHECK_COOLDOWN:-}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-}
       WORKER_HEALTH_PORT: ${WORKER_HEALTH_PORT:-}
+      # Documents (Phase 3 Milestone 3, docs/install.md). All empty by default, which uses the defaults. The worker reads the stored
+      # originals, extracts their text in a child process that holds no secret, and embeds it. The document space and the storage
+      # settings are the same as the app's.
+      DOCUMENT_SPACE: ${DOCUMENT_SPACE:-}
+      SOURCE_MAX_CHARS: ${SOURCE_MAX_CHARS:-}
+      EXTRACT_TIME_LIMIT: ${EXTRACT_TIME_LIMIT:-}
+      EXTRACT_MEMORY_MB: ${EXTRACT_MEMORY_MB:-}
+      EXTRACT_UNPACKED_MB: ${EXTRACT_UNPACKED_MB:-}
+      EXTRACT_MAX_PAGES: ${EXTRACT_MAX_PAGES:-}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET:-}
+      STORAGE_S3_PREFIX: ${STORAGE_S3_PREFIX:-}
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION:-}
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT:-}
+      STORAGE_S3_FORCE_PATH_STYLE: ${STORAGE_S3_FORCE_PATH_STYLE:-}
+      STORAGE_S3_ACCESS_KEY_ID: ${STORAGE_S3_ACCESS_KEY_ID:-}
+      STORAGE_S3_SECRET_ACCESS_KEY: ${STORAGE_S3_SECRET_ACCESS_KEY:-}
+    volumes:
+      # The stored originals of the documents that are not ready yet, with STORAGE_BACKEND=local (the default). Shared by the app
+      # and the worker; unused, and empty, with an S3-compatible service.
+      - storage:/app/apps/api/storage
     extra_hosts:
       # So a model server on the host (Ollama) is reachable as host.docker.internal on Linux too.
       - "host.docker.internal:host-gateway"
@@ -128,3 +170,4 @@ services:
 
 volumes:
   pgdata:
+  storage:

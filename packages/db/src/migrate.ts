@@ -8,6 +8,28 @@ const MIGRATIONS_DIR = fileURLToPath(new URL('../migrations/', import.meta.url))
 // Arbitrary constant so concurrent instances starting together run migrations one at a time.
 const LOCK_ID = 727274;
 
+/**
+ * A migration that stopped on purpose, with a message written for an operator (SQLSTATE class SX): Scrylux's own
+ * migrations raise it with fixed text, so it is safe to print. Every other failure carries driver text, which may hold
+ * a query or a value derived from the configuration, and is never printed (Phase 3 Milestone 3, FR-091, research #16).
+ */
+export class MigrationRefusedError extends Error {
+  constructor(
+    message: string,
+    readonly code: 'SX001' | 'SX002',
+  ) {
+    super(message);
+    this.name = 'MigrationRefusedError';
+  }
+}
+
+function refusal(err: unknown): MigrationRefusedError | undefined {
+  if (typeof err !== 'object' || err === null) return undefined;
+  const { code, message } = err as { code?: unknown; message?: unknown };
+  if ((code === 'SX001' || code === 'SX002') && typeof message === 'string') return new MigrationRefusedError(message, code);
+  return undefined;
+}
+
 export interface MigrationPool {
   connect(): Promise<PoolClient>;
 }
@@ -39,7 +61,7 @@ export async function migrate(pool: MigrationPool): Promise<void> {
         await client.query('COMMIT');
       } catch (err) {
         await client.query('ROLLBACK');
-        throw err;
+        throw refusal(err) ?? err;
       }
       console.log(`Applied migration ${file}`);
     }

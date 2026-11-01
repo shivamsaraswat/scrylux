@@ -10,8 +10,9 @@ Behind them sit four adapters: Anthropic, OpenAI-compatible (OpenAI, Azure OpenA
 Bedrock and Google Gemini. Every request returns a usage record (tokens, cost or "unknown", time, attempts, outcome) and writes one
 log line with those facts and nothing else.
 
-Nothing in Scrylux sends user content through it yet. The operator's check command is the only live caller; the worker, ingestion
-and the prompts come in later Phase 3 milestones. Design notes, decisions and contracts:
+The only user content sent through it is the chunks of documents added to a threat model, which the worker sends to make their
+embeddings (Phase 3 Milestone 3). The provider check and the operator's check command send fixed text. Generation, with prompts
+that hold a document's text, comes in a later Phase 3 milestone. Design notes, decisions and contracts:
 [`specs/phase-3/milestone-1-llm-provider-layer/`](../../specs/phase-3/milestone-1-llm-provider-layer/). For operators:
 [`docs/ai-providers.md`](../../docs/ai-providers.md).
 

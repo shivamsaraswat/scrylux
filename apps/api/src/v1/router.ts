@@ -1,4 +1,5 @@
 import express, { Router, type NextFunction, type Request, type RequestHandler, type Response } from 'express';
+import { limitBodies } from '../sources/upload.js';
 import { HttpError, mapStorageError } from './errors.js';
 import { allOperations } from './openapi.js';
 import { DEFAULT_BODY_LIMIT, parseBody, parseId, parseQuery, type Method, type Operation, type TextResult } from './operation.js';
@@ -47,10 +48,11 @@ function handle(op: Operation<unknown>): RequestHandler {
       const id = op.path.includes(':id') ? parseId(req.params.id) : '';
       // The id is checked first, then the query, then the body, then whether the record exists.
       const query = op.query ? parseQuery(op.query.schema, req.query) : undefined;
-      const body = op.body ? parseBody(op.body.schema, req.body, op.method === 'patch') : undefined;
+      // An operation that defers its body reads and validates it itself, after its own checks.
+      const body = op.body && !op.deferBody ? parseBody(op.body.schema, req.body, op.method === 'patch') : undefined;
       const accountId = res.locals.accountId as number;
 
-      const result = await op.handler({ id, body, query, accountId });
+      const result = await op.handler({ id, body, query, accountId, request: req });
 
       if (op.text) {
         sendText(res, result as TextResult);
@@ -89,8 +91,10 @@ const register: Record<Method, (path: string, ...handlers: RequestHandler[]) => 
 // handler as it always did, so the 400 and 413 answers are unchanged.
 v1Router.use(requireAccount);
 for (const op of allOperations) {
-  const readBody = op.body ? [express.json({ limit: op.bodyLimit ?? DEFAULT_BODY_LIMIT })] : [];
-  register[op.method](op.path, ...readBody, handle(op));
+  const readBody = op.body && !op.deferBody ? [express.json({ limit: op.bodyLimit ?? DEFAULT_BODY_LIMIT })] : [];
+  // Before any body is read: only so many documents at once (FR-004).
+  const limit = op.limitConcurrentBodies ? [limitBodies] : [];
+  register[op.method](op.path, ...limit, ...readBody, handle(op));
 }
 
 // Express decodes a path parameter itself, before parseId runs, and throws a URIError (status 400)

@@ -1,5 +1,7 @@
 import { ProjectCreateInput, ProjectRecord, ProjectUpdateInput, ThreatModelRecord } from '@scrylux/core';
 import { kdb } from '../db.js';
+import { currentSourcesContext } from '../sources/context.js';
+import { deleteWithSources } from '../sources/store.js';
 import { orNotFound } from './errors.js';
 import { LIST_ORDER_DESCRIPTION, defineOperation, type Operation } from './operation.js';
 
@@ -67,8 +69,8 @@ export const projectOperations: Operation<unknown>[] = [
     status: 204,
     errors: [400, 404],
     recordType: 'project',
-    handler: async ({ id }) =>
-      orNotFound(await kdb.deleteFrom('projects').where('id', '=', id).returning('id').executeTakeFirst(), 'Project'),
+    // The sources of its threat models go with it, and so do their originals (Phase 3 Milestone 3, FR-054).
+    handler: async ({ id }) => orNotFound((await deleteWithSources(kdb, currentSourcesContext(), { kind: 'project', id })) ? { id } : undefined, 'Project'),
   }),
   defineOperation({
     method: 'get',

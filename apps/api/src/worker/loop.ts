@@ -3,6 +3,9 @@ import type { Database } from '@scrylux/db';
 import type { Llm, LlmConfig } from '@scrylux/llm';
 import type { Kysely } from 'kysely';
 import { logWorker } from '../jobs/log.js';
+import { storage as defaultStorage } from '../storage/instance.js';
+import { sweepStorage } from '../storage/sweep.js';
+import type { Storage } from '../storage/types.js';
 import { claimJob, deleteStaleWorkers, registerWorker, removeWorker, sweep, touchWorker } from '../jobs/store.js';
 import { runJob } from './run.js';
 import { STALE_WORKER_MS, defaultTimings, type Timings } from './timing.js';
@@ -22,6 +25,8 @@ export interface WorkerOptions {
   /** Tests shorten these; the worker never reads them from the environment. */
   timings?: Partial<Timings>;
   workerId?: string;
+  /** Where the originals are. The worker of a deployment uses the process's own storage; a test may give another. */
+  storage?: Storage;
 }
 
 export interface Worker {
@@ -73,14 +78,30 @@ export async function startWorker(options: WorkerOptions): Promise<Worker> {
     }
   }
 
+  // Storage is swept when the worker starts and every sweepMs after: what a deletion could not remove, and what a crash left
+  // between a put and its row, would otherwise stay (FR-055). A sweep never throws and never delays a job.
+  let sweeping = false;
+  const sweepOriginals = (): void => {
+    if (stopping || sweeping) return;
+    sweeping = true;
+    void (async () => sweepStorage(db, options.storage ?? defaultStorage()))()
+      .catch(() => undefined)
+      .finally(() => {
+        sweeping = false;
+      });
+  };
+  const sweepTimer = setInterval(sweepOriginals, timings.sweepMs);
+
   const poll = setInterval(() => void tick(), timings.pollMs);
   const report = setInterval(() => void touchWorker(db, id).catch(() => undefined), timings.reportMs);
   void tick();
+  sweepOriginals();
 
   const halt = (): void => {
     stopping = true;
     clearInterval(poll);
     clearInterval(report);
+    clearInterval(sweepTimer);
   };
 
   return {

@@ -65,3 +65,10 @@ export async function apiPatch<T>(path: string, schema: z.ZodType<T>, body: unkn
 export async function apiDelete(path: string): Promise<void> {
   await request('DELETE', path);
 }
+
+// A multipart upload (Phase 3 Milestone 3): the browser sets the content type, with the boundary, so none is set here.
+export async function apiPostForm<T>(path: string, schema: z.ZodType<T>, form: FormData): Promise<T> {
+  const res = await apiFetch(path, { method: 'POST', body: form });
+  if (!res.ok) throw await toApiError(res);
+  return schema.parse(await res.json());
+}

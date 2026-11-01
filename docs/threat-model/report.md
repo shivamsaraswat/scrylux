@@ -3,26 +3,26 @@
 - **Project:** Scrylux
 - **Methodology:** STRIDE
 - **Threat model status:** Approved
-- **Exported:** 2026-11-01 06:18 UTC
-- **Contents:** 49 elements, 310 threats, 253 mitigations
+- **Exported:** 2026-11-01 12:40 UTC
+- **Contents:** 59 elements, 373 threats, 324 mitigations
 
 ## Risk summary
 
 | Status | Threats |
 |---|---:|
-| Open | 39 |
-| Mitigated | 77 |
-| Accepted | 113 |
-| Not applicable | 81 |
-| **Total** | **310** |
+| Open | 50 |
+| Mitigated | 89 |
+| Accepted | 139 |
+| Not applicable | 95 |
+| **Total** | **373** |
 
 | Risk (open threats) | Threats |
 |---|---:|
 | Critical | 6 |
-| High | 11 |
-| Medium | 20 |
-| Low | 2 |
-| **Total** | **39** |
+| High | 12 |
+| Medium | 29 |
+| Low | 3 |
+| **Total** | **50** |
 
 ## Diagram
 
@@ -30,57 +30,67 @@
 flowchart LR
   subgraph b1["Deployment network"]
     n2(["Reverse proxy"])
-    subgraph b17["Application container"]
-      n18(["Accounts API"])
-      n19(["Import and export"])
-      n20(["Report builder"])
-      n21(["Rule engine"])
-      n22(["Sign#45;in and sessions"])
-      n23(["Startup and configuration"])
-      n24(["Threat model API"])
-      n25(["Web app server"])
-      n26(["Worker"])
+    n3[("Document storage")]
+    subgraph b23["Application container"]
+      n24(["Accounts API"])
+      n25(["Document reader"])
+      n26(["Import and export"])
+      n27(["Report builder"])
+      n28(["Rule engine"])
+      n29(["Sign#45;in and sessions"])
+      n30(["Startup and configuration"])
+      n31(["Threat model API"])
+      n32(["Web app server"])
+      n33(["Worker"])
     end
-    subgraph b30["Database server"]
-      n31[("Account and session records")]
-      n32[("Job records")]
-      n33[("Threat model records")]
+    subgraph b38["Database server"]
+      n39[("Account and session records")]
+      n40[("Document records")]
+      n41[("Job records")]
+      n42[("Threat model records")]
     end
   end
-  subgraph b34["User device"]
-    n35(["Web app"])
+  subgraph b43["User device"]
+    n44(["Web app"])
   end
-  n36["API client"]
-  n37["LLM provider #40;hosted#41;"]
-  n38["Operator"]
-  n39["Secrets manager"]
-  n40["Signed#45;in user"]
-  n22 -->|"Account and session queries"| n31
-  n18 -->|"Account queries"| n31
-  n2 -->|"Account requests"| n18
-  n21 -->|"Generated threats"| n33
-  n19 -->|"Import and export queries"| n33
-  n26 -->|"Job claims and results"| n32
-  n24 -->|"Job queries"| n32
-  n23 -->|"Migrations and seeding"| n31
-  n2 -->|"Page requests"| n25
-  n20 -->|"Report reads"| n33
-  n24 -->|"Session check"| n31
-  n2 -->|"Sign#45;in and session requests"| n22
-  n24 -->|"Threat model queries"| n33
-  n2 -->|"Threat model requests"| n24
-  n24 -->|"Generation requests"| n21
-  n24 -->|"Import and export requests"| n19
-  n24 -->|"Report requests"| n20
-  n36 -->|"API client requests"| n2
-  n35 -->|"Browser requests"| n2
-  n38 -->|"Environment settings"| n23
-  n23 -->|"Model requests"| n37
-  n39 -->|"Secrets"| n23
-  n40 -->|"Use the web app"| n35
-  n25 -->|"Web app code"| n35
-  n26 -->|"Worker model requests"| n37
-  n38 -->|"Worker settings"| n26
+  n45["API client"]
+  n46["LLM provider #40;hosted#41;"]
+  n47["Operator"]
+  n48["Secrets manager"]
+  n49["Signed#45;in user"]
+  n29 -->|"Account and session queries"| n39
+  n24 -->|"Account queries"| n39
+  n2 -->|"Account requests"| n24
+  n33 -->|"Chunks and embeddings"| n40
+  n31 -->|"Document queries"| n40
+  n31 -->|"Document storage writes"| n3
+  n28 -->|"Generated threats"| n42
+  n26 -->|"Import and export queries"| n42
+  n33 -->|"Job claims and results"| n41
+  n31 -->|"Job queries"| n41
+  n30 -->|"Migrations and seeding"| n39
+  n3 -->|"Original for reading"| n33
+  n2 -->|"Page requests"| n32
+  n27 -->|"Report reads"| n42
+  n31 -->|"Session check"| n39
+  n2 -->|"Sign#45;in and session requests"| n29
+  n31 -->|"Threat model queries"| n42
+  n2 -->|"Threat model requests"| n31
+  n2 -->|"Uploaded documents"| n31
+  n31 -->|"Generation requests"| n28
+  n31 -->|"Import and export requests"| n26
+  n33 -->|"Reader input and answer"| n25
+  n31 -->|"Report requests"| n27
+  n45 -->|"API client requests"| n2
+  n44 -->|"Browser requests"| n2
+  n33 -->|"Document text for embeddings"| n46
+  n47 -->|"Environment settings"| n30
+  n30 -->|"Model requests"| n46
+  n48 -->|"Secrets"| n30
+  n49 -->|"Use the web app"| n44
+  n32 -->|"Web app code"| n44
+  n33 -->|"Worker model requests"| n46
+  n47 -->|"Worker settings"| n33
 ```
 
 ## Elements
@@ -267,10 +277,152 @@ No mitigations.
 
 No mitigations.
 
-#### E3 · Data flow · Account and session queries
+#### E3 · Data store · Document storage
 
-- **From:** E22 Sign\-in and sessions
-- **To:** E31 Account and session records
+- **Tags:** Local volume, S3\-compatible, Optional
+- **Stores sensitive data:** Yes
+- **Encrypted at rest:** Not assessed
+- **Internet facing:** No
+
+##### Reads of sensitive data in Document storage leave no record — High
+
+- **Category:** Repudiation
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > The only reader is the worker\, which reads a file once to process it and then deletes it\; no route returns an original\. The worker prints one line for each change of a job\'s state\, with ids only\. An S3\-compatible service\'s own access logs\, if the operator turns them on\, record who read what \(docs\/install\.md\, Storage\)
+- **Origin:** Rule-generated
+
+> Document storage stores sensitive data\. If reads are not logged\, a leak cannot be traced to an account or a time\, and anyone with access can look without being accountable\.
+
+**Mitigations**
+
+1. **Verified** — No route returns a stored original\, its key\, path or bucket \(apps\/api\/src\/v1\/sources\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\.test\.ts\)
+
+##### Copies of Document storage\, such as backups and exports\, may be less protected than the original — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux deletes the object or the file\. A bucket with versioning\, or a snapshot of the volume\, keeps older copies of it by design\: that is the operator\'s setting\, and the documentation says to keep versioning off for this prefix or to expire old versions \(docs\/install\.md\, Storage\)\. Because an original is deleted when its document is ready\, a copy exists for minutes at most before a snapshot would take it
+- **Origin:** Rule-generated
+
+> Sensitive data in Document storage does not stay in one place\: it is copied into backups\, exports\, replicas and test environments\. Each copy is often guarded less well than the store itself\, and any one of them can leak the lot\.
+
+**Mitigations**
+
+1. **Implemented** — Documentation tells the operator that deleting removes only the current object\, and to turn off versioning for the prefix or expire old versions \(docs\/install\.md\, Storage\)
+
+##### Sensitive data in Document storage can be read from disks\, snapshots or stolen media — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux adds no encryption of its own to the files\: the volume of the compose files has none\, and an S3\-compatible service\'s own encryption at rest applies\, which the documentation says to turn on \(docs\/install\.md\, Storage\)\. The window is short\: an original exists only while its document waits to be read and is deleted in the commit that makes the source ready
+- **Origin:** Rule-generated
+
+> Document storage stores sensitive data without encryption at rest\. Anyone who gets hold of the underlying disk\, a snapshot\, a backup file or a decommissioned drive can read it directly\, bypassing every access control in the application\.
+
+**Mitigations**
+
+1. **Verified** — The original is deleted in the commit that makes its source ready\, so a ready source holds none and nothing keeps a copy for later \(apps\/api\/src\/sources\/commit\.ts\; tests\: apps\/api\/test\/sources\/ingest\.test\.ts\)
+
+##### A user or service on the network could change data in Document storage without permission — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > Whoever can write the volume or the bucket can change a file that is waiting\, which is the same as adding another document\: the contents of a file are untrusted input whatever put them there\, and are read only in the document reader\, within its bounds\. Who may write is the operator\'s setting \(docs\/install\.md\, Storage\)
+- **Origin:** Rule-generated
+
+> Document storage is not exposed to the internet\, but every account and service that can reach it is a way to change what it holds\. Shared administrative credentials and wide write permissions turn any single mistake or compromise into corrupted data\.
+
+**Mitigations**
+
+1. **Verified** — A storage key is a fresh random identifier made by Scrylux\, never derived from a name or a request\, and nothing else under the prefix is read\, written or deleted \(apps\/api\/src\/storage\/types\.ts\; tests\: apps\/api\/test\/storage\/storage\.test\.ts\)
+2. **Verified** — A stored original is read only by the document reader\, which holds no secret and is stopped by a time\, a memory\, an unpacked\-size and a page bound \(apps\/api\/src\/extract\/\; tests\: apps\/api\/test\/extract\/failures\.test\.ts\)
+
+##### Too many people or services can read sensitive data in Document storage — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > Who can read the volume or the bucket is the operator\'s setting\. The compose files mount the volume into the app and the worker only\; the documentation gives each process only the access it needs\, says to dedicate a bucket or a prefix to Scrylux\, and no route returns an original \(docs\/install\.md\, Storage\)
+- **Origin:** Rule-generated
+
+> Over time\, more accounts and services are granted access to Document storage than need it\. Each extra reader widens the chance of a leak by mistake\, by compromise or by someone looking at what they should not\.
+
+**Mitigations**
+
+1. **Verified** — No route returns a stored original\, its key\, path or bucket\: a person reads the extracted chunks \(apps\/api\/src\/v1\/sources\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\.test\.ts\)
+2. **Implemented** — One IAM policy per process\: the app may put and delete under the prefix\, the worker may get and delete there and list the prefix \(docs\/install\.md\, Storage\)
+
+##### Document storage can run out of space or capacity — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> If nothing limits how much can be written to Document storage\, one runaway job\, one noisy customer or one attacker can fill it\. When it is full\, writes fail and everything that depends on it stops\.
+
+**Mitigations**
+
+1. **Verified** — An upload counts toward DOCUMENT\_SPACE from the moment it is added\, an upload is at most SOURCE\_MAX\_MB\, an account may have only INGESTION\_JOBS\_PER\_ACCOUNT documents waiting\, and the sweep removes any original that no source needs once it is an hour old \(apps\/api\/src\/sources\/store\.ts\, apps\/api\/src\/storage\/sweep\.ts\; tests\: apps\/api\/test\/sources\/store\.test\.ts\, apps\/api\/test\/storage\/sweep\.test\.ts\)
+2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
+##### Backups of Document storage can be altered\, so a restore brings back bad data — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Low)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux makes no backups of originals\, and they exist only while a document waits\. A restore that brings an old original back puts a file no source points at\, which the sweep removes once it is an hour old \(apps\/api\/src\/storage\/sweep\.ts\)\; the integrity of the operator\'s backups is the operator\'s
+- **Origin:** Rule-generated
+
+> A backup is only useful if it holds what was really there\. If someone can change or replace the copies of Document storage\, a restore after an incident reinstates the attacker\'s version\, or fails when it is needed most\.
+
+**Mitigations**
+
+1. **Verified** — The sweep removes every original older than an hour that no source still needs\, on both backends \(apps\/api\/src\/storage\/sweep\.ts\; tests\: apps\/api\/test\/storage\/sweep\.test\.ts\)
+
+##### Changes to Document storage cannot be traced to whoever made them — Low
+
+- **Category:** Repudiation
+- **Risk:** Low (likelihood Medium × impact Low)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> If Document storage keeps only its current contents\, nobody can tell afterwards who changed a record\, when\, or what it said before\. A wrong or malicious change cannot be attributed and cannot easily be undone\.
+
+**Mitigations**
+
+1. **Proposed** — A persisted\, tamper\-evident audit log of who changed what \(plan\.md\, Phase 6\)
+2. **Verified** — Adding and deleting a source each write one stdout line with the account id and the source\'s id\, never its name or text\; storage keeps no history of its own \(apps\/api\/src\/sources\/log\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\-delete\.test\.ts\)
+
+##### Data in Document storage can be deleted or corrupted\, taking the system down with it — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Low)
+- **Status:** Accepted
+- **Reason:**
+  > Only an original that is waiting is held here\, and a document whose original is lost fails as unavailable storage and can be added again\; a ready document holds no original\, so deleting the whole storage loses nothing that is ready\. Only whoever controls the volume or the bucket can do it\, and no route reaches it except to put\, read and delete one file by its key
+- **Origin:** Rule-generated
+
+> A mistaken command\, a bad release or an attacker with write access can delete or overwrite the data in Document storage\. The system is then unusable until the data is back\, if it can be\.
+
+**Mitigations**
+
+1. **Verified** — A document whose storage cannot be read is tried again after a wait\, then fails with a category and can be retried \(apps\/api\/src\/worker\/run\.ts\; tests\: apps\/api\/test\/sources\/ingest\-failures\.test\.ts\)
+
+#### E4 · Data flow · Account and session queries
+
+- **From:** E29 Sign\-in and sessions
+- **To:** E39 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -351,10 +503,10 @@ No mitigations.
 
 No mitigations.
 
-#### E4 · Data flow · Account queries
+#### E5 · Data flow · Account queries
 
-- **From:** E18 Accounts API
-- **To:** E31 Account and session records
+- **From:** E24 Accounts API
+- **To:** E39 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -435,10 +587,10 @@ No mitigations.
 
 No mitigations.
 
-#### E5 · Data flow · Account requests
+#### E6 · Data flow · Account requests
 
 - **From:** E2 Reverse proxy
-- **To:** E18 Accounts API
+- **To:** E24 Accounts API
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP, Bearer token
 - **Encrypted in transit:** No
@@ -505,10 +657,233 @@ No mitigations.
 
 No mitigations.
 
-#### E6 · Data flow · Generated threats
+#### E7 · Data flow · Chunks and embeddings
 
-- **From:** E21 Rule engine
-- **To:** E33 Threat model records
+- **From:** E33 Worker
+- **To:** E40 Document records
+- **Crosses a trust boundary:** Yes (from Application container to Database server)
+- **Tags:** PostgreSQL protocol, One transaction
+- **Encrypted in transit:** Not assessed
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### Data crossing a trust boundary into Document records may carry content that corrupts it — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Chunks and embeddings brings data from outside a trust boundary straight toward Document records\, a data store\. Content that is malformed or crafted to be misread\, such as injected query fragments\, oversized values or unexpected structure\, can corrupt what is stored\.
+
+**Mitigations**
+
+1. **Verified** — A source\'s chunks\, its embeddings and its ready state are written in one transaction\, fenced by the job\'s claim\; a vector that is not finite\, or of another size than its siblings\, is refused before anything is written \(apps\/api\/src\/worker\/embed\-all\.ts\, apps\/api\/src\/sources\/commit\.ts\; tests\: apps\/api\/test\/sources\/ingest\.test\.ts\, ingest\-failures\.test\.ts\, ingest\-refresh\.test\.ts\)
+2. **Implemented** — Every statement is parameterized or built with Kysely\; no value is concatenated into SQL \(constitution Principle I\; apps\/api\/src\/sources\/commit\.ts\, store\.ts\)
+3. **Verified** — The database enforces the integrity of document records for every writer \(packages\/db\/migrations\/017\_sources\.sql\; tests\: packages\/db\/test\/sources\-schema\.test\.ts\)
+
+##### Data from Worker to Document records can be changed in transit across a trust boundary — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Chunks and embeddings carries data from Worker to Document records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Worker to Document records readable in transit across a trust boundary — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Chunks and embeddings carries data from Worker to Document records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### A captured message from Worker to Document records can be sent again — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A database connection is its own authenticated session\; there is no standalone message to capture and send again outside it\. A chunk is written once\, in the transaction that makes its source ready\, and a second attempt for the same job writes nothing \(the claim fence\)
+- **Origin:** Rule-generated
+
+> Chunks and embeddings is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Document records will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Worker can flood Document records with messages across a trust boundary — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The worker writes one transaction for a document and runs at most WORKER\_CONCURRENCY of them at once\, and the connection pool is bounded \(apps\/api\/src\/db\.ts\)\; a flood would need an unbounded stream of documents\, which is the open spend and storage threats of the model as a whole
+- **Origin:** Rule-generated
+
+> Chunks and embeddings crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Document records can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E8 · Data flow · Document queries
+
+- **From:** E31 Threat model API
+- **To:** E40 Document records
+- **Crosses a trust boundary:** Yes (from Application container to Database server)
+- **Tags:** PostgreSQL protocol
+- **Encrypted in transit:** Not assessed
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### Data crossing a trust boundary into Document records may carry content that corrupts it — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Document queries brings data from outside a trust boundary straight toward Document records\, a data store\. Content that is malformed or crafted to be misread\, such as injected query fragments\, oversized values or unexpected structure\, can corrupt what is stored\.
+
+**Mitigations**
+
+1. **Verified** — A source\'s name\, a pasted text and a file\'s contents are validated at the boundary against a shared schema before they are written\, and the text is stored and shown as text\, never as markup \(packages\/core\/src\/schemas\/source\.ts\; tests\: packages\/core\/test\/source\.test\.ts\, apps\/web\/src\/pages\/SourcePage\.test\.tsx\)
+2. **Implemented** — Every statement is parameterized or built with Kysely\; no value is concatenated into SQL \(constitution Principle I\; apps\/api\/src\/sources\/store\.ts\)
+3. **Verified** — The database enforces the integrity of document records for every writer \(packages\/db\/migrations\/017\_sources\.sql\; tests\: packages\/db\/test\/sources\-schema\.test\.ts\)
+
+##### Data from Threat model API to Document records can be changed in transit across a trust boundary — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Document queries carries data from Threat model API to Document records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Threat model API to Document records readable in transit across a trust boundary — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Document queries carries data from Threat model API to Document records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### A captured message from Threat model API to Document records can be sent again — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A database connection is its own authenticated session\; there is no standalone message to capture and send again outside it
+- **Origin:** Rule-generated
+
+> Document queries is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Document records will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Threat model API can flood Document records with messages across a trust boundary — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The application is a client of the database with the worker\, and it opens at most the connection pool\'s size \(the pg default of 10 connections\, apps\/api\/src\/db\.ts\)\; a flood would need an unbounded stream of authenticated requests\, which is the open rate\-limiting threat of Threat model API
+- **Origin:** Rule-generated
+
+> Document queries crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Document records can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E9 · Data flow · Document storage writes
+
+- **From:** E31 Threat model API
+- **To:** E3 Document storage
+- **Crosses a trust boundary:** Yes (from Application container to Deployment network)
+- **Tags:** File write, S3 PutObject
+- **Encrypted in transit:** Yes
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### Data crossing a trust boundary into Document storage may carry content that corrupts it — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Document storage writes brings data from outside a trust boundary straight toward Document storage\, a data store\. Content that is malformed or crafted to be misread\, such as injected query fragments\, oversized values or unexpected structure\, can corrupt what is stored\.
+
+**Mitigations**
+
+1. **Verified** — A file\'s type is decided from its first bytes before it is stored\, and a file that is not what it claims is refused \(apps\/api\/src\/sources\/sniff\.ts\; tests\: apps\/api\/test\/sources\/sniff\.test\.ts\)
+2. **Verified** — Storage holds the bytes of a file and nothing is interpreted by it\: the key is a fresh random identifier\, never derived from a name\, so a name cannot choose a path or overwrite an object\, and a file is read only in the document reader \(apps\/api\/src\/storage\/types\.ts\; tests\: apps\/api\/test\/storage\/storage\.test\.ts\)
+
+##### Threat model API can flood Document storage with messages across a trust boundary — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Document storage writes crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Document storage can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+1. **Verified** — An upload is at most SOURCE\_MAX\_MB\, only a few are read at once\, a source counts toward DOCUMENT\_SPACE from the moment it is added\, and an account may have only INGESTION\_JOBS\_PER\_ACCOUNT documents waiting \(apps\/api\/src\/sources\/upload\.ts\, store\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\.test\.ts\, apps\/api\/test\/sources\/store\.test\.ts\)
+2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
+##### A captured message from Threat model API to Document storage can be sent again — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Low)
+- **Status:** Accepted
+- **Reason:**
+  > An S3 request is signed with a timestamp and sent over TLS\, so a captured one is useful for minutes and only to someone who has broken the connection\. Replaying a put writes the same bytes under the same random key\, which a deleted source no longer points at\, and the sweep removes it once it is an hour old
+- **Origin:** Rule-generated
+
+> Document storage writes is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Document storage will accept it a second time\.
+
+**Mitigations**
+
+1. **Verified** — The sweep removes every original older than an hour that no source still needs \(apps\/api\/src\/storage\/sweep\.ts\; tests\: apps\/api\/test\/storage\/sweep\.test\.ts\)
+
+#### E10 · Data flow · Generated threats
+
+- **From:** E28 Rule engine
+- **To:** E42 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, One transaction
 - **Encrypted in transit:** Not assessed
@@ -589,10 +964,10 @@ No mitigations.
 
 No mitigations.
 
-#### E7 · Data flow · Import and export queries
+#### E11 · Data flow · Import and export queries
 
-- **From:** E19 Import and export
-- **To:** E33 Threat model records
+- **From:** E26 Import and export
+- **To:** E42 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, One transaction
 - **Encrypted in transit:** Not assessed
@@ -673,10 +1048,10 @@ No mitigations.
 
 No mitigations.
 
-#### E8 · Data flow · Job claims and results
+#### E12 · Data flow · Job claims and results
 
-- **From:** E26 Worker
-- **To:** E32 Job records
+- **From:** E33 Worker
+- **To:** E41 Job records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, Row locks
 - **Encrypted in transit:** Not assessed
@@ -758,10 +1133,10 @@ No mitigations.
 
 No mitigations.
 
-#### E9 · Data flow · Job queries
+#### E13 · Data flow · Job queries
 
-- **From:** E24 Threat model API
-- **To:** E32 Job records
+- **From:** E31 Threat model API
+- **To:** E41 Job records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -843,10 +1218,10 @@ No mitigations.
 
 No mitigations.
 
-#### E10 · Data flow · Migrations and seeding
+#### E14 · Data flow · Migrations and seeding
 
-- **From:** E23 Startup and configuration
-- **To:** E31 Account and session records
+- **From:** E30 Startup and configuration
+- **To:** E39 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, SQL migrations
 - **Encrypted in transit:** Not assessed
@@ -926,10 +1301,50 @@ No mitigations.
 
 No mitigations.
 
-#### E11 · Data flow · Page requests
+#### E15 · Data flow · Original for reading
+
+- **From:** E3 Document storage
+- **To:** E33 Worker
+- **Crosses a trust boundary:** Yes (from Deployment network to Application container)
+- **Tags:** File read, S3 GetObject
+- **Encrypted in transit:** Yes
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### A captured message from Document storage to Worker can be sent again — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Low)
+- **Status:** Not applicable
+- **Reason:**
+  > A read is a request the worker makes for one key\; a replayed answer is a copy of a file the worker asked for\, and a file is read once for one job whose result is written once\, fenced by its claim \(apps\/api\/src\/jobs\/store\.ts finishRun\)
+- **Origin:** Rule-generated
+
+> Original for reading is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Worker will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Document storage can flood Worker with messages across a trust boundary — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Low)
+- **Status:** Not applicable
+- **Reason:**
+  > Storage cannot push to the worker\: the worker asks for one file at a time\, for the job it holds\, and the file is at most SOURCE\_MAX\_MB \(apps\/api\/src\/worker\/ingest\.ts\)
+- **Origin:** Rule-generated
+
+> Original for reading crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Worker can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E16 · Data flow · Page requests
 
 - **From:** E2 Reverse proxy
-- **To:** E25 Web app server
+- **To:** E32 Web app server
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP
 - **Encrypted in transit:** No
@@ -996,10 +1411,10 @@ No mitigations.
 
 No mitigations.
 
-#### E12 · Data flow · Report reads
+#### E17 · Data flow · Report reads
 
-- **From:** E20 Report builder
-- **To:** E33 Threat model records
+- **From:** E27 Report builder
+- **To:** E42 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, Read\-only snapshot
 - **Encrypted in transit:** Not assessed
@@ -1081,10 +1496,10 @@ No mitigations.
 
 No mitigations.
 
-#### E13 · Data flow · Session check
+#### E18 · Data flow · Session check
 
-- **From:** E24 Threat model API
-- **To:** E31 Account and session records
+- **From:** E31 Threat model API
+- **To:** E39 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -1166,10 +1581,10 @@ No mitigations.
 
 No mitigations.
 
-#### E14 · Data flow · Sign\-in and session requests
+#### E19 · Data flow · Sign\-in and session requests
 
 - **From:** E2 Reverse proxy
-- **To:** E22 Sign\-in and sessions
+- **To:** E29 Sign\-in and sessions
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP
 - **Encrypted in transit:** No
@@ -1234,10 +1649,10 @@ No mitigations.
 
 No mitigations.
 
-#### E15 · Data flow · Threat model queries
+#### E20 · Data flow · Threat model queries
 
-- **From:** E24 Threat model API
-- **To:** E33 Threat model records
+- **From:** E31 Threat model API
+- **To:** E42 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -1319,10 +1734,10 @@ No mitigations.
 
 No mitigations.
 
-#### E16 · Data flow · Threat model requests
+#### E21 · Data flow · Threat model requests
 
 - **From:** E2 Reverse proxy
-- **To:** E24 Threat model API
+- **To:** E31 Threat model API
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP, Bearer token
 - **Encrypted in transit:** No
@@ -1389,9 +1804,78 @@ No mitigations.
 
 No mitigations.
 
-### E17 · Trust boundary · Deployment network › Application container
+#### E22 · Data flow · Uploaded documents
 
-#### E18 · Process · Accounts API
+- **From:** E2 Reverse proxy
+- **To:** E31 Threat model API
+- **Crosses a trust boundary:** Yes (from Deployment network to Application container)
+- **Tags:** HTTP, Bearer token, Multipart upload
+- **Encrypted in transit:** No
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### A captured message from Reverse proxy to Threat model API can be sent again — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > A captured bearer token can be sent again until it expires\, as for every request\, and there is no nonce\. Capture needs the traffic in the clear\, which is the open TLS threat on Browser requests and API client requests\. A repeat of an upload adds nothing\: the same document is refused when the threat model already holds it
+- **Origin:** Rule-generated
+
+> Uploaded documents is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Threat model API will accept it a second time\.
+
+**Mitigations**
+
+1. **Verified** — The same document is not added twice to one threat model\, and a repeat is refused with a message \(apps\/api\/src\/sources\/store\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\.test\.ts\, apps\/api\/test\/sources\/store\.test\.ts\)
+
+##### Data from Reverse proxy to Threat model API can be changed in transit across a trust boundary — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)\. A document travels the same way as every other request
+- **Origin:** Rule-generated
+
+> Uploaded documents carries data from Reverse proxy to Threat model API without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Reverse proxy to Threat model API readable in transit across a trust boundary — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Between the proxy and the app the traffic is plain HTTP\: Scrylux has no TLS listener of its own\, and the AWS guide\'s load balancer forwards to the app over HTTP inside private subnets that only the load balancer\'s security group can reach \(deployment\.md\, step3\, step7\)\. A document travels the same way as every other request
+- **Origin:** Rule-generated
+
+> Uploaded documents carries data from Reverse proxy to Threat model API without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Reverse proxy can flood Threat model API with messages across a trust boundary — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Uploaded documents crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Threat model API can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+1. **Verified** — A file is at most SOURCE\_MAX\_MB and read in a bounded way\, only a few uploads are read at once\, a request is refused without a valid token before its body is read\, and an account may have only INGESTION\_JOBS\_PER\_ACCOUNT documents waiting or processing \(apps\/api\/src\/sources\/upload\.ts\, store\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\.test\.ts\, apps\/api\/test\/sources\/store\.test\.ts\)
+2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
+### E23 · Trust boundary · Deployment network › Application container
+
+#### E24 · Process · Accounts API
 
 - **Tags:** Express, bcrypt, \/api\/users
 - **Internet facing:** Yes
@@ -1597,7 +2081,177 @@ No mitigations.
 
 1. **Implemented** — Server errors answer a fixed \'Internal server error\' and the detail goes only to the server log\, an oversized or malformed body answers a fixed 413 or 400\, and X\-Powered\-By is off \(apps\/api\/src\/app\.ts\, errorHandler\)\. The tests that prove it \(apps\/api\/test\/contract\/v1\/validation\.test\.ts\, storage\-errors\.test\.ts\) cover \/api\/v1\, not this route
 
-#### E19 · Process · Import and export
+#### E25 · Process · Document reader
+
+- **Tags:** Node\.js, Child process, PDF, Word
+- **Internet facing:** No
+- **Requires authentication:** Not assessed
+- **Handles sensitive data:** Yes
+- **Runs privileged:** No
+
+##### Crafted input from inside the network can change what Document reader does — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Document reader is not reachable from the internet\, but it still takes input from other components\. A bug or compromise in any of them can send it malformed or hostile data\, and an internal caller is no more trustworthy than an outside one once it is compromised\.
+
+**Mitigations**
+
+1. **Verified** — A file\'s type comes from its first bytes\, never its name or the type a browser claims\, and an encrypted Word file or a file that is not what its name says is refused when it is uploaded \(apps\/api\/src\/sources\/sniff\.ts\; tests\: apps\/api\/test\/sources\/sniff\.test\.ts\, apps\/api\/test\/contract\/v1\/sources\.test\.ts\)
+2. **Verified** — Nothing a file points at is evaluated\, fetched or run\: no script\, macro\, font\, link or external image\, and pdf\.js is configured with none of that\; a test fails if a version of pdf\.js ever brings evaluation back \(tests\: apps\/api\/test\/extract\/failures\.test\.ts\, pdfjs\-no\-eval\.test\.ts\)
+3. **Verified** — Reading is bounded by a time\, a memory\, an unpacked\-size and a page limit\, and a file that passes one fails with the category of the bound while the worker and its other jobs go on\; a Word file is checked against the sizes its headers declare and the sizes it really unpacks to \(tests\: apps\/api\/test\/extract\/failures\.test\.ts\)
+4. **Verified** — The reader is started with an empty environment and no standard streams\, so a flaw in a parser finds no credential and a library cannot write document text anywhere \(apps\/api\/src\/extract\/run\.ts\; tests\: apps\/api\/test\/extract\/read\.test\.ts\)
+
+##### Another program can pose as Document reader to the components that call it — Medium
+
+- **Category:** Spoofing
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > Nothing calls the reader over a network\: the worker forks it for one file and speaks to it over the channel that fork creates\, which no other process can join \(apps\/api\/src\/extract\/run\.ts\)\. There is no address to impersonate
+- **Origin:** Rule-generated
+
+> Components that call Document reader need to be sure they are talking to the real one\. If an attacker can take over its name or address\, or sit on the path to it\, they can answer in its place and collect what callers send\.
+
+**Mitigations**
+
+No mitigations.
+
+##### The code\, dependencies or configuration of Document reader can be altered — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > The reader runs the same image as the app and the worker\, so what could alter its code and dependencies \(pdf\.js\, yauzl\, saxes\) is the supply chain this model already records for the app and the release pipeline\. Whoever controls the worker\'s environment controls it\, by design\: the extraction limits are the operator\'s
+- **Origin:** Rule-generated
+
+> An attacker who can change what Document reader runs gets everything the process can do\. The route can be a poisoned dependency\, a tampered build or image\, or a changed configuration or environment variable\.
+
+**Mitigations**
+
+1. **Verified** — The dependencies are pinned by a lockfile\, reviewed when they change\, and checked against a licence policy on every change \(pnpm\-lock\.yaml\; tests\: scripts\/check\-licenses\.test\.ts\)
+
+##### Access to sensitive data through Document reader leaves no trail — Medium
+
+- **Category:** Repudiation
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > The reader serves no client and keeps nothing\: it reads one file its own worker gives it and answers its worker\. When a document was read\, and by which job\, is recorded with the job
+- **Origin:** Rule-generated
+
+> Document reader handles sensitive data\. If reads\, exports and changes of that data are not recorded with who did them\, a leak or a misuse cannot be traced\, and a person who misused their access can deny it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Actions taken through Document reader cannot be reconstructed later — Medium
+
+- **Category:** Repudiation
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The reader prints nothing at all\, by design\, so that a parsing library cannot write document text into the worker\'s log\; the worker prints one line for each change of a job\'s state\, with ids and counts only\. No separate audit trail is persisted\. A persisted\, tamper\-evident audit log is scheduled for Phase 6 \(plan\.md\)
+- **Origin:** Rule-generated
+
+> Without a record of security\-relevant events\, nobody can say afterwards who signed in\, who changed what or what an attacker did\. Document reader may do the right thing and still be unable to prove it\.
+
+**Mitigations**
+
+1. **Proposed** — A persisted\, tamper\-evident audit log of who changed what \(plan\.md\, Phase 6\)
+2. **Verified** — What a parsing library prints\, to standard output or error\, reaches neither the worker\'s output nor its log\, and a fake document text\, file name and key run through every way a document can end appear in no log line\, job row or answer \(tests\: apps\/api\/test\/extract\/read\.test\.ts\, apps\/api\/test\/worker\/canary\.test\.ts\)
+
+##### Document reader may write sensitive data into logs\, metrics or traces — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Logs are copied\, indexed\, shipped and read by many people and tools\. If Document reader writes sensitive values into them\, such as passwords\, tokens\, personal data or request bodies\, the data ends up in places with much weaker protection than the system it came from\.
+
+**Mitigations**
+
+1. **Verified** — The reader\'s standard streams are ignored\, the worker\'s log lines carry ids and counts only\, and a document\'s name\, text and a chunk appear only in the source\'s own records and answers \(apps\/api\/src\/extract\/run\.ts\, apps\/api\/src\/sources\/log\.ts\; tests\: apps\/api\/test\/extract\/read\.test\.ts\, apps\/api\/test\/worker\/canary\.test\.ts\)
+
+##### Sensitive data handled by Document reader is open to anyone who can reach it — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > The reader has no listener and no interface\: it answers only the process that started it\, and holds no secret that a document could be made to reveal \(apps\/api\/src\/extract\/child\.ts\; tests\: apps\/api\/test\/extract\/read\.test\.ts\)
+- **Origin:** Rule-generated
+
+> Document reader handles sensitive data and does not require callers to authenticate\. Anyone who can connect can ask for the data\, with nothing to tie the request to a person who is allowed to see it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Document reader stops working when something it depends on fails — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Document reader relies on other components such as databases\, queues and other services\. If one of them is slow or down and the process waits for it without a limit\, requests pile up and the failure spreads\.
+
+**Mitigations**
+
+1. **Verified** — A reader that is stopped\, killed\, out of memory or out of heap fails its one document with a category\, and the worker reads the next file\, even while several fail at once \(tests\: apps\/api\/test\/extract\/failures\.test\.ts\)
+2. **Implemented** — The reader depends on nothing but its parent and the fonts and character maps that ship in the image\: it has no network\, database or storage dependency \(apps\/api\/src\/extract\/pdf\.ts\)
+
+##### Anyone inside the network can call Document reader without proving who they are — Low
+
+- **Category:** Spoofing
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > The reader has no listener\. It accepts one message from the process that started it\, answers it once and exits \(apps\/api\/src\/extract\/child\.ts\)
+- **Origin:** Rule-generated
+
+> Document reader is reachable only from inside the network\, but it does not require callers to authenticate\. A compromised machine\, a misconfigured service or a curious insider can call it as if they were any legitimate client\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Document reader may reveal its internals in error messages — Low
+
+- **Category:** Information Disclosure
+- **Risk:** Low (likelihood Low × impact Low)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Detailed errors help developers and attackers alike\. Stack traces\, query text\, file paths and version numbers in a response show an attacker how Document reader is built and where to push\.
+
+**Mitigations**
+
+1. **Verified** — The reader never sends an error message out\: a file it cannot read is answered with a category\, and the worker maps the way the reader ended \(an exit code\, a signal\, a time\) to a fixed category with a fixed message and hint \(apps\/api\/src\/extract\/child\.ts\, run\.ts\, apps\/api\/data\/failures\.yaml\; tests\: apps\/api\/test\/extract\/failures\.test\.ts\, apps\/api\/test\/jobs\/failures\.test\.ts\)
+
+##### A faulty or hostile internal client can overwhelm Document reader — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > The reader has one client\, the worker that started it\, which starts one reader for one file and waits for it\, and runs at most WORKER\_CONCURRENCY of them at once \(1 by default\, apps\/api\/src\/worker\/loop\.ts\)\. What a file can do to it is the threat of crafted input\, which is mitigated
+- **Origin:** Rule-generated
+
+> Document reader is not reachable from the internet\, but the components that call it can still misbehave\: a retry loop\, a bug or a compromised service can send more than it can handle\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E26 · Process · Import and export
 
 - **Tags:** Scrylux file, OTM, Threat Dragon
 - **Internet facing:** No
@@ -1807,7 +2461,7 @@ No mitigations.
 1. **Verified** — An import is bounded first \(64 levels\, 2\,000\,000 values\, by a walk with no recursion\)\, parsed by shared schemas\, checked across records\, and written all or nothing in one transaction \(packages\/core\/src\/exchange\/bounds\.ts\, apps\/api\/src\/exchange\/import\/\; tests\: packages\/core\/test\/exchange\/bounds\.test\.ts\, \'walks a 1\,000\,000\-deep nesting without recursing\, and quickly\'\, apps\/api\/test\/exchange\/\, apps\/api\/test\/contract\/v1\/exchange\.test\.ts\)
 2. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E20 · Process · Report builder
+#### E27 · Process · Report builder
 
 - **Tags:** Markdown, HTML, Mermaid
 - **Internet facing:** No
@@ -2000,7 +2654,7 @@ No mitigations.
 
 No mitigations.
 
-#### E21 · Process · Rule engine
+#### E28 · Process · Rule engine
 
 - **Tags:** YAML rules, STRIDE
 - **Internet facing:** No
@@ -2180,7 +2834,7 @@ No mitigations.
 2. **Proposed** — Move generation to the worker \(plan\.md\, Phase 3\) or limit it \(Phase 6\)
 3. **Verified** — One run is bounded by the element limit times the library\'s per\-element maximum \(about 15\,000 threats and 49\,000 mitigations\)\, written in chunked statements in one transaction under the model\'s lock\; measured under 5 s for 50 elements and under 30 s for the largest model \(apps\/api\/src\/rule\-engine\/run\.ts\; tests\: apps\/api\/test\/contract\/v1\/generate\-performance\.test\.ts\, generate\-concurrency\.test\.ts\)
 
-#### E22 · Process · Sign\-in and sessions
+#### E29 · Process · Sign\-in and sessions
 
 - **Tags:** Express, bcrypt, JWT, \/api\/login, \/api\/session
 - **Internet facing:** Yes
@@ -2400,7 +3054,7 @@ No mitigations.
 
 1. **Implemented** — Server errors answer a fixed \'Internal server error\' and the detail goes only to the server log\, an oversized or malformed body answers a fixed 413 or 400\, and X\-Powered\-By is off \(apps\/api\/src\/app\.ts\, errorHandler\)\. The tests that prove it \(apps\/api\/test\/contract\/v1\/validation\.test\.ts\, storage\-errors\.test\.ts\) cover \/api\/v1\, not this route
 
-#### E23 · Process · Startup and configuration
+#### E30 · Process · Startup and configuration
 
 - **Tags:** Node\.js, SQL migrations
 - **Internet facing:** No
@@ -2600,9 +3254,9 @@ No mitigations.
 
 No mitigations.
 
-#### E24 · Process · Threat model API
+#### E31 · Process · Threat model API
 
-- **Tags:** Express, Kysely, zod, \/api\/v1, Job routes
+- **Tags:** Express, Kysely, zod, \/api\/v1, Job routes, Source routes
 - **Internet facing:** Yes
 - **Requires authentication:** Yes
 - **Handles sensitive data:** Yes
@@ -2851,7 +3505,7 @@ No mitigations.
 
 No mitigations.
 
-#### E25 · Process · Web app server
+#### E32 · Process · Web app server
 
 - **Tags:** Express, Content\-Security\-Policy
 - **Internet facing:** Yes
@@ -2988,9 +3642,9 @@ No mitigations.
 
 No mitigations.
 
-#### E26 · Process · Worker
+#### E33 · Process · Worker
 
-- **Tags:** Node\.js, Jobs, Provider check
+- **Tags:** Node\.js, Jobs, Provider check, Document ingestion
 - **Internet facing:** No
 - **Requires authentication:** Not assessed
 - **Handles sensitive data:** Yes
@@ -3159,10 +3813,10 @@ No mitigations.
 
 No mitigations.
 
-#### E27 · Data flow · Generation requests
+#### E34 · Data flow · Generation requests
 
-- **From:** E24 Threat model API
-- **To:** E21 Rule engine
+- **From:** E31 Threat model API
+- **To:** E28 Rule engine
 - **Crosses a trust boundary:** No
 - **Tags:** In process
 - **Encrypted in transit:** Not assessed
@@ -3229,10 +3883,10 @@ No mitigations.
 
 No mitigations.
 
-#### E28 · Data flow · Import and export requests
+#### E35 · Data flow · Import and export requests
 
-- **From:** E24 Threat model API
-- **To:** E19 Import and export
+- **From:** E31 Threat model API
+- **To:** E26 Import and export
 - **Crosses a trust boundary:** No
 - **Tags:** In process
 - **Encrypted in transit:** Not assessed
@@ -3299,10 +3953,80 @@ No mitigations.
 
 No mitigations.
 
-#### E29 · Data flow · Report requests
+#### E36 · Data flow · Reader input and answer
 
-- **From:** E24 Threat model API
-- **To:** E20 Report builder
+- **From:** E33 Worker
+- **To:** E25 Document reader
+- **Crosses a trust boundary:** No
+- **Tags:** Node IPC, No environment
+- **Encrypted in transit:** Not assessed
+- **Authenticated:** Not assessed
+- **Carries sensitive data:** Yes
+
+##### Data from Worker to Document reader can be changed in transit inside one trust zone — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > The channel is a pipe between a process and the child it started on one machine\; it crosses no network
+- **Origin:** Rule-generated
+
+> Reader input and answer carries data from Worker to Document reader without encryption\. Both ends sit in the same trust zone\, but a compromised machine or device on that network can still alter the data on its way\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Another internal component can send Document reader forged data that claims to come from Worker — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > The channel is the one a parent creates with the child it forks\; no other process can write into it\, and the reader accepts one message only \(apps\/api\/src\/extract\/run\.ts\)
+- **Origin:** Rule-generated
+
+> Reader input and answer does not authenticate the sender\, but both ends are in one trust zone\. Any other component in the zone\, including one that has been compromised\, can send Document reader data that looks like it came from Worker\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Worker to Document reader can be read by anyone on the same network — Low
+
+- **Category:** Information Disclosure
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > The channel is a pipe between a process and the child it started on one machine\; it crosses no network
+- **Origin:** Rule-generated
+
+> Reader input and answer carries data from Worker to Document reader without encryption\. Both ends are in the same trust zone\, but anyone or anything that can see that network\'s traffic\, such as a compromised machine or a misplaced tap\, can read what passes\.
+
+**Mitigations**
+
+No mitigations.
+
+##### A fault in Worker can flood Document reader with messages — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Low)
+- **Status:** Not applicable
+- **Reason:**
+  > The worker sends the reader one message\, with one file\, and the reader answers once and exits \(apps\/api\/src\/extract\/run\.ts\, child\.ts\)
+- **Origin:** Rule-generated
+
+> Reader input and answer stays inside one trust zone\, but a bug\, a retry storm or a compromised sender can still send more than Document reader can handle\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E37 · Data flow · Report requests
+
+- **From:** E31 Threat model API
+- **To:** E27 Report builder
 - **Crosses a trust boundary:** No
 - **Tags:** In process
 - **Encrypted in transit:** Not assessed
@@ -3369,9 +4093,9 @@ No mitigations.
 
 No mitigations.
 
-### E30 · Trust boundary · Deployment network › Database server
+### E38 · Trust boundary · Deployment network › Database server
 
-#### E31 · Data store · Account and session records
+#### E39 · Data store · Account and session records
 
 - **Tags:** PostgreSQL
 - **Stores sensitive data:** Yes
@@ -3508,7 +4232,145 @@ No mitigations.
 
 No mitigations.
 
-#### E32 · Data store · Job records
+#### E40 · Data store · Document records
+
+- **Tags:** PostgreSQL, pgvector
+- **Stores sensitive data:** Yes
+- **Encrypted at rest:** Not assessed
+- **Internet facing:** No
+
+##### A user or service on the network could change data in Document records without permission — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > The database is reached by the application and the worker only in the reference deployment\: the AWS guide puts RDS in private subnets reachable from the app\'s security group alone \(deployment\.md\, step3\, step5\)\. The compose defaults are for local use\: they publish the database port on the host and use the documented default password \(docker\-compose\.yml\)\. What a writer can write is bounded by the database\'s own rules
+- **Origin:** Rule-generated
+
+> Document records is not exposed to the internet\, but every account and service that can reach it is a way to change what it holds\. Shared administrative credentials and wide write permissions turn any single mistake or compromise into corrupted data\.
+
+**Mitigations**
+
+1. **Verified** — The database enforces the integrity of document records for every writer\: a source is ready exactly when the facts of its ingestion are there\, it holds its original only while it is not ready\, its chunks are numbered from zero without a gap\, none holds more than 2\,000 characters or text that differs from its offsets\, and a job points at its source and threat model \(packages\/db\/migrations\/017\_sources\.sql\; tests\: packages\/db\/test\/sources\-schema\.test\.ts\)
+
+##### Reads of sensitive data in Document records leave no record — High
+
+- **Category:** Repudiation
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Document records stores sensitive data\. If reads are not logged\, a leak cannot be traced to an account or a time\, and anyone with access can look without being accountable\.
+
+**Mitigations**
+
+1. **Proposed** — A persisted\, tamper\-evident audit log of who changed what \(plan\.md\, Phase 6\)
+2. **Implemented** — Reads are not logged at all\: no line is written when a source or its chunks are read\, and the same holds for every other read \(apps\/api\/src\/v1\/sources\.ts\; tests\: apps\/api\/test\/contract\/v1\/write\-log\.test\.ts\)
+
+##### Copies of Document records\, such as backups and exports\, may be less protected than the original — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux makes no backups\: a copy is the operator\'s database backup or snapshot\, which holds the text and the embeddings of every document and has the protection the operator gives it \(the AWS guide\'s RDS storage is encrypted by default\, step5\-rds\-guide\.md\)\. The copies Scrylux does make\, a report and an export\, carry no document\, its text or its chunks \(docs\/formats\; tests\: apps\/api\/test\/exchange\/\, apps\/api\/test\/report\/\)
+- **Origin:** Rule-generated
+
+> Sensitive data in Document records does not stay in one place\: it is copied into backups\, exports\, replicas and test environments\. Each copy is often guarded less well than the store itself\, and any one of them can leak the lot\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Sensitive data in Document records can be read from disks\, snapshots or stolen media — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux does not encrypt at rest\: that is the storage\'s job\. The AWS guide\'s RDS has encryption on by default \(step5\-rds\-guide\.md\)\; the compose volume has none\, and the compose defaults are for local use\. The text of a document is stored as it was read\, so whoever can read the database can read it
+- **Origin:** Rule-generated
+
+> Document records stores sensitive data without encryption at rest\. Anyone who gets hold of the underlying disk\, a snapshot\, a backup file or a decommissioned drive can read it directly\, bypassing every access control in the application\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Backups of Document records can be altered\, so a restore brings back bad data — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux makes no backups\; the integrity of the operator\'s backups is the operator\'s\, and a restore goes through the same database rules as any write
+- **Origin:** Rule-generated
+
+> A backup is only useful if it holds what was really there\. If someone can change or replace the copies of Document records\, a restore after an incident reinstates the attacker\'s version\, or fails when it is needed most\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Changes to Document records cannot be traced to whoever made them — Medium
+
+- **Category:** Repudiation
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> If Document records keeps only its current contents\, nobody can tell afterwards who changed a record\, when\, or what it said before\. A wrong or malicious change cannot be attributed and cannot easily be undone\.
+
+**Mitigations**
+
+1. **Proposed** — A persisted\, tamper\-evident audit log of who changed what \(plan\.md\, Phase 6\)
+2. **Verified** — Adding\, retrying\, refreshing and deleting a source each write one stdout line with the account id\, the action\, the source and threat model ids\, the source\'s type and size\, never its name or any of its text \(apps\/api\/src\/sources\/log\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\-retry\.test\.ts\, sources\-refresh\.test\.ts\, sources\-delete\.test\.ts\)
+
+##### Too many people or services can read sensitive data in Document records — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Over time\, more accounts and services are granted access to Document records than need it\. Each extra reader widens the chance of a leak by mistake\, by compromise or by someone looking at what they should not\.
+
+**Mitigations**
+
+1. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\) and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+2. **Implemented** — The database is reached only by the application and the worker in the reference deployment\; the AWS guide lets only their security group reach it \(deployment\.md\, step3\)\. Any signed\-in account can read every source\, as it can every threat model\, until Phase 6 \(the milestone\'s FR\-065\)
+
+##### Data in Document records can be deleted or corrupted\, taking the system down with it — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> A mistaken command\, a bad release or an attacker with write access can delete or overwrite the data in Document records\. The system is then unusable until the data is back\, if it can be\.
+
+**Mitigations**
+
+1. **Verified** — Deleting a source removes its chunks and its original\, deleting a threat model or a project removes the sources under it\, and a person is asked before the web app does either \(apps\/api\/src\/sources\/store\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\-delete\.test\.ts\, apps\/web\/src\/pages\/SourcesTab\.test\.tsx\)
+2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
+##### Document records can run out of space or capacity — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> If nothing limits how much can be written to Document records\, one runaway job\, one noisy customer or one attacker can fill it\. When it is full\, writes fail and everything that depends on it stops\.
+
+**Mitigations**
+
+1. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+2. **Implemented** — The documentation tells the operator how much text a space holds at each embedding size\, and to watch the database\'s storage \(docs\/install\.md\, Documents and storage\)
+3. **Verified** — What every document takes is bounded by DOCUMENT\_SPACE \(2 GB by default\)\, which counts the text and the embeddings\: the app refuses an upload that would pass it\, the worker checks again before making a source ready\, and deleting frees the space at once\. A document\, a threat model and an account are bounded too \(SOURCE\_MAX\_MB\, SOURCES\_PER\_THREAT\_MODEL\, INGESTION\_JOBS\_PER\_ACCOUNT\) \(apps\/api\/src\/sources\/store\.ts\, commit\.ts\; tests\: apps\/api\/test\/sources\/store\.test\.ts\, ingest\.test\.ts\, ingest\-failures\.test\.ts\)
+
+#### E41 · Data store · Job records
 
 - **Tags:** PostgreSQL
 - **Stores sensitive data:** No
@@ -3589,7 +4451,7 @@ No mitigations.
 
 No mitigations.
 
-#### E33 · Data store · Threat model records
+#### E42 · Data store · Threat model records
 
 - **Tags:** PostgreSQL
 - **Stores sensitive data:** Yes
@@ -3727,9 +4589,9 @@ No mitigations.
 
 No mitigations.
 
-### E34 · Trust boundary · User device
+### E43 · Trust boundary · User device
 
-#### E35 · Process · Web app
+#### E44 · Process · Web app
 
 - **Tags:** React, Vite, TanStack Query
 - **Internet facing:** No
@@ -3915,7 +4777,7 @@ No mitigations.
 
 ### Outside any trust boundary
 
-#### E36 · External entity · API client
+#### E45 · External entity · API client
 
 - **Tags:** Script or integration
 - **Authenticated:** Yes
@@ -3965,7 +4827,7 @@ No mitigations.
 
 1. **Verified** — Every successful \/api\/v1 create\, update and delete writes one stdout line with the account id\, action\, record type and id\, never a value \(apps\/api\/src\/v1\/write\-log\.ts\; tests\: apps\/api\/test\/contract\/v1\/write\-log\.test\.ts\)
 
-#### E37 · External entity · LLM provider \(hosted\)
+#### E46 · External entity · LLM provider \(hosted\)
 
 - **Tags:** HTTPS, Anthropic, OpenAI\-compatible, Amazon Bedrock, Google Gemini, Optional
 - **Authenticated:** Yes
@@ -4001,7 +4863,7 @@ No mitigations.
 
 No mitigations.
 
-#### E38 · External entity · Operator
+#### E47 · External entity · Operator
 
 - **Authenticated:** Not assessed
 - **Internet facing:** No
@@ -4052,7 +4914,7 @@ No mitigations.
 
 No mitigations.
 
-#### E39 · External entity · Secrets manager
+#### E48 · External entity · Secrets manager
 
 - **Tags:** AWS Secrets Manager, Optional
 - **Authenticated:** Yes
@@ -4088,7 +4950,7 @@ No mitigations.
 
 No mitigations.
 
-#### E40 · External entity · Signed\-in user
+#### E49 · External entity · Signed\-in user
 
 - **Authenticated:** Yes
 - **Internet facing:** Yes
@@ -4136,9 +4998,9 @@ No mitigations.
 
 1. **Verified** — Every successful \/api\/v1 create\, update and delete writes one stdout line with the account id\, action\, record type and id\, never a value \(apps\/api\/src\/v1\/write\-log\.ts\; tests\: apps\/api\/test\/contract\/v1\/write\-log\.test\.ts\)
 
-#### E41 · Data flow · API client requests
+#### E50 · Data flow · API client requests
 
-- **From:** E36 API client
+- **From:** E45 API client
 - **To:** E2 Reverse proxy
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Deployment network)
 - **Tags:** HTTP, Bearer token
@@ -4204,9 +5066,9 @@ No mitigations.
 2. **Proposed** — General rate limiting for every route \(plan\.md\, Phase 6\)
 3. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E42 · Data flow · Browser requests
+#### E51 · Data flow · Browser requests
 
-- **From:** E35 Web app
+- **From:** E44 Web app
 - **To:** E2 Reverse proxy
 - **Crosses a trust boundary:** Yes (from User device to Deployment network)
 - **Tags:** HTTP
@@ -4271,10 +5133,78 @@ No mitigations.
 2. **Proposed** — General rate limiting for every route \(plan\.md\, Phase 6\)
 3. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E43 · Data flow · Environment settings
+#### E52 · Data flow · Document text for embeddings
 
-- **From:** E38 Operator
-- **To:** E23 Startup and configuration
+- **From:** E33 Worker
+- **To:** E46 LLM provider \(hosted\)
+- **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
+- **Tags:** HTTPS, Embeddings
+- **Encrypted in transit:** Yes
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### Sensitive data goes from Worker to an outside party\, LLM provider \(hosted\) — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Document text for embeddings carries sensitive data to LLM provider \(hosted\)\, which is outside the system\. Once the data has left\, you cannot control what the recipient does with it\, who else can see it there\, or how long it is kept\.
+
+**Mitigations**
+
+1. **Verified** — A hosted provider must be reached over https\, and a fully local provider remains a supported path\; only the worker sends the text\, to the provider the operator configured and to nothing else\, and the API holds no provider key \(tests\: apps\/api\/test\/worker\/imports\.test\.ts\, packages\/llm\/test\/\)
+2. **Verified** — Before a document can be added the Sources tab says where its text goes\: it names the embedding provider and says the text leaves the install when that provider is hosted\, in the form and again above the list\, on every visit\, and says it stays in the install when every configured provider is local \(apps\/web\/src\/components\/SourcesNotice\.tsx\; tests\: apps\/web\/src\/components\/SourcesNotice\.test\.tsx\, apps\/web\/e2e\/sources\.spec\.ts\)
+
+##### Worker can flood LLM provider \(hosted\) with messages across a trust boundary — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Document text for embeddings crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than LLM provider \(hosted\) can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+1. **Verified** — Every embedding request is gated by the job\'s token cap and cost cap against the most it could use\, counting every earlier run\, so one document cannot exhaust the provider budget\; an account may have only INGESTION\_JOBS\_PER\_ACCOUNT documents waiting or processing \(apps\/api\/src\/worker\/embed\-all\.ts\, budget\.ts\; tests\: apps\/api\/test\/sources\/ingest\-failures\.test\.ts\, apps\/api\/test\/worker\/budget\.test\.ts\, apps\/api\/test\/sources\/store\.test\.ts\)
+2. **Verified** — Every request is tried at most three times\, its output is bounded\, and it reports its tokens and cost \(packages\/llm\/src\/attempts\.ts\, usage\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, usage\.test\.ts\)
+3. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
+##### Worker stops working when the outside party LLM provider \(hosted\) is slow or down — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Document text for embeddings sends work to LLM provider \(hosted\)\, which is outside the system\. You do not run it and cannot make it available\, so when it is slow or down Worker can be left waiting\, and the failure spreads to whoever depends on Worker\.
+
+**Mitigations**
+
+1. **Verified** — A failing provider is retried at most twice\, with backoff and a bounded wait for retry\-after\, then the request fails with a category \(packages\/llm\/src\/attempts\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\)
+2. **Verified** — A run that fails because the provider is down is tried again after a wait\, up to JOB\_MAX\_RUNS\, then the document fails with a reason\, keeps its original\, and can be retried\; nothing else in Scrylux waits on a document \(apps\/api\/src\/worker\/run\.ts\; tests\: apps\/api\/test\/sources\/ingest\-failures\.test\.ts\, apps\/api\/test\/worker\/recovery\.test\.ts\)
+
+##### A captured message from Worker to LLM provider \(hosted\) can be sent again — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A hosted provider must be reached over https\, so a request cannot be captured in transit\, and Bedrock requests are signed with a timestamp by the AWS SDK\; an embedding request changes nothing at the provider\, so a repeat would only produce another embedding and its cost\, which the job counts against its caps
+- **Origin:** Rule-generated
+
+> Document text for embeddings is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and LLM provider \(hosted\) will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E53 · Data flow · Environment settings
+
+- **From:** E47 Operator
+- **To:** E30 Startup and configuration
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** Environment variables
 - **Encrypted in transit:** Not assessed
@@ -4341,10 +5271,10 @@ No mitigations.
 
 No mitigations.
 
-#### E44 · Data flow · Model requests
+#### E54 · Data flow · Model requests
 
-- **From:** E23 Startup and configuration
-- **To:** E37 LLM provider \(hosted\)
+- **From:** E30 Startup and configuration
+- **To:** E46 LLM provider \(hosted\)
 - **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
 - **Tags:** HTTPS, Operator check
 - **Encrypted in transit:** Yes
@@ -4412,10 +5342,10 @@ No mitigations.
 1. **Verified** — Every request is tried at most three times\, with at most two retries for a failing provider\, and its output size is bounded \(packages\/llm\/src\/attempts\.ts\, client\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, client\.test\.ts\)\.
 2. **Verified** — Every request reports its tokens and cost in one log line \(packages\/llm\/src\/log\.ts\, usage\.ts\; tests\: packages\/llm\/test\/usage\.test\.ts\)\.
 
-#### E45 · Data flow · Secrets
+#### E55 · Data flow · Secrets
 
-- **From:** E39 Secrets manager
-- **To:** E23 Startup and configuration
+- **From:** E48 Secrets manager
+- **To:** E30 Startup and configuration
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** HTTPS, AWS SDK
 - **Encrypted in transit:** Yes
@@ -4452,10 +5382,10 @@ No mitigations.
 
 No mitigations.
 
-#### E46 · Data flow · Use the web app
+#### E56 · Data flow · Use the web app
 
-- **From:** E40 Signed\-in user
-- **To:** E35 Web app
+- **From:** E49 Signed\-in user
+- **To:** E44 Web app
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to User device)
 - **Encrypted in transit:** Not assessed
 - **Authenticated:** Yes
@@ -4521,10 +5451,10 @@ No mitigations.
 
 No mitigations.
 
-#### E47 · Data flow · Web app code
+#### E57 · Data flow · Web app code
 
-- **From:** E25 Web app server
-- **To:** E35 Web app
+- **From:** E32 Web app server
+- **To:** E44 Web app
 - **Crosses a trust boundary:** Yes (from Application container to User device)
 - **Encrypted in transit:** Not assessed
 - **Authenticated:** No
@@ -4587,10 +5517,10 @@ No mitigations.
 
 No mitigations.
 
-#### E48 · Data flow · Worker model requests
+#### E58 · Data flow · Worker model requests
 
-- **From:** E26 Worker
-- **To:** E37 LLM provider \(hosted\)
+- **From:** E33 Worker
+- **To:** E46 LLM provider \(hosted\)
 - **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
 - **Tags:** HTTPS
 - **Encrypted in transit:** Yes
@@ -4603,14 +5533,14 @@ No mitigations.
 - **Risk:** High (likelihood Medium × impact High)
 - **Status:** Accepted
 - **Reason:**
-  > Accepted for Phase 3 Milestone 2\: the worker sends only the provider check\'s fixed text\, which a person who starts the check cannot change\, with the provider\'s own key\, to the provider that issued it\, and no user content is sent \(apps\/api\/src\/provider\-check\.ts\; tests\: apps\/api\/test\/worker\/run\.test\.ts\)\. The Jobs page and every check\'s result say whether each provider is hosted or local\. Until Phase 3 Milestone 3\, the first milestone that sends user content\; it must show that data leaves the install before a hosted provider is used \(Principle VI\)\.
+  > Accepted\: this flow carries only the provider check\'s fixed text\, which a person who starts the check cannot change\, with the provider\'s own key\, to the provider that issued it\, and no user content \(apps\/api\/src\/provider\-check\.ts\; tests\: apps\/api\/test\/worker\/run\.test\.ts\)\. A document\'s text goes by its own flow\, Document text for embeddings\, where the notice that data leaves the install is shown before a document can be added \(Principle VI\)\. The Jobs page and every check\'s result say whether each provider is hosted or local
 - **Origin:** Rule-generated
 
 > Worker model requests carries sensitive data to LLM provider \(hosted\)\, which is outside the system\. Once the data has left\, you cannot control what the recipient does with it\, who else can see it there\, or how long it is kept\.
 
 **Mitigations**
 
-1. **Proposed** — Before document text is sent to a hosted provider\, the UI says that data leaves the install \(Principle VI\; plan\.md\, Phase 3 Milestone 3\)\.
+No mitigations.
 
 ##### Worker can flood LLM provider \(hosted\) with messages across a trust boundary — Medium
 
@@ -4658,10 +5588,10 @@ No mitigations.
 
 No mitigations.
 
-#### E49 · Data flow · Worker settings
+#### E59 · Data flow · Worker settings
 
-- **From:** E38 Operator
-- **To:** E26 Worker
+- **From:** E47 Operator
+- **To:** E33 Worker
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** Environment variables
 - **Encrypted in transit:** Not assessed
@@ -4745,6 +5675,36 @@ No mitigations.
 
 No mitigations.
 
+##### A crafted PDF or Word file attacks the document reader — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> A person can add a file made to exhaust the worker \(a page bomb\, a Word file that unpacks to gigabytes\, a parser that never ends\) or to exploit the parser that reads it\, and the file is read in full by the worker\, not only by the API\.
+
+**Mitigations**
+
+1. **Implemented** — Container memory limits remain the last line\, as the documentation says \(docs\/install\.md\, Documents and storage\)
+2. **Verified** — The API never loads a parser\: its import graph holds no document\-reading module \(tests\: apps\/api\/test\/worker\/imports\.test\.ts\)
+3. **Verified** — The file is read in a child process started with an empty environment\, under a time\, a memory\, an unpacked\-size and a page bound\; a file that passes a bound\, or crashes the reader\, fails its one document and the worker goes on\; nothing a file points at is evaluated\, fetched or run \(apps\/api\/src\/extract\/\; tests\: apps\/api\/test\/extract\/failures\.test\.ts\, pdfjs\-no\-eval\.test\.ts\, read\.test\.ts\)
+
+##### A document steers a model with text written for it \(stored prompt injection\) — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Nothing in this milestone sends a source to generation\: its text goes only to the embedding provider\, which follows no instruction in it\, and it is stored and shown as text\. Delimiting it in prompts\, never executing it\, and never letting it trigger an action are Phase 3 Milestone 4\'s\, under Principle VI \(plan\.md\)\; this threat is accepted until that milestone verifies them
+- **Origin:** Manual
+
+> A document may hold text written to make a model ignore its instructions or reveal something\. It is stored\, and later milestones will put chunks of it in prompts\.
+
+**Mitigations**
+
+1. **Verified** — A document\'s text\, name and chunks are rendered as text\, never as markup\, in the web app \(tests\: apps\/web\/src\/pages\/SourcePage\.test\.tsx\, apps\/web\/src\/pages\/SourcesTab\.test\.tsx\)
+
 ##### A hostile or misconfigured model endpoint answers with crafted output — High
 
 - **Category:** Tampering
@@ -4759,6 +5719,21 @@ No mitigations.
 1. **Verified** — A hosted provider must be reached over https\; http is allowed only for a provider the operator declares local \(packages\/llm\/src\/config\.ts\; tests\: packages\/llm\/test\/config\.test\.ts\)\.
 2. **Verified** — Every answer is checked against its schema before anything uses it\, and a field the schema does not name makes it invalid \(packages\/llm\/src\/schema\.ts\, attempts\.ts\; tests\: packages\/llm\/test\/schema\.test\.ts\, attempts\.test\.ts\)\.
 3. **Verified** — The model is offered no tool\, and nothing in an answer is executed \(tests\: packages\/llm\/test\/adapters\/placement\.test\.ts\)\.
+
+##### A document\'s content outlives its deletion or its need — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> A confidential design document is stored as an original while it waits to be read and\, afterwards\, as text and embeddings\. A copy that stays after a person deletes the document\, its threat model or its project\, or after the document is ready\, would disclose what was meant to be gone\.
+
+**Mitigations**
+
+1. **Verified** — A document deleted while it is being processed ends its job cancelled and writes no chunk \(tests\: apps\/api\/test\/sources\/ingest\-delete\.test\.ts\)
+2. **Verified** — The original is deleted in the commit that makes its source ready\, and when the source\, its threat model or its project is deleted\, in the same request\; a storage that cannot remove it then does not fail the deletion \(apps\/api\/src\/sources\/store\.ts\, commit\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\-delete\.test\.ts\, apps\/api\/test\/sources\/ingest\.test\.ts\)
+3. **Verified** — The worker sweeps storage when it starts and every ten minutes and removes every original older than an hour that no source needs\, so an original is gone within an hour and ten minutes of its deletion while a worker runs \(apps\/api\/src\/storage\/sweep\.ts\; tests\: apps\/api\/test\/storage\/sweep\.test\.ts\, apps\/api\/test\/worker\/sweep\.test\.ts\)
 
 ##### An install is left running on the documented default credentials — High
 
@@ -4860,6 +5835,20 @@ No mitigations.
 1. **Proposed** — Sign every release image\, attach a build attestation and an SBOM \(plan\.md\, Phase 6\, Verifiable release images\)\.
 2. **Verified** — The image labels carry the source repository and the commit it was built from\, which the smoke run checks on both platforms before publishing and again after \(scripts\/release\/smoke\.test\.ts\, step 7\)\.
 
+##### A bucket shared with other applications exposes other objects to Scrylux\, or Scrylux\'s objects to others — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> Scrylux deletes what it finds under its prefix\, and a bucket used for something else could lose objects to the sweep\, or let others read the originals\.
+
+**Mitigations**
+
+1. **Verified** — A storage key has one exact shape that only Scrylux makes\, a random identifier under its own prefix\; the sweep and every deletion touch nothing else\, and an object of another shape is never listed \(apps\/api\/src\/storage\/types\.ts\, sweep\.ts\; tests\: apps\/api\/test\/storage\/storage\.test\.ts\, sweep\.test\.ts\)
+2. **Implemented** — The documentation says to give Scrylux a bucket or a prefix of its own\, and gives one IAM policy per process\, limited to its prefix \(docs\/install\.md\, Storage\)
+
 ##### A pipeline job leaks a repository secret\, for instance to a fork — Medium
 
 - **Category:** Information Disclosure
@@ -4917,20 +5906,36 @@ No mitigations.
 1. **Verified** — A job holds a lease its worker renews\; a job whose lease runs out comes back to the queue\, or fails as worker\_lost on its last run\, and a stopping worker hands its jobs back without using up a run \(apps\/api\/src\/jobs\/store\.ts\; tests\: apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/worker\/recovery\.test\.ts\)
 2. **Verified** — A job runs at most JOB\_MAX\_RUNS times and lives at most JOB\_TIME\_LIMIT\, runs and waits together\; its request in progress is abandoned at the deadline \(tests\: apps\/api\/test\/worker\/recovery\.test\.ts\)
 
-##### Many accounts can start provider checks one after another and spend on the provider — Medium
+##### Many accounts can start provider checks and add documents one after another and spend on the provider — Medium
 
 - **Category:** Denial of Service
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Open
 - **Origin:** Manual
 
-> Every job is capped and every account is limited\, but any signed\-in account can create more accounts\, each with its own cooldown\, and the caps bound one job and not spend over time\. A request that a crashed worker was making may also be uncounted\, though the provider may bill it\.
+> Every job is capped and every account is limited\, but any signed\-in account can create more accounts\, each with its own cooldown and its own limit on documents\, and the caps bound one job and not spend over time\. Embedding a document costs at the provider like any request\. A request that a crashed worker was making may also be uncounted\, though the provider may bill it\.
 
 **Mitigations**
 
-1. **Verified** — Every job has a token cap and a cost cap\, checked before each request against the most it could use and counting every earlier run\; an account has a limit on its active jobs and a cooldown between its provider checks \(tests\: apps\/api\/test\/worker\/budget\.test\.ts\, apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/contract\/v1\/jobs\-cooldown\.test\.ts\)
-2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
-3. **Implemented** — The documentation tells the operator to set a spending limit on the provider account\, which is the only limit on the install as a whole \(docs\/ai\-providers\.md\, Limits\; docs\/install\.md\, Running the worker\)
+1. **Verified** — An account may have only INGESTION\_JOBS\_PER\_ACCOUNT documents waiting or processing at once\, a threat model holds at most SOURCES\_PER\_THREAT\_MODEL\, and a document is at most SOURCE\_MAX\_CHARS of text\, so one document cannot embed an unbounded amount \(tests\: apps\/api\/test\/sources\/store\.test\.ts\, apps\/api\/test\/sources\/ingest\-failures\.test\.ts\)
+2. **Verified** — Every job has a token cap and a cost cap\, checked before each request against the most it could use and counting every earlier run\; an account has a limit on its active jobs and a cooldown between its provider checks \(tests\: apps\/api\/test\/worker\/budget\.test\.ts\, apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/contract\/v1\/jobs\-cooldown\.test\.ts\)
+3. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+4. **Implemented** — The documentation tells the operator to set a spending limit on the provider account\, which is the only limit on the install as a whole \(docs\/ai\-providers\.md\, Limits\; docs\/install\.md\, Running the worker\)
+
+##### One account fills the document space for everybody — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Manual
+
+> All documents share one space \(DOCUMENT\_SPACE\)\. An account that adds documents up to the space leaves none for the others\, and any signed\-in account can create more accounts\, each with its own limit on documents waiting or processing\.
+
+**Mitigations**
+
+1. **Verified** — A document\, a threat model and an account are bounded\, the space is checked again before a source is made ready\, deleting frees it at once\, and the add form shows how full the space is \(apps\/api\/src\/sources\/store\.ts\; tests\: apps\/api\/test\/sources\/store\.test\.ts\, apps\/api\/test\/contract\/v1\/sources\.test\.ts\)
+2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, per\-account quotas and general rate limiting \(plan\.md\, Phase 6\)
+3. **Implemented** — The documentation tells the operator to choose a space they can afford and to watch the database storage \(docs\/install\.md\, The document space\)
 
 ##### A tag push runs the release workflow as defined at the tagged commit — Medium
 
@@ -4959,6 +5964,21 @@ No mitigations.
 **Mitigations**
 
 1. **Implemented** — The default GITHUB\_TOKEN permission is read\-only \(contents\: read\)\. The only jobs that hold a write permission are CodeQL\'s \(security\-events\: write\) and the release workflow\'s two publishing jobs \(see the release pipeline threats\)\, and scripts\/workflows\.test\.ts fails the build if any other does\. The ruleset on main has no bypass actors\, so no one\, repository admins included\, can merge or push around a failing or missing required check\; the ruleset is a repository setting\, held by review \(\.github\/workflows\/\, \.github\/rulesets\/main\.json\, scripts\/workflows\.test\.ts\, docs\/ci\.md\)\.
+
+##### Any signed\-in account can read\, retry\, refresh and delete every document — Medium
+
+- **Category:** Elevation of Privilege
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > There are no roles before Phase 6 \(the open risk of the model as a whole\)\, and any signed\-in account can already read\, change and delete every threat model\, so a document is no more private than the model it belongs to\. What an account can do is bounded by the limits on documents\, and a source\'s record says who added it and when\. The widening was called out in the milestone\'s spec \(FR\-065\, FR\-080\) and is a justified widening in the constitution\'s Threat Model section
+- **Origin:** Manual
+
+> There are no roles\, so a document is not private to the account that added it\, and documents are confidential by nature\. Any signed\-in account can add one to any threat model and delete any\.
+
+**Mitigations**
+
+1. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\) and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
 
 ##### The publishing credential is stolen or broader than needed — Medium
 
@@ -5004,6 +6024,21 @@ No mitigations.
 
 No mitigations.
 
+##### The document reader can reach the worker\'s network — Low
+
+- **Category:** Information Disclosure
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > Accepted\: it would find no credential\, because it is started with an empty environment and loads no module that reads configuration\, the database\, storage or a provider\. Limiting the worker\'s network to the provider and the storage is the operator\'s\, with a container network policy \(docs\/install\.md\, Reading files safely\)
+- **Origin:** Manual
+
+> The document reader holds no secret\, but it runs on the same host as the worker and Node offers no sandbox for it\. A crafted file that achieved code execution in it could reach what the worker\'s network reaches\.
+
+**Mitigations**
+
+1. **Verified** — The reader is given no environment variable and no standard stream\, and the API\'s import graph holds none of its code \(tests\: apps\/api\/test\/extract\/read\.test\.ts\, apps\/api\/test\/worker\/imports\.test\.ts\)
+
 ##### Any signed\-in account can see and cancel every job and start a provider check — Low
 
 - **Category:** Elevation of Privilege
@@ -5013,7 +6048,7 @@ No mitigations.
   > There are no roles before Phase 6 \(the open risk of the model as a whole\)\. A provider check sends fixed text and spends little\, and it is bounded by the caps\, the limit on an account\'s active jobs and the cooldown\. The widening was called out in Milestone 2\'s spec \(FR\-065\) and is a justified widening in the constitution\'s Threat Model section
 - **Origin:** Manual
 
-> There are no roles\, so a job is not private to the account that started it\, and any signed\-in account can make the provider spend by starting a check\, where until Phase 3 Milestone 2 only an operator with a shell could\.
+> There are no roles\, so a job is not private to the account that started it\, and any signed\-in account can make the provider spend by starting a check\, where until Phase 3 Milestone 2 only an operator with a shell could\. The jobs that process documents are the same\: any account can see and cancel them\.
 
 **Mitigations**
 

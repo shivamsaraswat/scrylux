@@ -128,7 +128,7 @@ test('walks the whole Definition of Done', async ({ page, baseURL }) => {
 
   // 7. Delete the threat model, then the project, confirming each.
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
-  await expect(page.getByText(`Delete threat model "${modelName}"? This permanently deletes its elements, threats and mitigations.`)).toBeVisible();
+  await expect(page.getByText(`Delete threat model "${modelName}"? This permanently deletes its elements, threats, mitigations and documents.`)).toBeVisible();
   await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
   await expect(page.getByText('No threat models yet.')).toBeVisible();
   await page.getByRole('button', { name: 'Delete', exact: true }).click();

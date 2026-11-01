@@ -13,6 +13,8 @@ import { ProjectPage } from './pages/ProjectPage.js';
 import { ProjectsPage } from './pages/ProjectsPage.js';
 import { DiagramTab } from './pages/DiagramTab.js';
 import { ThreatModelPage } from './pages/ThreatModelPage.js';
+import { SourcePage } from './pages/SourcePage.js';
+import { SourcesTab } from './pages/SourcesTab.js';
 import { ThreatsTab } from './pages/ThreatsTab.js';
 import { RequireSession } from './session/RequireSession.js';
 import { SessionProvider } from './session/SessionProvider.js';
@@ -63,6 +65,7 @@ export const appRoutes: RouteObject[] = [
                   { path: '/projects/:projectId', element: <ProjectPage /> },
                   { path: '/jobs', element: <JobsPage /> },
                   { path: '/jobs/:jobId', element: <JobPage /> },
+                  { path: '/threat-models/:threatModelId/sources/:sourceId', element: <SourcePage /> },
                   {
                     // The Threats tab is the page's own address, so existing links keep working.
                     path: '/threat-models/:threatModelId',
@@ -70,6 +73,7 @@ export const appRoutes: RouteObject[] = [
                     children: [
                       { index: true, element: <ThreatsTab /> },
                       { path: 'diagram', element: <DiagramTab /> },
+                      { path: 'sources', element: <SourcesTab /> },
                     ],
                   },
                   { path: '*', element: <NotFoundPage /> },

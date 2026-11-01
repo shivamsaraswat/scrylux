@@ -1,10 +1,10 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { JobRecord } from '@scrylux/core';
 import type { Usage } from '@scrylux/llm';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
 import db, { kdb } from '../../src/db.js';
-import { JobFinishedError, JobLimitError, cancelJob, claimJob, enqueue, finishRun, gate, getJob, handBack, listJobs, nextAllowedAt, recordUsage, sweep, writeProgress, type JobSettings } from '../../src/jobs/store.js';
+import { JobFinishedError, JobLimitError, cancelJob, claimJob, enqueue, finishRun, gate, getJob, handBack, listJobs, nextAllowedAt, recordUsage, sweep, writeProgress, type JobSettings, type RunCommit } from '../../src/jobs/store.js';
 
 // The job store against the real database (Phase 3 Milestone 2, data-model.md). This file runs in the `jobs` group, one
 // file at a time (apps/api/vitest.config.ts), and starts every test from empty job tables, because a worker claims any
@@ -950,5 +950,151 @@ describe('the cooldown between an account’s provider checks (FR-047, SC-011)',
       await setRow(id, `queued_at = now() - interval '6 minutes'`);
       expect(await nextAllowedAt(kdb, alice, withCooldown)).toBeNull();
     });
+  });
+});
+
+
+// A run that ends with a commit (Phase 3 Milestone 3, research #2): the chunks of a source are written in the one transaction
+// that ends the job, fenced by the same claim, so a lost run writes nothing, a cancel writes nothing, and a failure of the
+// write ends nothing. The commit is three steps, in this order: lock the rows it will write, check what must hold, and, only
+// if the job really succeeded, write.
+describe('finishRun with a commit (research #2)', () => {
+  async function ingestion(): Promise<{ id: string; claim: number; sourceId: string }> {
+    const { rows: project } = await db.query<{ id: string }>('INSERT INTO projects (name, created_by) VALUES ($1, $2) RETURNING id', [`p-${randomUUID()}`, alice]);
+    const { rows: model } = await db.query<{ id: string }>('INSERT INTO threat_models (project_id, name) VALUES ($1, $2) RETURNING id', [project[0]?.id, 'model']);
+    const { rows: source } = await db.query<{ id: string }>(
+      `INSERT INTO sources (threat_model_id, name, type, size_bytes, digest, added_by, original_key, stored_bytes)
+       VALUES ($1, 'design.md', 'md', 100, $2, $3, $4, 100) RETURNING id`,
+      [model[0]?.id, randomBytes(32), alice, `sources/${randomUUID()}`],
+    );
+    const sourceId = source[0]?.id as string;
+    const { rows: job } = await db.query<{ id: string }>(
+      `INSERT INTO jobs (kind, input, created_by, max_runs, time_limit_ms, token_cap, cost_cap_usd, threat_model_id, source_id)
+       VALUES ('ingest_source', $1, $2, 3, 3600000, 500000, 5, $3, $4) RETURNING id`,
+      [JSON.stringify({ source_id: sourceId }), alice, model[0]?.id, sourceId],
+    );
+    const claimed = await claimJob(kdb, randomUUID());
+    if (!claimed || claimed.id !== job[0]?.id) throw new Error('the ingestion job was not claimed');
+    return { id: claimed.id, claim: claimed.claim, sourceId };
+  }
+
+  /** A commit that records what it was asked, and what it could see. */
+  function spyCommit(job: { id: string }, over: Partial<RunCommit> = {}): { commit: RunCommit; calls: string[]; seen: Record<string, unknown> } {
+    const calls: string[] = [];
+    const seen: Record<string, unknown> = {};
+    const commit: RunCommit = {
+      lock: (trx) => {
+        calls.push('lock');
+        return sql`SELECT 1`.execute(trx).then(() => true);
+      },
+      check: () => {
+        calls.push('check');
+        return Promise.resolve(undefined);
+      },
+      write: async (trx) => {
+        calls.push('write');
+        seen.insideState = (await sql<{ state: string }>`SELECT state FROM jobs WHERE id = ${job.id}`.execute(trx)).rows[0]?.state;
+        // From another connection, the transaction has not committed.
+        seen.outsideState = (await db.query<{ state: string }>('SELECT state FROM jobs WHERE id = $1', [job.id])).rows[0]?.state;
+      },
+      ...over,
+    };
+    return { commit, calls, seen };
+  }
+
+  it('locks, checks, ends the job, and writes, in that order, in one transaction', async () => {
+    const job = await ingestion();
+    const { commit, calls, seen } = spyCommit(job);
+    expect(await finishRun(kdb, job, { kind: 'succeeded' }, commit)).toBe('succeeded');
+    expect(calls).toEqual(['lock', 'check', 'write']);
+    expect(seen.insideState).toBe('succeeded');
+    expect(seen.outsideState).toBe('running');
+    expect((await row(job.id)).state).toBe('succeeded');
+  });
+
+  it('writes nothing when the run was lost to another worker, because the fenced update finds no row', async () => {
+    const job = await ingestion();
+    const { commit, calls } = spyCommit(job);
+    expect(await finishRun(kdb, { id: job.id, claim: job.claim + 1 }, { kind: 'succeeded' }, commit)).toBe('lost');
+    expect(calls).toEqual(['lock', 'check']);
+    expect((await row(job.id)).state).toBe('running');
+  });
+
+  it('writes nothing when a cancel was asked, and the job ends as cancelled', async () => {
+    const job = await ingestion();
+    await setRow(job.id, 'cancel_requested_at = now()');
+    const { commit, calls } = spyCommit(job);
+    expect(await finishRun(kdb, job, { kind: 'succeeded' }, commit)).toBe('cancelled');
+    expect(calls).not.toContain('write');
+  });
+
+  it('writes nothing when the run is to be queued again, or has failed', async () => {
+    const queued = await ingestion();
+    const a = spyCommit(queued);
+    expect(await finishRun(kdb, queued, { kind: 'transient', category: 'provider_unavailable' }, a.commit)).toBe('queued');
+    expect(a.calls).not.toContain('write');
+    await db.query('TRUNCATE jobs, job_usage, workers');
+    const failed = await ingestion();
+    const b = spyCommit(failed);
+    expect(await finishRun(kdb, failed, { kind: 'failed', category: 'damaged' }, b.commit)).toBe('failed');
+    expect(b.calls).not.toContain('write');
+  });
+
+  it('turns a check that fails into the failure of the job, and writes nothing', async () => {
+    const job = await ingestion();
+    const { commit, calls } = spyCommit(job, {
+      check: () => Promise.resolve({ category: 'document_space_full' as const }),
+    });
+    expect(await finishRun(kdb, job, { kind: 'succeeded' }, commit)).toBe('failed');
+    expect(calls).not.toContain('write');
+    expect(await getJob(kdb, job.id)).toMatchObject({ state: 'failed', failure: { category: 'document_space_full' } });
+  });
+
+  it('keeps the detail of a failure that a check names', async () => {
+    const job = await ingestion();
+    const { commit } = spyCommit(job, { check: () => Promise.resolve({ category: 'too_large' as const, detail: 'chars' as const }) });
+    await finishRun(kdb, job, { kind: 'succeeded' }, commit);
+    expect((await getJob(kdb, job.id))?.failure?.message).toMatch(/characters/);
+  });
+
+  it('ends the job as cancelled and writes nothing when the rows to write are gone (the lock finds no source)', async () => {
+    const job = await ingestion();
+    const { commit, calls } = spyCommit(job, { lock: () => Promise.resolve(false) });
+    expect(await finishRun(kdb, job, { kind: 'succeeded' }, commit)).toBe('cancelled');
+    expect(calls).not.toContain('write');
+  });
+
+  it('leaves the job running, and rolls back every row the write made, when the write fails', async () => {
+    const job = await ingestion();
+    const { commit } = spyCommit(job, {
+      write: async (trx) => {
+        await sql`UPDATE sources SET stored_bytes = 999 WHERE id = ${job.sourceId}`.execute(trx);
+        throw new Error('the write failed');
+      },
+    });
+    await expect(finishRun(kdb, job, { kind: 'succeeded' }, commit)).rejects.toThrow('the write failed');
+    expect((await row(job.id)).state).toBe('running');
+    expect(Number((await db.query<{ stored_bytes: string }>('SELECT stored_bytes FROM sources WHERE id = $1', [job.sourceId])).rows[0]?.stored_bytes)).toBe(100);
+  });
+
+  it('lets the check and the write run on the transaction they are given, not on a connection of their own', async () => {
+    const job = await ingestion();
+    let checkSawUncommittedEnd: unknown;
+    const { commit } = spyCommit(job, {
+      check: async (trx) => {
+        // The fenced update has not run yet: the job is still running inside the transaction.
+        checkSawUncommittedEnd = (await sql<{ state: string }>`SELECT state FROM jobs WHERE id = ${job.id}`.execute(trx)).rows[0]?.state;
+        return undefined;
+      },
+    });
+    await finishRun(kdb, job, { kind: 'succeeded' }, commit);
+    expect(checkSawUncommittedEnd).toBe('running');
+  });
+
+  it('is the same as before for a run without a commit', async () => {
+    const id = await queue();
+    const claimed = await claimJob(kdb, randomUUID());
+    expect(claimed?.id).toBe(id);
+    expect(await finishRun(kdb, { id, claim: claimed?.claim ?? 0 }, { kind: 'succeeded' })).toBe('succeeded');
   });
 });

@@ -4,6 +4,9 @@ import db, { kdb } from './db.js';
 import migrate from './migrate.js';
 import { startHealthServer } from './worker/health.js';
 import { startWorker } from './worker/loop.js';
+import { isRefusal, startupFailureLine } from './startup-failure.js';
+import { createStorage } from './storage/index.js';
+import { useStorage } from './storage/instance.js';
 import { checkWorkerStartup } from './worker/startup.js';
 
 // The worker's entry point (Phase 3 Milestone 2, FR-001, contracts/worker.md): `node dist/worker.js`, from the same image
@@ -21,7 +24,8 @@ async function initDatabase(attempts = 10): Promise<void> {
       await migrate();
       return;
     } catch (err) {
-      if (i >= attempts) throw err;
+      // A refusal an operator has to act on is not a database that is still starting.
+      if (i >= attempts || isRefusal(err)) throw err;
       console.warn(`Database not ready (attempt ${i}/${attempts})`);
       await sleep(2000);
     }
@@ -45,6 +49,7 @@ async function main(): Promise<void> {
     return;
   }
   console.log(startup.line);
+  useStorage(createStorage(startup.storage));
 
   await initDatabase();
   // Listening before the loop starts, so that a health port that is taken stops the process while it holds nothing: no
@@ -68,9 +73,10 @@ async function main(): Promise<void> {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-main().catch(() => {
+main().catch((error: unknown) => {
   // No error detail on purpose, as the server's catch-all: any property of the caught value could carry driver-attached
-  // data derived from env-sourced config.
-  console.error('Startup failed');
+  // data derived from env-sourced config. A migration that stopped on purpose is the one exception: its message was
+  // written for the operator.
+  console.error(startupFailureLine('Startup failed', error));
   process.exit(1);
 });

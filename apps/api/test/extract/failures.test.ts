@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { extractDocument, type ExtractLimits, type ExtractResult } from '../../src/extract/run.js';
 import { pdf } from '../fixtures/sources/pdf.js';
 import { docx, zip } from '../fixtures/sources/zip.js';
@@ -8,6 +8,10 @@ import { docx, zip } from '../fixtures/sources/zip.js';
 // What goes wrong with a file, through the real extraction child (Phase 3 Milestone 3, US5, FR-011, FR-012, SC-004, research #3
 // to #5): each file that cannot be read fails with a category of its own, within the bounds, and nothing the file points at is
 // ever fetched. A page without text is not a failure of the child (the worker decides on `no_text_found`, ingest-failures.test.ts).
+
+// Each test starts real extraction children, which load a PDF or XML parser and take a second or more on a loaded runner; the
+// default 5 seconds failed one test in CI that starts three of them in a row.
+vi.setConfig({ testTimeout: 60_000 });
 
 const LIMITS: ExtractLimits = { maxPages: 2000, unpackedBytes: 50 * 1024 * 1024, memoryMb: 1024, timeLimitMs: 60_000 };
 const run = (type: 'pdf' | 'docx', bytes: Uint8Array, limits: Partial<ExtractLimits> = {}, entry?: string): Promise<ExtractResult> =>

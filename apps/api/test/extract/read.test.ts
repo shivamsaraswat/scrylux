@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { extractDocument, type ExtractLimits, type ExtractResult } from '../../src/extract/run.js';
 import { pdf } from '../fixtures/sources/pdf.js';
 import { docx } from '../fixtures/sources/zip.js';
@@ -9,6 +9,10 @@ import { docx } from '../fixtures/sources/zip.js';
 // #3 to #5). The child answers with blocks in reading order: one per page of a PDF that has text, and one per paragraph or
 // table of a Word file, with its headings marked. The worker joins them, normalizes the text and chunks it. What goes wrong
 // with a file, and the bounds, are in failures.test.ts.
+
+// Each test starts real extraction children, which load a PDF or XML parser and take a second or more on a loaded runner; the
+// default 5 seconds failed one test in CI that starts three of them in a row.
+vi.setConfig({ testTimeout: 60_000 });
 
 const LIMITS: ExtractLimits = { maxPages: 2000, unpackedBytes: 50 * 1024 * 1024, memoryMb: 512, timeLimitMs: 60_000 };
 const run = (type: 'pdf' | 'docx', bytes: Uint8Array, limits: Partial<ExtractLimits> = {}): Promise<ExtractResult> =>

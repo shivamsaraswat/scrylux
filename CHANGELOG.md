@@ -4,18 +4,21 @@ What changed in each release of Scrylux, newest first. Versions are `MAJOR.MINOR
 
 ## [Unreleased]
 
-### AI providers, with no AI feature yet
+### AI providers and a worker, with no AI feature yet
 
-This groundwork for Phase 3 adds the layer that later AI features will use to reach a language model. **Nothing in Scrylux sends your content to a model yet**, and with no AI setting made, Scrylux behaves exactly as v0.1 does.
+This groundwork for Phase 3 adds the layer that later AI features will use to reach a language model, and the worker that will run them in the background. **Nothing in Scrylux sends your content to a model yet**, and with no AI setting made, Scrylux behaves exactly as v0.1 does.
 
 - **Choose where the model runs**, with environment values and no code change: Anthropic, OpenAI, Azure OpenAI, Amazon Bedrock, Google Gemini, or a local model through Ollama or vLLM. Generation and embeddings are chosen separately, and embeddings are optional. [AI providers](docs/ai-providers.md) has a working configuration for each, and says what leaves your install: a provider is hosted unless you declare an OpenAI-compatible one local, and a hosted one must be reached over `https`.
-- **Check a setup** with `docker compose exec app node dist/llm-check.js`. It sends one tiny fixed request with none of your data, and reports the provider, the model, whether data leaves the install, the tokens used and the cost, or what failed and which setting to look at.
+- **Check a setup** from the new **Jobs** page (any signed-in account can choose *Check AI provider*), or from a shell with `docker compose exec worker node dist/llm-check.js`. It sends one tiny fixed request with none of your data, and reports the provider, the model, whether data leaves the install, the tokens used and the cost, or what failed and which setting to look at.
+- **A worker runs background jobs**, from the same image with another command (`node dist/worker.js`), as a new `worker` service in both compose files. A job shows its state and progress without a reload, can be cancelled, runs again after a failure that may pass, and is picked up again if its worker stops or crashes. You can run as many workers as you like. Everything that worked in v0.1 works with no worker running; jobs wait in the queue, and the Jobs page says so.
+- **A job cannot overspend.** Each job has a token cap and a cost cap (500,000 tokens and $5 by default), checked before every request against the most it could use, counting every run. An account can have three jobs queued or running, and can start a provider check every five minutes. These bound one job, not your spend over time, so set a spending limit on the provider account too.
 - **Every request reports its tokens and cost.** Prices come from a dated list in the repository or from your own `LLM_PRICE_INPUT` and `LLM_PRICE_OUTPUT`, and a model with no price has an unknown cost, never a free one.
-- **Your keys stay yours.** A provider key is read from the environment or from the secrets-manager secret, and is never logged, stored in the database or sent to the browser.
+- **Your keys stay yours.** A provider key is read from the environment or from the secrets-manager secret, and is never logged, stored in the database or sent to the browser. Only the worker uses a key: give it to the worker alone, and the app starts without it.
 
 ### Upgrading
 
-- Sixteen new environment variables, all optional, are in [Install and run](docs/install.md#environment-variables). The secrets-manager secret may also hold `LLM_API_KEY` and `EMBEDDING_API_KEY`.
+- Twenty-four new environment variables, all optional, are in [Install and run](docs/install.md#environment-variables): sixteen for AI providers and eight for jobs and the worker. The secrets-manager secret may also hold `LLM_API_KEY` and `EMBEDDING_API_KEY`, though both the app and the worker read that secret, so a key kept there reaches the app as well; [which process gets what](docs/install.md#which-process-gets-what) says how to keep it from the app.
+- **Run the worker.** The compose files now start a `worker` service next to `app`. On any other setup, start `node dist/worker.js` from the same image. A database migration (`016_jobs.sql`) adds three tables, and the first process to start applies it.
 - **A setting that is wrong stops Scrylux from starting**, and the message names the variable. So does a stray variable that the provider libraries would read on their own, such as `OPENAI_API_KEY` or `ANTHROPIC_BASE_URL`, but only while a provider is configured. [AI providers](docs/ai-providers.md#variables-scrylux-refuses) lists them.
 - The compose files pass the new variables through, and map `host.docker.internal` to the host, so a model server on the same machine is reachable from the container.
 

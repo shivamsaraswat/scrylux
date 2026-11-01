@@ -23,6 +23,7 @@ const STATUS_DESCRIPTIONS: Record<number, string> = {
   401: 'There is no valid token',
   404: 'No such record',
   409: 'The request conflicts with existing records',
+  429: 'Too many jobs, or too soon after the last provider check; Retry-After says how long to wait',
   415: 'The content encoding is not supported',
   500: 'An unexpected failure',
 };

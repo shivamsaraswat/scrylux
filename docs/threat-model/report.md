@@ -3,26 +3,26 @@
 - **Project:** Scrylux
 - **Methodology:** STRIDE
 - **Threat model status:** Approved
-- **Exported:** 2026-10-31 14:00 UTC
-- **Contents:** 43 elements, 271 threats, 214 mitigations
+- **Exported:** 2026-11-01 06:18 UTC
+- **Contents:** 49 elements, 310 threats, 253 mitigations
 
 ## Risk summary
 
 | Status | Threats |
 |---|---:|
-| Open | 37 |
-| Mitigated | 68 |
-| Accepted | 97 |
-| Not applicable | 69 |
-| **Total** | **271** |
+| Open | 39 |
+| Mitigated | 77 |
+| Accepted | 113 |
+| Not applicable | 81 |
+| **Total** | **310** |
 
 | Risk (open threats) | Threats |
 |---|---:|
 | Critical | 6 |
 | High | 11 |
-| Medium | 19 |
-| Low | 1 |
-| **Total** | **37** |
+| Medium | 20 |
+| Low | 2 |
+| **Total** | **39** |
 
 ## Diagram
 
@@ -30,51 +30,57 @@
 flowchart LR
   subgraph b1["Deployment network"]
     n2(["Reverse proxy"])
-    subgraph b15["Application container"]
-      n16(["Accounts API"])
-      n17(["Import and export"])
-      n18(["Report builder"])
-      n19(["Rule engine"])
-      n20(["Sign#45;in and sessions"])
-      n21(["Startup and configuration"])
-      n22(["Threat model API"])
-      n23(["Web app server"])
+    subgraph b17["Application container"]
+      n18(["Accounts API"])
+      n19(["Import and export"])
+      n20(["Report builder"])
+      n21(["Rule engine"])
+      n22(["Sign#45;in and sessions"])
+      n23(["Startup and configuration"])
+      n24(["Threat model API"])
+      n25(["Web app server"])
+      n26(["Worker"])
     end
-    subgraph b27["Database server"]
-      n28[("Account and session records")]
-      n29[("Threat model records")]
+    subgraph b30["Database server"]
+      n31[("Account and session records")]
+      n32[("Job records")]
+      n33[("Threat model records")]
     end
   end
-  subgraph b30["User device"]
-    n31(["Web app"])
+  subgraph b34["User device"]
+    n35(["Web app"])
   end
-  n32["API client"]
-  n33["LLM provider #40;hosted#41;"]
-  n34["Operator"]
-  n35["Secrets manager"]
-  n36["Signed#45;in user"]
-  n20 -->|"Account and session queries"| n28
-  n16 -->|"Account queries"| n28
-  n2 -->|"Account requests"| n16
-  n19 -->|"Generated threats"| n29
-  n17 -->|"Import and export queries"| n29
-  n21 -->|"Migrations and seeding"| n28
-  n2 -->|"Page requests"| n23
-  n18 -->|"Report reads"| n29
-  n22 -->|"Session check"| n28
-  n2 -->|"Sign#45;in and session requests"| n20
-  n22 -->|"Threat model queries"| n29
-  n2 -->|"Threat model requests"| n22
-  n22 -->|"Generation requests"| n19
-  n22 -->|"Import and export requests"| n17
-  n22 -->|"Report requests"| n18
-  n32 -->|"API client requests"| n2
-  n31 -->|"Browser requests"| n2
-  n34 -->|"Environment settings"| n21
-  n21 -->|"Model requests"| n33
-  n35 -->|"Secrets"| n21
-  n36 -->|"Use the web app"| n31
-  n23 -->|"Web app code"| n31
+  n36["API client"]
+  n37["LLM provider #40;hosted#41;"]
+  n38["Operator"]
+  n39["Secrets manager"]
+  n40["Signed#45;in user"]
+  n22 -->|"Account and session queries"| n31
+  n18 -->|"Account queries"| n31
+  n2 -->|"Account requests"| n18
+  n21 -->|"Generated threats"| n33
+  n19 -->|"Import and export queries"| n33
+  n26 -->|"Job claims and results"| n32
+  n24 -->|"Job queries"| n32
+  n23 -->|"Migrations and seeding"| n31
+  n2 -->|"Page requests"| n25
+  n20 -->|"Report reads"| n33
+  n24 -->|"Session check"| n31
+  n2 -->|"Sign#45;in and session requests"| n22
+  n24 -->|"Threat model queries"| n33
+  n2 -->|"Threat model requests"| n24
+  n24 -->|"Generation requests"| n21
+  n24 -->|"Import and export requests"| n19
+  n24 -->|"Report requests"| n20
+  n36 -->|"API client requests"| n2
+  n35 -->|"Browser requests"| n2
+  n38 -->|"Environment settings"| n23
+  n23 -->|"Model requests"| n37
+  n39 -->|"Secrets"| n23
+  n40 -->|"Use the web app"| n35
+  n25 -->|"Web app code"| n35
+  n26 -->|"Worker model requests"| n37
+  n38 -->|"Worker settings"| n26
 ```
 
 ## Elements
@@ -263,8 +269,8 @@ No mitigations.
 
 #### E3 · Data flow · Account and session queries
 
-- **From:** E20 Sign\-in and sessions
-- **To:** E28 Account and session records
+- **From:** E22 Sign\-in and sessions
+- **To:** E31 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -347,8 +353,8 @@ No mitigations.
 
 #### E4 · Data flow · Account queries
 
-- **From:** E16 Accounts API
-- **To:** E28 Account and session records
+- **From:** E18 Accounts API
+- **To:** E31 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -432,7 +438,7 @@ No mitigations.
 #### E5 · Data flow · Account requests
 
 - **From:** E2 Reverse proxy
-- **To:** E16 Accounts API
+- **To:** E18 Accounts API
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP, Bearer token
 - **Encrypted in transit:** No
@@ -501,8 +507,8 @@ No mitigations.
 
 #### E6 · Data flow · Generated threats
 
-- **From:** E19 Rule engine
-- **To:** E29 Threat model records
+- **From:** E21 Rule engine
+- **To:** E33 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, One transaction
 - **Encrypted in transit:** Not assessed
@@ -585,8 +591,8 @@ No mitigations.
 
 #### E7 · Data flow · Import and export queries
 
-- **From:** E17 Import and export
-- **To:** E29 Threat model records
+- **From:** E19 Import and export
+- **To:** E33 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, One transaction
 - **Encrypted in transit:** Not assessed
@@ -667,10 +673,180 @@ No mitigations.
 
 No mitigations.
 
-#### E8 · Data flow · Migrations and seeding
+#### E8 · Data flow · Job claims and results
 
-- **From:** E21 Startup and configuration
-- **To:** E28 Account and session records
+- **From:** E26 Worker
+- **To:** E32 Job records
+- **Crosses a trust boundary:** Yes (from Application container to Database server)
+- **Tags:** PostgreSQL protocol, Row locks
+- **Encrypted in transit:** Not assessed
+- **Authenticated:** Yes
+- **Carries sensitive data:** No
+
+##### Data crossing a trust boundary into Job records may carry content that corrupts it — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Job claims and results brings data from outside a trust boundary straight toward Job records\, a data store\. Content that is malformed or crafted to be misread\, such as injected query fragments\, oversized values or unexpected structure\, can corrupt what is stored\.
+
+**Mitigations**
+
+1. **Implemented** — Every statement is parameterized or built with Kysely\; no value is concatenated into SQL \(constitution Principle I\; apps\/api\/src\/jobs\/store\.ts\)
+2. **Verified** — Every write a worker makes to a job is fenced by a claim number that only a new claim changes\, so a worker that lost its job writes nothing after another has taken it \(apps\/api\/src\/jobs\/store\.ts\; tests\: apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/worker\/recovery\.test\.ts\)
+3. **Verified** — The database enforces the integrity of job records for every writer\: the states\, a job that has ended never changes again\, a queued job always has a run left\, a running job has a worker and a lease\, and the caps are positive \(packages\/db\/migrations\/016\_jobs\.sql\; tests\: packages\/db\/test\/jobs\-schema\.test\.ts\)
+
+##### Data from Worker to Job records can be changed in transit across a trust boundary — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Job claims and results carries data from Worker to Job records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Worker to Job records readable in transit across a trust boundary — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Job claims and results carries data from Worker to Job records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### A captured message from Worker to Job records can be sent again — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A database connection is its own authenticated session\; there is no standalone message to capture and send again outside it
+- **Origin:** Rule-generated
+
+> Job claims and results is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Job records will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Worker can flood Job records with messages across a trust boundary — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The worker is a client of the database like the application\, and each process opens at most the connection pool\'s size \(the pg default of 10 connections\, apps\/api\/src\/db\.ts\)\; a flood would need an unbounded stream of authenticated requests\, which is the open rate\-limiting threat of Threat model API\. It looks for a job every 2 seconds for each free slot and renews each job\'s lease every 5 seconds \(apps\/api\/src\/worker\/timing\.ts\)
+- **Origin:** Rule-generated
+
+> Job claims and results crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Job records can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E9 · Data flow · Job queries
+
+- **From:** E24 Threat model API
+- **To:** E32 Job records
+- **Crosses a trust boundary:** Yes (from Application container to Database server)
+- **Tags:** PostgreSQL protocol
+- **Encrypted in transit:** Not assessed
+- **Authenticated:** Yes
+- **Carries sensitive data:** No
+
+##### Data crossing a trust boundary into Job records may carry content that corrupts it — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Job queries brings data from outside a trust boundary straight toward Job records\, a data store\. Content that is malformed or crafted to be misread\, such as injected query fragments\, oversized values or unexpected structure\, can corrupt what is stored\.
+
+**Mitigations**
+
+1. **Implemented** — Every statement is parameterized or built with Kysely\; no value is concatenated into SQL \(constitution Principle I\; apps\/api\/src\/jobs\/store\.ts\)
+2. **Verified** — The database enforces the integrity of job records for every writer\: the states\, a job that has ended never changes again\, a queued job always has a run left\, a running job has a worker and a lease\, and the caps are positive \(packages\/db\/migrations\/016\_jobs\.sql\; tests\: packages\/db\/test\/jobs\-schema\.test\.ts\)
+3. **Verified** — The shared record schemas validate every request body and parse every answer\, and a start can set no cap\, run count or time limit\: those are copied from the operator\'s settings \(packages\/core\/src\/schemas\/job\.ts\; tests\: packages\/core\/test\/job\.test\.ts\, apps\/api\/test\/contract\/v1\/jobs\.test\.ts\)
+
+##### Data from Threat model API to Job records can be changed in transit across a trust boundary — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Job queries carries data from Threat model API to Job records without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Threat model API to Job records readable in transit across a trust boundary — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Job queries carries data from Threat model API to Job records without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### A captured message from Threat model API to Job records can be sent again — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A database connection is its own authenticated session\; there is no standalone message to capture and send again outside it
+- **Origin:** Rule-generated
+
+> Job queries is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Job records will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Threat model API can flood Job records with messages across a trust boundary — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The application is a client of the database like the application\, and each process opens at most the connection pool\'s size \(the pg default of 10 connections\, apps\/api\/src\/db\.ts\)\; a flood would need an unbounded stream of authenticated requests\, which is the open rate\-limiting threat of Threat model API\; a start is also refused beyond JOBS\_PER\_ACCOUNT active jobs and\, for a provider check\, inside the cooldown \(apps\/api\/src\/jobs\/store\.ts\)
+- **Origin:** Rule-generated
+
+> Job queries crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Job records can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E10 · Data flow · Migrations and seeding
+
+- **From:** E23 Startup and configuration
+- **To:** E31 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, SQL migrations
 - **Encrypted in transit:** Not assessed
@@ -750,10 +926,10 @@ No mitigations.
 
 No mitigations.
 
-#### E9 · Data flow · Page requests
+#### E11 · Data flow · Page requests
 
 - **From:** E2 Reverse proxy
-- **To:** E23 Web app server
+- **To:** E25 Web app server
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP
 - **Encrypted in transit:** No
@@ -820,10 +996,10 @@ No mitigations.
 
 No mitigations.
 
-#### E10 · Data flow · Report reads
+#### E12 · Data flow · Report reads
 
-- **From:** E18 Report builder
-- **To:** E29 Threat model records
+- **From:** E20 Report builder
+- **To:** E33 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, Read\-only snapshot
 - **Encrypted in transit:** Not assessed
@@ -905,10 +1081,10 @@ No mitigations.
 
 No mitigations.
 
-#### E11 · Data flow · Session check
+#### E13 · Data flow · Session check
 
-- **From:** E22 Threat model API
-- **To:** E28 Account and session records
+- **From:** E24 Threat model API
+- **To:** E31 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -990,10 +1166,10 @@ No mitigations.
 
 No mitigations.
 
-#### E12 · Data flow · Sign\-in and session requests
+#### E14 · Data flow · Sign\-in and session requests
 
 - **From:** E2 Reverse proxy
-- **To:** E20 Sign\-in and sessions
+- **To:** E22 Sign\-in and sessions
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP
 - **Encrypted in transit:** No
@@ -1058,10 +1234,10 @@ No mitigations.
 
 No mitigations.
 
-#### E13 · Data flow · Threat model queries
+#### E15 · Data flow · Threat model queries
 
-- **From:** E22 Threat model API
-- **To:** E29 Threat model records
+- **From:** E24 Threat model API
+- **To:** E33 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -1143,10 +1319,10 @@ No mitigations.
 
 No mitigations.
 
-#### E14 · Data flow · Threat model requests
+#### E16 · Data flow · Threat model requests
 
 - **From:** E2 Reverse proxy
-- **To:** E22 Threat model API
+- **To:** E24 Threat model API
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP, Bearer token
 - **Encrypted in transit:** No
@@ -1213,9 +1389,9 @@ No mitigations.
 
 No mitigations.
 
-### E15 · Trust boundary · Deployment network › Application container
+### E17 · Trust boundary · Deployment network › Application container
 
-#### E16 · Process · Accounts API
+#### E18 · Process · Accounts API
 
 - **Tags:** Express, bcrypt, \/api\/users
 - **Internet facing:** Yes
@@ -1421,7 +1597,7 @@ No mitigations.
 
 1. **Implemented** — Server errors answer a fixed \'Internal server error\' and the detail goes only to the server log\, an oversized or malformed body answers a fixed 413 or 400\, and X\-Powered\-By is off \(apps\/api\/src\/app\.ts\, errorHandler\)\. The tests that prove it \(apps\/api\/test\/contract\/v1\/validation\.test\.ts\, storage\-errors\.test\.ts\) cover \/api\/v1\, not this route
 
-#### E17 · Process · Import and export
+#### E19 · Process · Import and export
 
 - **Tags:** Scrylux file, OTM, Threat Dragon
 - **Internet facing:** No
@@ -1631,7 +1807,7 @@ No mitigations.
 1. **Verified** — An import is bounded first \(64 levels\, 2\,000\,000 values\, by a walk with no recursion\)\, parsed by shared schemas\, checked across records\, and written all or nothing in one transaction \(packages\/core\/src\/exchange\/bounds\.ts\, apps\/api\/src\/exchange\/import\/\; tests\: packages\/core\/test\/exchange\/bounds\.test\.ts\, \'walks a 1\,000\,000\-deep nesting without recursing\, and quickly\'\, apps\/api\/test\/exchange\/\, apps\/api\/test\/contract\/v1\/exchange\.test\.ts\)
 2. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E18 · Process · Report builder
+#### E20 · Process · Report builder
 
 - **Tags:** Markdown, HTML, Mermaid
 - **Internet facing:** No
@@ -1824,7 +2000,7 @@ No mitigations.
 
 No mitigations.
 
-#### E19 · Process · Rule engine
+#### E21 · Process · Rule engine
 
 - **Tags:** YAML rules, STRIDE
 - **Internet facing:** No
@@ -2004,7 +2180,7 @@ No mitigations.
 2. **Proposed** — Move generation to the worker \(plan\.md\, Phase 3\) or limit it \(Phase 6\)
 3. **Verified** — One run is bounded by the element limit times the library\'s per\-element maximum \(about 15\,000 threats and 49\,000 mitigations\)\, written in chunked statements in one transaction under the model\'s lock\; measured under 5 s for 50 elements and under 30 s for the largest model \(apps\/api\/src\/rule\-engine\/run\.ts\; tests\: apps\/api\/test\/contract\/v1\/generate\-performance\.test\.ts\, generate\-concurrency\.test\.ts\)
 
-#### E20 · Process · Sign\-in and sessions
+#### E22 · Process · Sign\-in and sessions
 
 - **Tags:** Express, bcrypt, JWT, \/api\/login, \/api\/session
 - **Internet facing:** Yes
@@ -2224,7 +2400,7 @@ No mitigations.
 
 1. **Implemented** — Server errors answer a fixed \'Internal server error\' and the detail goes only to the server log\, an oversized or malformed body answers a fixed 413 or 400\, and X\-Powered\-By is off \(apps\/api\/src\/app\.ts\, errorHandler\)\. The tests that prove it \(apps\/api\/test\/contract\/v1\/validation\.test\.ts\, storage\-errors\.test\.ts\) cover \/api\/v1\, not this route
 
-#### E21 · Process · Startup and configuration
+#### E23 · Process · Startup and configuration
 
 - **Tags:** Node\.js, SQL migrations
 - **Internet facing:** No
@@ -2318,9 +2494,10 @@ No mitigations.
 
 **Mitigations**
 
-1. **Verified** — An LLM provider key comes only from the environment or the secrets\-manager secret\, and never reaches a log line\, an error\, a usage record\, the check command\'s output\, the database or the browser\; while a provider is configured\, Scrylux refuses to start if a variable the provider libraries read on their own is set \(packages\/llm\/src\/config\.ts\; tests\: apps\/api\/test\/llm\/canary\.test\.ts\, packages\/llm\/test\/sdk\-env\.test\.ts\)\.
-2. **Verified** — No log line holds a username\, password\, credential\, token or address \(apps\/api\/src\/session\/log\.ts\; tests\: apps\/api\/test\/contract\/session\-log\.test\.ts\)
-3. **Implemented** — Secrets come only from the environment or a secrets manager\, \.env and \.env\.test are gitignored\, and the process stops at start with a fixed line when JWT\_SECRET is unset \(apps\/api\/src\/config\.ts\, server\.ts\, \.gitignore\)\. apps\/api\/test\/config\.test\.ts covers loading and overriding from a secret and its failure message\; the stop on a missing JWT\_SECRET is not tested
+1. **Verified** — A job\'s rows\, records and logs hold no provider key\, and the worker is the only process that uses one \(apps\/api\/test\/worker\/canary\.test\.ts\, apps\/api\/test\/worker\/imports\.test\.ts\)
+2. **Verified** — An LLM provider key comes only from the environment or the secrets\-manager secret\, and never reaches a log line\, an error\, a usage record\, the check command\'s output\, the database or the browser\; while a provider is configured\, Scrylux refuses to start if a variable the provider libraries read on their own is set \(packages\/llm\/src\/config\.ts\; tests\: apps\/api\/test\/llm\/canary\.test\.ts\, packages\/llm\/test\/sdk\-env\.test\.ts\)\.
+3. **Verified** — No log line holds a username\, password\, credential\, token or address \(apps\/api\/src\/session\/log\.ts\; tests\: apps\/api\/test\/contract\/session\-log\.test\.ts\)
+4. **Implemented** — Secrets come only from the environment or a secrets manager\, \.env and \.env\.test are gitignored\, and the process stops at start with a fixed line when JWT\_SECRET is unset \(apps\/api\/src\/config\.ts\, server\.ts\, \.gitignore\)\. apps\/api\/test\/config\.test\.ts covers loading and overriding from a secret and its failure message\; the stop on a missing JWT\_SECRET is not tested
 
 ##### Sensitive data handled by Startup and configuration is open to anyone who can reach it — Medium
 
@@ -2423,9 +2600,9 @@ No mitigations.
 
 No mitigations.
 
-#### E22 · Process · Threat model API
+#### E24 · Process · Threat model API
 
-- **Tags:** Express, Kysely, zod, \/api\/v1
+- **Tags:** Express, Kysely, zod, \/api\/v1, Job routes
 - **Internet facing:** Yes
 - **Requires authentication:** Yes
 - **Handles sensitive data:** Yes
@@ -2674,7 +2851,7 @@ No mitigations.
 
 No mitigations.
 
-#### E23 · Process · Web app server
+#### E25 · Process · Web app server
 
 - **Tags:** Express, Content\-Security\-Policy
 - **Internet facing:** Yes
@@ -2811,10 +2988,181 @@ No mitigations.
 
 No mitigations.
 
-#### E24 · Data flow · Generation requests
+#### E26 · Process · Worker
 
-- **From:** E22 Threat model API
-- **To:** E19 Rule engine
+- **Tags:** Node\.js, Jobs, Provider check
+- **Internet facing:** No
+- **Requires authentication:** Not assessed
+- **Handles sensitive data:** Yes
+- **Runs privileged:** No
+
+##### Another program can pose as Worker to the components that call it — Medium
+
+- **Category:** Spoofing
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > No component calls the worker\: the app and the worker meet only in the database\, so there is no call to impersonate\. Writing to the job tables takes the database credentials \(see Job records\)
+- **Origin:** Rule-generated
+
+> Components that call Worker need to be sure they are talking to the real one\. If an attacker can take over its name or address\, or sit on the path to it\, they can answer in its place and collect what callers send\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Crafted input from inside the network can change what Worker does — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Worker is not reachable from the internet\, but it still takes input from other components\. A bug or compromise in any of them can send it malformed or hostile data\, and an internal caller is no more trustworthy than an outside one once it is compromised\.
+
+**Mitigations**
+
+1. **Verified** — A job\'s input is checked against its kind\'s schema when it is queued\, and a provider check takes none \(packages\/core\/src\/schemas\/job\.ts\; tests\: packages\/core\/test\/job\.test\.ts\, apps\/api\/test\/contract\/v1\/jobs\.test\.ts\)
+2. **Verified** — Every answer of a provider is checked against its schema before anything uses it\, the model is offered no tool\, and nothing in an answer is executed \(packages\/llm\/src\/schema\.ts\, attempts\.ts\; tests\: packages\/llm\/test\/schema\.test\.ts\, attempts\.test\.ts\, adapters\/placement\.test\.ts\)
+3. **Implemented** — Every statement is parameterized or built with Kysely\; no value is concatenated into SQL \(constitution Principle I\; apps\/api\/src\/jobs\/store\.ts\)
+
+##### The code\, dependencies or configuration of Worker can be altered — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > The worker runs the same image as the app\, so what could alter its code and dependencies is the supply chain this model already records for the app and the release pipeline\. Whoever controls its environment controls it\, by design\: the settings and the provider keys are the operator\'s
+- **Origin:** Rule-generated
+
+> An attacker who can change what Worker runs gets everything the process can do\. The route can be a poisoned dependency\, a tampered build or image\, or a changed configuration or environment variable\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Access to sensitive data through Worker leaves no trail — Medium
+
+- **Category:** Repudiation
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > The worker serves no client and reads no user content in this release\: it reads the job rows and the provider keys\, and sends fixed text\. What each job used is recorded with the job
+- **Origin:** Rule-generated
+
+> Worker handles sensitive data\. If reads\, exports and changes of that data are not recorded with who did them\, a leak or a misuse cannot be traced\, and a person who misused their access can deny it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Actions taken through Worker cannot be reconstructed later — Medium
+
+- **Category:** Repudiation
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The worker prints one line for each change of a job\'s state and one for each model request to stdout\, and a job\'s record keeps who started it\, who cancelled it and what each request used\; no separate audit trail is persisted\. A persisted\, tamper\-evident audit log is scheduled for Phase 6 \(plan\.md\)
+- **Origin:** Rule-generated
+
+> Without a record of security\-relevant events\, nobody can say afterwards who signed in\, who changed what or what an attacker did\. Worker may do the right thing and still be unable to prove it\.
+
+**Mitigations**
+
+1. **Proposed** — A persisted\, tamper\-evident audit log of who changed what \(plan\.md\, Phase 6\)
+2. **Verified** — The worker\'s log lines carry ids and counts only\, never a prompt\, an answer\, a key or an address\; a fake key and fake content run through every way a job can end appear in none \(apps\/api\/src\/jobs\/log\.ts\, packages\/llm\/src\/log\.ts\; tests\: apps\/api\/test\/jobs\/log\.test\.ts\, apps\/api\/test\/worker\/canary\.test\.ts\)
+
+##### Sensitive data handled by Worker is open to anyone who can reach it — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > The worker\'s only listener is \/health\, which serves no data \(apps\/api\/src\/worker\/health\.ts\; tests\: apps\/api\/test\/worker\/health\.test\.ts\)\; the provider keys it holds are on no interface
+- **Origin:** Rule-generated
+
+> Worker handles sensitive data and does not require callers to authenticate\. Anyone who can connect can ask for the data\, with nothing to tie the request to a person who is allowed to see it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Worker may write sensitive data into logs\, metrics or traces — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Logs are copied\, indexed\, shipped and read by many people and tools\. If Worker writes sensitive values into them\, such as passwords\, tokens\, personal data or request bodies\, the data ends up in places with much weaker protection than the system it came from\.
+
+**Mitigations**
+
+1. **Verified** — The worker\'s log lines carry ids and counts only\, never a prompt\, an answer\, a key or an address\; a fake key and fake content run through every way a job can end appear in none \(apps\/api\/src\/jobs\/log\.ts\, packages\/llm\/src\/log\.ts\; tests\: apps\/api\/test\/jobs\/log\.test\.ts\, apps\/api\/test\/worker\/canary\.test\.ts\)
+
+##### Worker stops working when something it depends on fails — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Worker relies on other components such as databases\, queues and other services\. If one of them is slow or down and the process waits for it without a limit\, requests pile up and the failure spreads\.
+
+**Mitigations**
+
+1. **Implemented** — A bad setting stops the worker at start with a fixed line\; a database that fails later makes it try again at its next poll\, and the job it held comes back to the queue when its lease runs out \(apps\/api\/src\/worker\.ts\, apps\/api\/src\/worker\/loop\.ts\, apps\/api\/src\/jobs\/store\.ts\)
+2. **Verified** — A provider that is slow or down is retried\, then the run fails with a category and the job runs again after a wait\, up to JOB\_MAX\_RUNS\; a worker that is lost has its job picked up by another \(tests\: apps\/api\/test\/worker\/recovery\.test\.ts\)
+3. **Verified** — Nothing else in Scrylux waits on the worker\: every v0\.1 flow works with no worker running \(tests\: the browser suite in apps\/web\/e2e\, which runs with no worker\)
+
+##### Anyone inside the network can call Worker without proving who they are — Low
+
+- **Category:** Spoofing
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > The worker accepts no call that does anything\: its only listener is \/health\, which answers 200 and serves no data \(apps\/api\/src\/worker\/health\.ts\)\, and it takes its work from the database\, not from callers
+- **Origin:** Rule-generated
+
+> Worker is reachable only from inside the network\, but it does not require callers to authenticate\. A compromised machine\, a misconfigured service or a curious insider can call it as if they were any legitimate client\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Worker may reveal its internals in error messages — Low
+
+- **Category:** Information Disclosure
+- **Risk:** Low (likelihood Low × impact Low)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Detailed errors help developers and attackers alike\. Stack traces\, query text\, file paths and version numbers in a response show an attacker how Worker is built and where to push\.
+
+**Mitigations**
+
+1. **Verified** — A failed job shows a fixed message and a fixed hint\, never the provider\'s own error or the worker\'s \(apps\/api\/data\/failures\.yaml\, apps\/api\/src\/jobs\/failures\.ts\; tests\: apps\/api\/test\/jobs\/failures\.test\.ts\, apps\/api\/test\/worker\/canary\.test\.ts\)
+2. **Implemented** — The worker\'s own failures print fixed lines with no error detail\, because the error may carry what the database or a provider said \(apps\/api\/src\/worker\.ts\, apps\/api\/src\/worker\/loop\.ts\)
+
+##### A faulty or hostile internal client can overwhelm Worker — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > The worker has no clients\: it takes jobs from the queue\, one claim at a time\, and runs at most WORKER\_CONCURRENCY of them at once \(1 by default\, apps\/api\/src\/worker\/loop\.ts\)
+- **Origin:** Rule-generated
+
+> Worker is not reachable from the internet\, but the components that call it can still misbehave\: a retry loop\, a bug or a compromised service can send more than it can handle\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E27 · Data flow · Generation requests
+
+- **From:** E24 Threat model API
+- **To:** E21 Rule engine
 - **Crosses a trust boundary:** No
 - **Tags:** In process
 - **Encrypted in transit:** Not assessed
@@ -2881,10 +3229,10 @@ No mitigations.
 
 No mitigations.
 
-#### E25 · Data flow · Import and export requests
+#### E28 · Data flow · Import and export requests
 
-- **From:** E22 Threat model API
-- **To:** E17 Import and export
+- **From:** E24 Threat model API
+- **To:** E19 Import and export
 - **Crosses a trust boundary:** No
 - **Tags:** In process
 - **Encrypted in transit:** Not assessed
@@ -2951,10 +3299,10 @@ No mitigations.
 
 No mitigations.
 
-#### E26 · Data flow · Report requests
+#### E29 · Data flow · Report requests
 
-- **From:** E22 Threat model API
-- **To:** E18 Report builder
+- **From:** E24 Threat model API
+- **To:** E20 Report builder
 - **Crosses a trust boundary:** No
 - **Tags:** In process
 - **Encrypted in transit:** Not assessed
@@ -3021,9 +3369,9 @@ No mitigations.
 
 No mitigations.
 
-### E27 · Trust boundary · Deployment network › Database server
+### E30 · Trust boundary · Deployment network › Database server
 
-#### E28 · Data store · Account and session records
+#### E31 · Data store · Account and session records
 
 - **Tags:** PostgreSQL
 - **Stores sensitive data:** Yes
@@ -3160,7 +3508,88 @@ No mitigations.
 
 No mitigations.
 
-#### E29 · Data store · Threat model records
+#### E32 · Data store · Job records
+
+- **Tags:** PostgreSQL
+- **Stores sensitive data:** No
+- **Encrypted at rest:** Not assessed
+- **Internet facing:** No
+
+##### A user or service on the network could change data in Job records without permission — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The database is reached by the application and the worker only in the reference deployment\: the AWS guide puts RDS in private subnets reachable from the app\'s security group alone \(deployment\.md\, step3\, step5\)\. The compose defaults are for local use\: they publish the database port on the host and use the documented default password \(docker\-compose\.yml\)\. What a writer can write is bounded by the database\'s own rules
+- **Origin:** Rule-generated
+
+> Job records is not exposed to the internet\, but every account and service that can reach it is a way to change what it holds\. Shared administrative credentials and wide write permissions turn any single mistake or compromise into corrupted data\.
+
+**Mitigations**
+
+1. **Verified** — The database enforces the integrity of job records for every writer\: the states\, a job that has ended never changes again\, a queued job always has a run left\, a running job has a worker and a lease\, and the caps are positive \(packages\/db\/migrations\/016\_jobs\.sql\; tests\: packages\/db\/test\/jobs\-schema\.test\.ts\)
+
+##### Backups of Job records can be altered\, so a restore brings back bad data — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux makes no backups\; the integrity of the operator\'s backups is the operator\'s\, and a restore goes through the same database rules as any write
+- **Origin:** Rule-generated
+
+> A backup is only useful if it holds what was really there\. If someone can change or replace the copies of Job records\, a restore after an incident reinstates the attacker\'s version\, or fails when it is needed most\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Changes to Job records cannot be traced to whoever made them — Low
+
+- **Category:** Repudiation
+- **Risk:** Low (likelihood Medium × impact Low)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> If Job records keeps only its current contents\, nobody can tell afterwards who changed a record\, when\, or what it said before\. A wrong or malicious change cannot be attributed and cannot easily be undone\.
+
+**Mitigations**
+
+1. **Proposed** — A persisted\, tamper\-evident audit log of who changed what \(plan\.md\, Phase 6\)
+2. **Verified** — Starting and cancelling a job each write one stdout line with the account id and the job id\, never a value\, and a job keeps who started it and who cancelled it \(apps\/api\/src\/jobs\/log\.ts\, store\.ts\; tests\: apps\/api\/test\/contract\/v1\/jobs\.test\.ts\)
+
+##### Data in Job records can be deleted or corrupted\, taking the system down with it — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Low)
+- **Status:** Accepted
+- **Reason:**
+  > No route edits or deletes a job beyond queueing and cancelling it\; only someone with the database\'s credentials can\. Losing the job tables loses the history of jobs and the spend log\, not a threat model\, and nothing else in Scrylux waits on them
+- **Origin:** Rule-generated
+
+> A mistaken command\, a bad release or an attacker with write access can delete or overwrite the data in Job records\. The system is then unusable until the data is back\, if it can be\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Job records can run out of space or capacity — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > Job and usage records are small and kept indefinitely\, and every job adds some\. An account can have JOBS\_PER\_ACCOUNT jobs queued or running and start a provider check every PROVIDER\_CHECK\_COOLDOWN\, but any account can create more accounts and Scrylux has no per\-account quota\; watching the storage is the operator\'s job \(docs\/install\.md\, Running the worker\)
+- **Origin:** Rule-generated
+
+> If nothing limits how much can be written to Job records\, one runaway job\, one noisy customer or one attacker can fill it\. When it is full\, writes fail and everything that depends on it stops\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E33 · Data store · Threat model records
 
 - **Tags:** PostgreSQL
 - **Stores sensitive data:** Yes
@@ -3298,9 +3727,9 @@ No mitigations.
 
 No mitigations.
 
-### E30 · Trust boundary · User device
+### E34 · Trust boundary · User device
 
-#### E31 · Process · Web app
+#### E35 · Process · Web app
 
 - **Tags:** React, Vite, TanStack Query
 - **Internet facing:** No
@@ -3486,7 +3915,7 @@ No mitigations.
 
 ### Outside any trust boundary
 
-#### E32 · External entity · API client
+#### E36 · External entity · API client
 
 - **Tags:** Script or integration
 - **Authenticated:** Yes
@@ -3536,7 +3965,7 @@ No mitigations.
 
 1. **Verified** — Every successful \/api\/v1 create\, update and delete writes one stdout line with the account id\, action\, record type and id\, never a value \(apps\/api\/src\/v1\/write\-log\.ts\; tests\: apps\/api\/test\/contract\/v1\/write\-log\.test\.ts\)
 
-#### E33 · External entity · LLM provider \(hosted\)
+#### E37 · External entity · LLM provider \(hosted\)
 
 - **Tags:** HTTPS, Anthropic, OpenAI\-compatible, Amazon Bedrock, Google Gemini, Optional
 - **Authenticated:** Yes
@@ -3572,7 +4001,7 @@ No mitigations.
 
 No mitigations.
 
-#### E34 · External entity · Operator
+#### E38 · External entity · Operator
 
 - **Authenticated:** Not assessed
 - **Internet facing:** No
@@ -3623,7 +4052,7 @@ No mitigations.
 
 No mitigations.
 
-#### E35 · External entity · Secrets manager
+#### E39 · External entity · Secrets manager
 
 - **Tags:** AWS Secrets Manager, Optional
 - **Authenticated:** Yes
@@ -3659,7 +4088,7 @@ No mitigations.
 
 No mitigations.
 
-#### E36 · External entity · Signed\-in user
+#### E40 · External entity · Signed\-in user
 
 - **Authenticated:** Yes
 - **Internet facing:** Yes
@@ -3707,9 +4136,9 @@ No mitigations.
 
 1. **Verified** — Every successful \/api\/v1 create\, update and delete writes one stdout line with the account id\, action\, record type and id\, never a value \(apps\/api\/src\/v1\/write\-log\.ts\; tests\: apps\/api\/test\/contract\/v1\/write\-log\.test\.ts\)
 
-#### E37 · Data flow · API client requests
+#### E41 · Data flow · API client requests
 
-- **From:** E32 API client
+- **From:** E36 API client
 - **To:** E2 Reverse proxy
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Deployment network)
 - **Tags:** HTTP, Bearer token
@@ -3775,9 +4204,9 @@ No mitigations.
 2. **Proposed** — General rate limiting for every route \(plan\.md\, Phase 6\)
 3. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E38 · Data flow · Browser requests
+#### E42 · Data flow · Browser requests
 
-- **From:** E31 Web app
+- **From:** E35 Web app
 - **To:** E2 Reverse proxy
 - **Crosses a trust boundary:** Yes (from User device to Deployment network)
 - **Tags:** HTTP
@@ -3842,10 +4271,10 @@ No mitigations.
 2. **Proposed** — General rate limiting for every route \(plan\.md\, Phase 6\)
 3. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E39 · Data flow · Environment settings
+#### E43 · Data flow · Environment settings
 
-- **From:** E34 Operator
-- **To:** E21 Startup and configuration
+- **From:** E38 Operator
+- **To:** E23 Startup and configuration
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** Environment variables
 - **Encrypted in transit:** Not assessed
@@ -3912,12 +4341,12 @@ No mitigations.
 
 No mitigations.
 
-#### E40 · Data flow · Model requests
+#### E44 · Data flow · Model requests
 
-- **From:** E21 Startup and configuration
-- **To:** E33 LLM provider \(hosted\)
+- **From:** E23 Startup and configuration
+- **To:** E37 LLM provider \(hosted\)
 - **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
-- **Tags:** HTTPS
+- **Tags:** HTTPS, Operator check
 - **Encrypted in transit:** Yes
 - **Authenticated:** Yes
 - **Carries sensitive data:** Yes
@@ -3936,21 +4365,6 @@ No mitigations.
 **Mitigations**
 
 1. **Proposed** — Before document text is sent to a hosted provider\, the UI says that data leaves the install \(Principle VI\; plan\.md\, Phase 3 Milestone 3\)\.
-
-##### Startup and configuration can flood LLM provider \(hosted\) with messages across a trust boundary — Medium
-
-- **Category:** Denial of Service
-- **Risk:** Medium (likelihood Medium × impact Medium)
-- **Status:** Open
-- **Origin:** Rule-generated
-
-> Model requests crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than LLM provider \(hosted\) can handle\, by mistake or on purpose\, and crowd out other work\.
-
-**Mitigations**
-
-1. **Verified** — Every request is tried at most three times\, with at most two retries for a failing provider\, and its output size is bounded \(packages\/llm\/src\/attempts\.ts\, client\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, client\.test\.ts\)\.
-2. **Verified** — Every request reports its tokens and cost in one log line \(packages\/llm\/src\/log\.ts\, usage\.ts\; tests\: packages\/llm\/test\/usage\.test\.ts\)\.
-3. **Proposed** — Per\-job token and cost caps\, so a single job cannot exhaust the provider budget \(plan\.md\, Phase 3 Milestone 2\)\.
 
 ##### Startup and configuration stops working when the outside party LLM provider \(hosted\) is slow or down — Medium
 
@@ -3982,10 +4396,26 @@ No mitigations.
 
 No mitigations.
 
-#### E41 · Data flow · Secrets
+##### Startup and configuration can flood LLM provider \(hosted\) with messages across a trust boundary — Low
 
-- **From:** E35 Secrets manager
-- **To:** E21 Startup and configuration
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > Only the operator\'s check command sends these requests\: one to each configured operation\, run by someone with a shell on the deployment\, and it cannot be started from the interface\. The Jobs page\'s check goes through the worker \(Worker model requests\)\, where the caps\, the limit on active jobs and the cooldown apply
+- **Origin:** Rule-generated
+
+> Model requests crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than LLM provider \(hosted\) can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+1. **Verified** — Every request is tried at most three times\, with at most two retries for a failing provider\, and its output size is bounded \(packages\/llm\/src\/attempts\.ts\, client\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, client\.test\.ts\)\.
+2. **Verified** — Every request reports its tokens and cost in one log line \(packages\/llm\/src\/log\.ts\, usage\.ts\; tests\: packages\/llm\/test\/usage\.test\.ts\)\.
+
+#### E45 · Data flow · Secrets
+
+- **From:** E39 Secrets manager
+- **To:** E23 Startup and configuration
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** HTTPS, AWS SDK
 - **Encrypted in transit:** Yes
@@ -4022,10 +4452,10 @@ No mitigations.
 
 No mitigations.
 
-#### E42 · Data flow · Use the web app
+#### E46 · Data flow · Use the web app
 
-- **From:** E36 Signed\-in user
-- **To:** E31 Web app
+- **From:** E40 Signed\-in user
+- **To:** E35 Web app
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to User device)
 - **Encrypted in transit:** Not assessed
 - **Authenticated:** Yes
@@ -4091,10 +4521,10 @@ No mitigations.
 
 No mitigations.
 
-#### E43 · Data flow · Web app code
+#### E47 · Data flow · Web app code
 
-- **From:** E23 Web app server
-- **To:** E31 Web app
+- **From:** E25 Web app server
+- **To:** E35 Web app
 - **Crosses a trust boundary:** Yes (from Application container to User device)
 - **Encrypted in transit:** Not assessed
 - **Authenticated:** No
@@ -4152,6 +4582,147 @@ No mitigations.
 - **Origin:** Rule-generated
 
 > Web app code crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Web app can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E48 · Data flow · Worker model requests
+
+- **From:** E26 Worker
+- **To:** E37 LLM provider \(hosted\)
+- **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
+- **Tags:** HTTPS
+- **Encrypted in transit:** Yes
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### Sensitive data goes from Worker to an outside party\, LLM provider \(hosted\) — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Accepted for Phase 3 Milestone 2\: the worker sends only the provider check\'s fixed text\, which a person who starts the check cannot change\, with the provider\'s own key\, to the provider that issued it\, and no user content is sent \(apps\/api\/src\/provider\-check\.ts\; tests\: apps\/api\/test\/worker\/run\.test\.ts\)\. The Jobs page and every check\'s result say whether each provider is hosted or local\. Until Phase 3 Milestone 3\, the first milestone that sends user content\; it must show that data leaves the install before a hosted provider is used \(Principle VI\)\.
+- **Origin:** Rule-generated
+
+> Worker model requests carries sensitive data to LLM provider \(hosted\)\, which is outside the system\. Once the data has left\, you cannot control what the recipient does with it\, who else can see it there\, or how long it is kept\.
+
+**Mitigations**
+
+1. **Proposed** — Before document text is sent to a hosted provider\, the UI says that data leaves the install \(Principle VI\; plan\.md\, Phase 3 Milestone 3\)\.
+
+##### Worker can flood LLM provider \(hosted\) with messages across a trust boundary — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Worker model requests crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than LLM provider \(hosted\) can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+1. **Verified** — An account may have JOBS\_PER\_ACCOUNT jobs queued or running and may start a provider check every PROVIDER\_CHECK\_COOLDOWN\, counted from when the last was queued even if it was cancelled \(apps\/api\/src\/jobs\/store\.ts\; tests\: apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/contract\/v1\/jobs\-limit\.test\.ts\, jobs\-cooldown\.test\.ts\)
+2. **Verified** — Every job has a token cap and a cost cap\, checked before each request against the most it could use and counting every earlier run\, so a single job cannot exhaust the provider budget \(apps\/api\/src\/worker\/budget\.ts\, run\.ts\; tests\: apps\/api\/test\/worker\/budget\.test\.ts\)
+3. **Verified** — Every request is tried at most three times and its output size is bounded\; every request reports its tokens and cost \(packages\/llm\/src\/attempts\.ts\, usage\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, usage\.test\.ts\)
+4. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
+##### Worker stops working when the outside party LLM provider \(hosted\) is slow or down — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Worker model requests sends work to LLM provider \(hosted\)\, which is outside the system\. You do not run it and cannot make it available\, so when it is slow or down Worker can be left waiting\, and the failure spreads to whoever depends on Worker\.
+
+**Mitigations**
+
+1. **Verified** — A failing provider is retried at most twice\, with backoff and a bounded wait for retry\-after\, then the request fails with a category \(packages\/llm\/src\/attempts\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\)
+2. **Verified** — A run that fails because the provider is down is tried again after a wait\, up to JOB\_MAX\_RUNS\, and a job ends at its time limit \(JOB\_TIME\_LIMIT\)\; nothing else in Scrylux waits on the worker \(apps\/api\/src\/worker\/run\.ts\; tests\: apps\/api\/test\/worker\/recovery\.test\.ts\)
+3. **Verified** — Every attempt has a time limit \(LLM\_TIMEOUT\, 300 seconds by default\)\, and a request that is cancelled or whose job runs out of time is abandoned within seconds \(packages\/llm\/src\/attempts\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, apps\/api\/test\/worker\/cancel\.test\.ts\, recovery\.test\.ts\)
+
+##### A captured message from Worker to LLM provider \(hosted\) can be sent again — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A hosted provider must be reached over https\, so a request cannot be captured in transit\, and Bedrock requests are signed with a timestamp by the AWS SDK\; a model request changes nothing at the provider\, so a repeat would only produce another answer and its cost\, which the job counts against its caps
+- **Origin:** Rule-generated
+
+> Worker model requests is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and LLM provider \(hosted\) will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E49 · Data flow · Worker settings
+
+- **From:** E38 Operator
+- **To:** E26 Worker
+- **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
+- **Tags:** Environment variables
+- **Encrypted in transit:** Not assessed
+- **Authenticated:** Not assessed
+- **Carries sensitive data:** Yes
+
+##### Anyone who can reach Worker can send it forged data that claims to come from Operator — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > Only someone who controls the host can set its environment\; that is the operator by definition
+- **Origin:** Rule-generated
+
+> Worker settings does not authenticate the sender\, and it crosses a trust boundary\. Worker cannot tell data really sent by Operator from data sent by someone else\, so it may act on forged input\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Operator to Worker can be changed in transit across a trust boundary — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > The operator places the settings in the host\'s environment \(a systemd unit\, a compose file or a secrets manager\)\; Scrylux defines no network path for them
+- **Origin:** Rule-generated
+
+> Worker settings carries data from Operator to Worker without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Operator to Worker readable in transit across a trust boundary — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Not applicable
+- **Reason:**
+  > The operator places the settings in the host\'s environment \(a systemd unit\, a compose file or a secrets manager\)\; Scrylux defines no network path for them
+- **Origin:** Rule-generated
+
+> Worker settings carries data from Operator to Worker without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Operator can flood Worker with messages across a trust boundary — Low
+
+- **Category:** Denial of Service
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > The operator sets the environment once\; there is no stream to flood
+- **Origin:** Rule-generated
+
+> Worker settings crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Worker can handle\, by mistake or on purpose\, and crowd out other work\.
 
 **Mitigations**
 
@@ -4231,6 +4802,21 @@ No mitigations.
 1. **Implemented** — BuildKit is pinned by digest and refreshed by hand \(docs\/ci\.md\, docs\/releasing\.md\)\; Dependabot waits three days before it proposes an action update \(\.github\/dependabot\.yml\)\.
 2. **Verified** — Every third\-party action of every workflow is pinned to a commit SHA\, and the release workflow uses only first\-party actions \(scripts\/workflows\.test\.ts\)\.
 
+##### A job is run twice\, by a worker that was only slow and the one that took it over — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> A worker holds a job on a lease it renews\. If it is slow rather than gone\, another worker can take the job over\, and the first could still write its progress or its result afterwards\.
+
+**Mitigations**
+
+1. **Verified** — A cancel that was asked wins over every way a run can end\, so a job is never left cancelled\-and\-succeeded \(apps\/api\/src\/jobs\/store\.ts\; tests\: apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/worker\/cancel\.test\.ts\)
+2. **Verified** — A job that has ended can never change again\: a database trigger refuses any update of it \(packages\/db\/migrations\/016\_jobs\.sql\; tests\: packages\/db\/test\/jobs\-schema\.test\.ts\)
+3. **Verified** — Every write a worker makes to a job is fenced by a claim number that only a new claim changes\, so a worker that lost its job writes nothing after another has taken it \(apps\/api\/src\/jobs\/store\.ts\; tests\: apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/worker\/recovery\.test\.ts\)
+
 ##### A published image is replaced after publication — Medium
 
 - **Category:** Tampering
@@ -4287,6 +4873,22 @@ No mitigations.
 
 1. **Implemented** — No job references a repository secret \(the test job\'s database credentials are throwaway defaults defined in the workflow\)\, every job runs on pull\_request and never pull\_request\_target\, and every checkout sets persist\-credentials\: false \(\.github\/workflows\/\, docs\/ci\.md\)\. No automated test covers it\: it is held by review
 
+##### A provider key kept in the shared secret reaches the API process — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > The compose files and the documentation give the keys to the worker alone\, in its environment \(docker\-compose\.yml\, docs\/install\.md\, Which process gets what\)\; an operator who keeps keys in the shared secret has chosen to share them with the app\. A separate secret for the worker would close the gap and is not scheduled
+- **Origin:** Manual
+
+> The worker is the only process that uses a provider key\, but both processes read the secrets\-manager secret for the database credentials\, so a key stored there is readable by the API process too\, which never uses it\.
+
+**Mitigations**
+
+1. **Verified** — The API process never reaches the code that sends a provider request \(apps\/api\/test\/worker\/imports\.test\.ts\)
+2. **Implemented** — The compose files give LLM\_API\_KEY and EMBEDDING\_API\_KEY to the worker service alone\, and the API starts without them \(docker\-compose\.yml\, docker\-compose\.release\.yml\; tests\: scripts\/compose\.test\.ts\, apps\/api\/test\/llm\/startup\.test\.ts\)
+
 ##### A secret reaches the image\, a release asset or the pipeline\'s log — Medium
 
 - **Category:** Information Disclosure
@@ -4300,6 +4902,35 @@ No mitigations.
 
 1. **Verified** — The demo and the release\'s text files are scanned for credential\, email address\, IP address and cloud\-account patterns on every pull request \(apps\/api\/test\/demo\/\)\, and the workflow references no secret but the per\-run token \(scripts\/workflows\.test\.ts\)\.
 2. **Implemented** — The image is built by the pipeline from a clean checkout filtered by \.dockerignore\, never from a person\'s machine \(docs\/releasing\.md\)\.
+
+##### A job never ends\, or is held by a worker that is gone — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> A worker can stop in the middle of a job\, a provider can hold a request open\, and a job can keep failing and running again\.
+
+**Mitigations**
+
+1. **Verified** — A job holds a lease its worker renews\; a job whose lease runs out comes back to the queue\, or fails as worker\_lost on its last run\, and a stopping worker hands its jobs back without using up a run \(apps\/api\/src\/jobs\/store\.ts\; tests\: apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/worker\/recovery\.test\.ts\)
+2. **Verified** — A job runs at most JOB\_MAX\_RUNS times and lives at most JOB\_TIME\_LIMIT\, runs and waits together\; its request in progress is abandoned at the deadline \(tests\: apps\/api\/test\/worker\/recovery\.test\.ts\)
+
+##### Many accounts can start provider checks one after another and spend on the provider — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Manual
+
+> Every job is capped and every account is limited\, but any signed\-in account can create more accounts\, each with its own cooldown\, and the caps bound one job and not spend over time\. A request that a crashed worker was making may also be uncounted\, though the provider may bill it\.
+
+**Mitigations**
+
+1. **Verified** — Every job has a token cap and a cost cap\, checked before each request against the most it could use and counting every earlier run\; an account has a limit on its active jobs and a cooldown between its provider checks \(tests\: apps\/api\/test\/worker\/budget\.test\.ts\, apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/contract\/v1\/jobs\-cooldown\.test\.ts\)
+2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+3. **Implemented** — The documentation tells the operator to set a spending limit on the provider account\, which is the only limit on the install as a whole \(docs\/ai\-providers\.md\, Limits\; docs\/install\.md\, Running the worker\)
 
 ##### A tag push runs the release workflow as defined at the tagged commit — Medium
 
@@ -4372,3 +5003,18 @@ No mitigations.
 **Mitigations**
 
 No mitigations.
+
+##### Any signed\-in account can see and cancel every job and start a provider check — Low
+
+- **Category:** Elevation of Privilege
+- **Risk:** Low (likelihood Medium × impact Low)
+- **Status:** Accepted
+- **Reason:**
+  > There are no roles before Phase 6 \(the open risk of the model as a whole\)\. A provider check sends fixed text and spends little\, and it is bounded by the caps\, the limit on an account\'s active jobs and the cooldown\. The widening was called out in Milestone 2\'s spec \(FR\-065\) and is a justified widening in the constitution\'s Threat Model section
+- **Origin:** Manual
+
+> There are no roles\, so a job is not private to the account that started it\, and any signed\-in account can make the provider spend by starting a check\, where until Phase 3 Milestone 2 only an operator with a shell could\.
+
+**Mitigations**
+
+1. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\) and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)

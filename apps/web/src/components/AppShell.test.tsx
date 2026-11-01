@@ -45,6 +45,19 @@ describe('AppShell', () => {
     expect(screen.getByText('projects page')).toBeTruthy();
   });
 
+  it('links to the Jobs page, and asks the API for nothing about jobs (Phase 3 Milestone 2, FR-061a)', () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    try {
+      setup();
+      expect(screen.getByRole('link', { name: 'Jobs' }).getAttribute('href')).toBe('/jobs');
+      // The header is a plain link: no count, no badge, and no request, so a page that shows no job never asks for one.
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('logs out and goes to the sign-in page', async () => {
     const value = setup();
     await userEvent.click(screen.getByRole('button', { name: 'Log out' }));

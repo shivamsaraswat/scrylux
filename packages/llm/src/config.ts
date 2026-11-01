@@ -83,7 +83,13 @@ function parsePrice(name: string, raw: string | undefined): number | undefined {
   return Number(raw);
 }
 
-function parseOperation(env: Env, prefix: Prefix, accepted: readonly ProviderName[], generation: OperationConfig | null): OperationConfig | null {
+function parseOperation(
+  env: Env,
+  prefix: Prefix,
+  accepted: readonly ProviderName[],
+  generation: OperationConfig | null,
+  requireKeys: boolean,
+): OperationConfig | null {
   const providerVar = `${prefix}_PROVIDER`;
   const provider = pickProvider(env, prefix, accepted);
   if (provider === null) {
@@ -106,6 +112,8 @@ function parseOperation(env: Env, prefix: Prefix, accepted: readonly ProviderNam
   if (apiKey === null && prefix === 'EMBEDDING' && sameEndpoint) apiKey = generation.apiKey;
 
   for (const setting of REQUIRED[provider]) {
+    // The API process reports whether AI is configured and holds no key (parseLlmStatus), so a key may be missing there.
+    if (setting === 'API_KEY' && !requireKeys) continue;
     const present = setting === 'API_KEY' ? apiKey !== null : value(setting) !== undefined;
     if (!present) throw new LlmConfigError(`${prefix}_${setting} must be set when ${providerVar} is ${provider}`);
   }
@@ -249,8 +257,22 @@ function parseTimeout(raw: string | undefined): number {
  * Scrylux behaves as v0.1 (FR-005). Otherwise it throws an LlmConfigError for the first problem it finds.
  */
 export function parseLlmConfig(env: Env): LlmConfig {
-  const generation = parseOperation(env, 'LLM', GENERATION_PROVIDERS, null);
-  const embedding = parseOperation(env, 'EMBEDDING', EMBEDDING_PROVIDERS, generation);
+  return parse(env, true);
+}
+
+/**
+ * The same rules as parseLlmConfig, except that a key may be missing: the API process holds no provider key, only the
+ * worker does, and it needs to know only whether generation and embeddings are configured and whether each is hosted
+ * (Phase 3 Milestone 2, FR-071). One parser with a flag, so the two cannot drift. A key that is set is still checked
+ * like any other setting.
+ */
+export function parseLlmStatus(env: Env): LlmStatus {
+  return llmStatus(parse(env, false));
+}
+
+function parse(env: Env, requireKeys: boolean): LlmConfig {
+  const generation = parseOperation(env, 'LLM', GENERATION_PROVIDERS, null, requireKeys);
+  const embedding = parseOperation(env, 'EMBEDDING', EMBEDDING_PROVIDERS, generation, requireKeys);
   const timeoutMs = parseTimeout(set(env, 'LLM_TIMEOUT'));
   refuseVendorVariables(env, generation, embedding);
   return { generation, embedding, timeoutMs };

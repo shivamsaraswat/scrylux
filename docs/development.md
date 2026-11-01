@@ -14,6 +14,8 @@ The API is there too: `GET /health` returns `200 {"status":"ok"}`, and [API.md](
 
 Override the defaults by exporting variables before `docker compose up` (or putting them in a `.env` file next to `docker-compose.yml`): `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `PORT`.
 
+Compose starts three services: `db`, `app`, and a `worker` that runs background jobs (the provider check on the **Jobs** page) from the same image. Nothing else needs the worker, so `docker compose up --build app db` is enough for everything except jobs. From source, `pnpm --filter @scrylux/api worker` starts one; see [Running the worker](install.md#running-the-worker). `pnpm test` runs the job tests one file at a time (they share the database with whatever else is queued), and the browser test for jobs starts its own app, worker and stand-in provider.
+
 Data lives in the `pgdata` volume. `docker compose down -v` wipes it.
 
 If you're used to this project's pre-Phase-1 npm commands, here's the mapping:

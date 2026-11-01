@@ -4,6 +4,10 @@ import { defineConfig } from 'vitest/config';
 // Files whose transactions are long enough to stall the rest of the suite while they run.
 const HEAVY = 'test/contract/v1/exchange-bound.test.ts';
 
+// The job and worker tests. A worker claims any queued job in the shared test database, so these files must not run
+// beside each other or beside a file that queues jobs: they run one at a time, after the others have finished.
+const JOBS = ['test/jobs/**/*.test.ts', 'test/worker/**/*.test.ts', 'test/contract/v1/jobs*.test.ts'];
+
 export default defineConfig({
   resolve: {
     // Workspace packages resolve to source, including inside globalSetup (which Vitest loads
@@ -29,7 +33,11 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: 'api', include: ['test/**/*.test.ts'], exclude: [HEAVY], sequence: { groupOrder: 1 } },
+        test: { name: 'api', include: ['test/**/*.test.ts'], exclude: [HEAVY, ...JOBS], sequence: { groupOrder: 1 } },
+      },
+      {
+        extends: true,
+        test: { name: 'jobs', include: JOBS, fileParallelism: false, sequence: { groupOrder: 3 } },
       },
       {
         extends: true,

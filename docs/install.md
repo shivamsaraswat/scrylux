@@ -79,7 +79,7 @@ The original threat tracker was removed in Phase 1 Milestone 5. On the first sta
 | `LLM_PROVIDER` | no | — (AI off) | Which provider writes text for the AI features: `anthropic`, `openai-compatible` (OpenAI, Azure OpenAI, Ollama, vLLM), `bedrock` or `gemini`. Unset, there is no AI feature and Scrylux never connects to a model provider. See [AI providers](ai-providers.md) |
 | `LLM_MODEL` | with `LLM_PROVIDER` | — | The provider's model id. For Azure OpenAI, the name of your deployment |
 | `LLM_BASE_URL` | with `openai-compatible` | — | The provider's address, for example `https://api.openai.com/v1`, `https://<resource>.openai.azure.com/openai/v1/` or `http://ollama:11434/v1`. It must be `https` unless `LLM_LOCAL=true`. Not accepted for the other providers |
-| `LLM_API_KEY` | with `anthropic` or `gemini`; optional with `openai-compatible` | — | The provider's API key. Also read from the `DB_SECRET_ID` secret. Not accepted for `bedrock`, which uses the AWS credentials of the host |
+| `LLM_API_KEY` | with `anthropic` or `gemini`, for the worker; optional with `openai-compatible` | — | The provider's API key. **Give it to the worker only**: the app does not use it and starts without it. Also read from the `DB_SECRET_ID` secret, which both processes read (see [Which process gets what](#which-process-gets-what)). Not accepted for `bedrock`, which uses the AWS credentials of the host |
 | `LLM_LOCAL` | no | `false` | `true` says the `openai-compatible` provider runs on your own hardware, so data sent to it stays in your install. Scrylux cannot check this, so it is your statement. Any other provider is always hosted, and `true` for it stops Scrylux from starting |
 | `LLM_REGION` | with `bedrock` | — | The AWS region, for example `us-east-1`. Bedrock's credentials come from the instance or task role, or the usual `AWS_*` variables |
 | `EMBEDDING_PROVIDER` | no | — (embeddings off) | Which provider turns text into embeddings: `openai-compatible`, `bedrock` or `gemini`. Optional even when `LLM_PROVIDER` is set |
@@ -92,8 +92,16 @@ The original threat tracker was removed in Phase 1 Milestone 5. On the first sta
 | `LLM_PRICE_INPUT` | no | — | US dollars per million input tokens, to cost a model that Scrylux's price list does not know, or to override it. Set it with `LLM_PRICE_OUTPUT` |
 | `LLM_PRICE_OUTPUT` | no | — | US dollars per million output tokens |
 | `EMBEDDING_PRICE_INPUT` | no | — | US dollars per million input tokens for the embedding model |
+| `JOB_TOKEN_CAP` | no | `500000` | The most tokens one background job may use, over all its runs, from 1 to 1,000,000,000. Each job gets a copy when it is queued; a job stops before any request that could take it past the cap. See [Background jobs](#running-the-worker) |
+| `JOB_COST_CAP` | no | `5` | The most one job may cost, in US dollars (above 0, at most 10,000, up to 6 decimals). The cap cannot be applied to a request whose model has no known price; the token cap still is |
+| `JOB_MAX_RUNS` | no | `3` | How many times a job runs at most, from 1 to 5. A job runs again after a failure that may pass (the provider is unavailable or limiting requests) or when its worker is lost |
+| `JOB_TIME_LIMIT` | no | `60m` | The longest a job lives once it first starts, runs and waits together: a whole number and `s`, `m` or `h`, from `1m` to `24h` |
+| `JOBS_PER_ACCOUNT` | no | `3` | How many jobs one account may have queued or running at once, from 1 to 100 |
+| `PROVIDER_CHECK_COOLDOWN` | no | `5m` | How long an account must wait between provider checks, counted from when the last one was queued, even if it was cancelled: `0` turns it off, otherwise a whole number and `s`, `m` or `h`, up to `24h` |
+| `WORKER_CONCURRENCY` | no | `1` | How many jobs one worker runs at once, from 1 to 32 (the worker reads it) |
+| `WORKER_HEALTH_PORT` | no | `3001` | The port of the worker's `/health` (the worker reads it). The compose files check port 3001: change both together |
 
-Scrylux refuses to start with a bad AI setting, and says which variable. It also refuses while a provider is configured and a variable that the provider libraries read on their own is set (for example `OPENAI_API_KEY`); [AI providers](ai-providers.md) lists them.
+Scrylux refuses to start with a bad AI or job setting, and says which variable. The worker also needs the provider key that the provider takes; the app starts without it. It also refuses while a provider is configured and a variable that the provider libraries read on their own is set (for example `OPENAI_API_KEY`); [AI providers](ai-providers.md) lists them.
 
 ### Behind a load balancer or reverse proxy
 
@@ -101,11 +109,44 @@ Set `TRUST_PROXY` (`1` behind one ALB). Without it every client appears to come 
 
 If `ADMIN_USERNAME`/`ADMIN_PASSWORD` are unset, no user is seeded and nobody can log in. Once logged in, any user can create more users (`POST /api/users`). There are no roles: any logged-in user can also read, change and delete every project and everything in it. There is no user edit or delete.
 
+## Running the worker
+
+The worker runs jobs off the request path, such as the provider check on the **Jobs** page, so that nothing waits on a model while a page is open. It is a second process started from the **same image** as the app, with another command:
+
+```sh
+node dist/worker.js                      # in the image (WORKDIR /app/apps/api)
+pnpm --filter @scrylux/api worker        # from source
+```
+
+Both compose files already run it as a `worker` service next to `app`. To run more of them, scale the service: `docker compose up -d --scale worker=2`. Any number can run against one database: each job is run by one worker at a time, a worker that stops hands its jobs back, and a job held by a worker that crashed comes back to the queue within a minute or so. Each worker runs `WORKER_CONCURRENCY` jobs at once.
+
+- **No worker, no problem for the rest.** Manual threat modeling, reports and imports never use the worker. Without one, jobs wait in the queue; the Jobs page says that no worker is processing jobs.
+- **Health check:** the worker answers `GET /health` with 200 on `WORKER_HEALTH_PORT` (default 3001) while the process is up. It needs no authentication and touches neither the database nor a provider, like the app's. Nothing else is served on it, and the compose files do not publish it.
+- **Caps:** `JOB_TOKEN_CAP` and `JOB_COST_CAP` bound one job, not your spend over time. A person can start a provider check every `PROVIDER_CHECK_COOLDOWN`, and any account can create more accounts, so set a spending limit on the provider account too.
+- **Stopping:** on `SIGTERM` the worker takes no new job, lets running jobs go on for up to 30 seconds, then hands back the ones still running; they run again on another worker. A second signal stops it at once.
+- **Logs** go to stdout, one JSON line per event, with ids and counts and never content, a prompt, a key or an address.
+- **Records:** every job and every request it made are kept in the database, with its tokens and cost, until you delete them yourself. They are small, and the cooldown limits how quickly provider checks add to them.
+
+### Which process gets what
+
+| Setting | App | Worker |
+| --- | --- | --- |
+| `DB_*`, `DB_SECRET_ID` | yes | yes |
+| `JWT_SECRET`, `ADMIN_*`, `TRUST_PROXY`, `PORT`, session and sign-in settings | yes | no |
+| `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL`, `LLM_LOCAL`, `LLM_REGION` and the `EMBEDDING_` ones, `LLM_TIMEOUT`, the prices | yes, to report them | yes |
+| **`LLM_API_KEY`, `EMBEDDING_API_KEY`** | **no** | **yes** |
+| `JOB_*`, `JOBS_PER_ACCOUNT`, `PROVIDER_CHECK_COOLDOWN` | yes: it copies the caps, runs and time limit onto each job and checks the limits | yes: it checks them |
+| `WORKER_CONCURRENCY`, `WORKER_HEALTH_PORT` | checked | used |
+
+The worker is the only process that sends a request to a provider, so it is the only one that needs a key. Give the keys to the `worker` service alone, as both compose files do. A key kept in the secret named by `DB_SECRET_ID` is the exception: both processes read that secret for the database credentials, so a key in it reaches the app as well, though the app never uses it. To keep a key from the app, set it in the worker's environment instead.
+
+With the keys on the worker, `docker compose exec app node dist/llm-check.js` reports a missing key, which is expected. Run the operator's check in the worker's container: `docker compose exec worker node dist/llm-check.js` ([AI providers](ai-providers.md)).
+
 ## Deployment
 
 - Config is entirely environment variables; nothing is read from local files.
 - Logs go to stdout/stderr.
-- Point the load balancer health check at `/health`.
+- Point the load balancer health check at `/health`. A worker has its own, on `WORKER_HEALTH_PORT` (see [Running the worker](#running-the-worker)).
 - The compose defaults for `JWT_SECRET` and passwords are for local use only — set real values in any deployed environment.
 - The app reads its secrets from AWS Secrets Manager when configured to (see `apps/api/src/config.ts`).
 - **Memory:** give the host at least **2 GiB** if it will hold large threat models. Exporting or importing the largest one Scrylux allows (1,000 elements, about 15,000 threats) takes the API about 500 to 650 MB while it runs, on top of about 110 MB at rest, and two at once about 700 MB. A 1 GiB host (such as a `t3.micro`) is fine for ordinary use, but it is not promised to survive several large exports or imports at the same time. Lowering the 64 MiB import limit would not help: memory follows the number of records.

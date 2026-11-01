@@ -72,7 +72,7 @@ function handle(op: Operation<unknown>): RequestHandler {
     } catch (err) {
       const mapped = err instanceof HttpError ? err : mapStorageError(err, op.method === 'delete' ? 'delete' : 'write');
       if (!mapped) throw err;
-      res.status(mapped.status).json({ error: mapped.message });
+      res.set(mapped.headers).status(mapped.status).json({ error: mapped.message });
     }
   };
 }

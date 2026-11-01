@@ -10,11 +10,11 @@ import type { ProviderName } from './types.js';
 // for every provider: schema attempts (FR-014), transient retries (FR-022), free resends when a model refuses a
 // setting, the time limit of each call (FR-010) and cancellation (FR-023).
 
-const MAX_TRANSIENT_RETRIES = 2;
+export const MAX_TRANSIENT_RETRIES = 2;
 const BASE_WAITS_MS = [1000, 2000] as const;
 const JITTER = 0.25;
 const MAX_RETRY_AFTER_MS = 60_000;
-const MAX_ISSUES = 20;
+export const MAX_ISSUES = 20;
 
 export interface LoopRequest<T> {
   provider: ProviderName;

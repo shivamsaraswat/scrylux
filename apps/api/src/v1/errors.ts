@@ -4,6 +4,8 @@ export class HttpError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    // Headers to send with the answer, such as Retry-After on a 429. Fixed values, never built from the request.
+    readonly headers: Readonly<Record<string, string>> = {},
   ) {
     super(message);
     this.name = 'HttpError';

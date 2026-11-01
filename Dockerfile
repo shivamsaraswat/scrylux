@@ -28,6 +28,8 @@ WORKDIR /app/apps/api
 
 COPY --from=builder /prod/api/node_modules ./node_modules
 COPY --from=builder /prod/api/dist ./dist
+# Fixed text the API and the worker read at run time (failure messages and hints), next to dist so one path serves src and dist.
+COPY --from=builder /app/apps/api/data ./data
 COPY --from=builder /prod/api/package.json ./package.json
 COPY --from=builder /app/apps/web/dist /app/apps/web/dist
 

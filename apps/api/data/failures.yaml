@@ -1,0 +1,38 @@
+# Messages and hints for job failures (Phase 3 Milestone 2, FR-064). Fixed text only: no value from a request, a provider
+# or a setting, only the settings' names. {prefix} becomes LLM or EMBEDDING, for the operation that failed. A hint never
+# holds an address. This file is read by the API, which adds the message and hint to a job when it is read, and by the
+# operator's check command, so both say the same thing. To change a hint, edit it here: apps/api/test/jobs/failures.test.ts
+# holds the rules.
+
+# Milestone 1's categories: the message is the layer's own fixed text (FAILURE_MESSAGES), and only the hint is here.
+provider:
+  not_configured: "Check {prefix}_PROVIDER."
+  not_authorized: "Check {prefix}_API_KEY, and that the key may use this model. For Bedrock, check the role’s permissions."
+  not_available: "Check {prefix}_MODEL. For Ollama, run `ollama pull <model>` first. For Bedrock, check that the model is enabled in {prefix}_REGION."
+  rate_limited: "The provider is limiting requests. Wait and run the check again, or look at the limits of the account behind {prefix}_API_KEY, or choose another {prefix}_MODEL."
+  provider_unavailable: "Check that the provider is up and reachable from here ({prefix}_BASE_URL or {prefix}_REGION). A slow local model may need a larger LLM_TIMEOUT."
+  input_too_large: "The check sends only a few words, so the model’s context length is set too low. For Ollama, raise OLLAMA_CONTEXT_LENGTH."
+  output_limit_reached: "The model used up its output limit before it answered. Check {prefix}_MODEL: a model that reasons at length may need another."
+  refused: "The model declined a harmless request. Try another model: {prefix}_MODEL."
+  rejected: "Check that {prefix}_MODEL names a model that can do this, and that the provider accepts what Scrylux sends it."
+  invalid_output: "The model did not answer in the required shape. A small model may fail this, so try a larger one: {prefix}_MODEL."
+  cancelled: "The request was stopped before it finished. Nothing is wrong with the provider."
+
+# The job's own categories: a message and a hint each. cap_below_one_request is the message of a cap_reached failure
+# whose cap was lower than the most one request could use (FR-044).
+job:
+  cap_reached:
+    message: "The job stopped before a request that could have taken it past its token or cost cap."
+    hint: "An operator can raise JOB_TOKEN_CAP or JOB_COST_CAP. A model with high prices may need a higher JOB_COST_CAP."
+  cap_below_one_request:
+    message: "The job's cap is lower than one request to this model needs, so nothing was sent."
+    hint: "An operator can raise JOB_TOKEN_CAP or JOB_COST_CAP, or choose a model with lower prices."
+  timed_out:
+    message: "The job ran out of time."
+    hint: "An operator can raise JOB_TIME_LIMIT. A slow local model may need a larger LLM_TIMEOUT too."
+  worker_lost:
+    message: "The worker running the job stopped, and the job had no runs left."
+    hint: "Check the worker's logs and restart it. Start the job again."
+  job_error:
+    message: "The job failed because of an error in Scrylux."
+    hint: "Check the worker's logs, and report it if it happens again."

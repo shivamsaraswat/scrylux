@@ -1,5 +1,5 @@
-// Kysely table types for the five domain tables. Types only: the tables themselves are defined by
-// the SQL files in migrations/, and test/schema-types.test.ts checks these against the real columns.
+// Kysely table types for the five domain tables and the three job tables. Types only: the tables themselves are
+// defined by the SQL files in migrations/, and test/schema-types.test.ts checks these against the real columns.
 //
 // ColumnType<Select, Insert, Update>: `never` marks a column the database owns (set on insert, or
 // never written), or one that cannot change once the row exists. users and schema_migrations are
@@ -8,6 +8,9 @@ import type { ColumnType, Generated } from 'kysely';
 import type {
   ElementType,
   Impact,
+  JobFailureCategory,
+  JobKind,
+  JobState,
   JsonValue,
   Likelihood,
   Methodology,
@@ -94,10 +97,80 @@ interface MitigationsTable {
   updated_at: Timestamp;
 }
 
+// A column the database fills on insert but the caller may set, such as a time a test needs to choose; never updated.
+type Settable<T> = ColumnType<T, T | undefined, never>;
+// A column a worker or the API changes after the row exists.
+type Mutable<T> = ColumnType<T, T | undefined, T>;
+// BIGINT and NUMERIC come back from the driver as strings, so reading one gives a string and writing one takes either.
+type Exact = ColumnType<string, number | string, never>;
+type Counter = ColumnType<string, number | string | undefined, number | string>;
+
+// The queue and the permanent record of every job (Phase 3 Milestone 2, data-model.md). `claim` only goes up: it is the
+// fencing number of every worker write. Totals are summed from job_usage when read, never stored.
+interface JobsTable {
+  id: Generated<string>;
+  kind: Fixed<JobKind>;
+  input: ColumnType<JsonObject, JsonObject | undefined, never>;
+  state: Mutable<JobState>;
+  created_by: Fixed<number>;
+  queued_at: Settable<Date>;
+  next_run_at: Mutable<Date>;
+  started_at: Mutable<Date | null>;
+  deadline_at: Mutable<Date | null>;
+  finished_at: Mutable<Date | null>;
+  run: Mutable<number>;
+  claim: Counter;
+  max_runs: Fixed<number>;
+  time_limit_ms: Fixed<number>;
+  token_cap: Exact;
+  cost_cap_usd: Exact;
+  worker_id: Mutable<string | null>;
+  lease_expires_at: Mutable<Date | null>;
+  cancel_requested_at: Mutable<Date | null>;
+  cancelled_by: Mutable<number | null>;
+  progress: Mutable<JsonObject | null>;
+  failure_category: Mutable<JobFailureCategory | null>;
+  failure_detail: Mutable<'cap_below_one_request' | null>;
+  result: Mutable<JsonObject | null>;
+}
+
+// One row per model request a job made: Milestone 1's usage record. Never updated.
+interface JobUsageTable {
+  id: ColumnType<string, never, never>;
+  job_id: Fixed<string>;
+  run: Fixed<number>;
+  operation: Fixed<'generate' | 'embed'>;
+  provider: Fixed<string>;
+  model: Fixed<string>;
+  outcome: Fixed<string>;
+  attempts: Fixed<number>;
+  input_tokens: Fixed<number>;
+  output_tokens: Fixed<number>;
+  tokens_estimated: Fixed<boolean>;
+  // NUMERIC: a string when read. NULL means the price is unknown, never zero.
+  cost_usd: ColumnType<string | null, number | string | null, never>;
+  cost_estimated: Fixed<boolean>;
+  price_source: Fixed<'operator' | 'list' | 'none'>;
+  temperature_applied: Fixed<boolean | null>;
+  duration_ms: Fixed<number>;
+  recorded_at: Timestamp;
+}
+
+// One row per running worker process, for "is any worker alive" (FR-008).
+interface WorkersTable {
+  id: Fixed<string>;
+  started_at: Timestamp;
+  last_seen_at: Mutable<Date>;
+  stopping: Mutable<boolean>;
+}
+
 export interface Database {
   projects: ProjectsTable;
   threat_models: ThreatModelsTable;
   elements: ElementsTable;
   threats: ThreatsTable;
   mitigations: MitigationsTable;
+  jobs: JobsTable;
+  job_usage: JobUsageTable;
+  workers: WorkersTable;
 }

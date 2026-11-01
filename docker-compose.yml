@@ -29,7 +29,52 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
-      # AI providers (docs/ai-providers.md). All empty by default, which leaves AI off, as in v0.1.
+      # AI providers (docs/ai-providers.md). All empty by default, which leaves AI off, as in v0.1. The app only reports them:
+      # the provider keys (LLM_API_KEY, EMBEDDING_API_KEY) are given to the worker alone, which is the one process that talks to a provider.
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_LOCAL: ${LLM_LOCAL:-}
+      LLM_REGION: ${LLM_REGION:-}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
+      EMBEDDING_LOCAL: ${EMBEDDING_LOCAL:-}
+      EMBEDDING_REGION: ${EMBEDDING_REGION:-}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-}
+      LLM_PRICE_INPUT: ${LLM_PRICE_INPUT:-}
+      LLM_PRICE_OUTPUT: ${LLM_PRICE_OUTPUT:-}
+      EMBEDDING_PRICE_INPUT: ${EMBEDDING_PRICE_INPUT:-}
+      # Background jobs (docs/install.md). All empty by default, which uses the defaults. The API copies the caps, runs and
+      # time limit onto each job it queues and enforces the limits; the worker runs the jobs.
+      JOB_TOKEN_CAP: ${JOB_TOKEN_CAP:-}
+      JOB_COST_CAP: ${JOB_COST_CAP:-}
+      JOB_MAX_RUNS: ${JOB_MAX_RUNS:-}
+      JOB_TIME_LIMIT: ${JOB_TIME_LIMIT:-}
+      JOBS_PER_ACCOUNT: ${JOBS_PER_ACCOUNT:-}
+      PROVIDER_CHECK_COOLDOWN: ${PROVIDER_CHECK_COOLDOWN:-}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-}
+      WORKER_HEALTH_PORT: ${WORKER_HEALTH_PORT:-}
+    extra_hosts:
+      # So a model server on the host (Ollama) is reachable as host.docker.internal on Linux too.
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # The worker (Phase 3): runs jobs off the request path, from the same image as the app. It publishes no port. Without one,
+  # v0.1 works as before and jobs wait in the queue.
+  worker:
+    build: .
+    command: ["node", "dist/worker.js"]
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: threats
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-devpassword}
+      # AI providers (docs/ai-providers.md), with the provider keys: the worker is the one process that uses them (the app
+      # holds none). All empty by default, which leaves AI off, as in v0.1.
       LLM_PROVIDER: ${LLM_PROVIDER:-}
       LLM_MODEL: ${LLM_MODEL:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-}
@@ -46,9 +91,26 @@ services:
       LLM_PRICE_INPUT: ${LLM_PRICE_INPUT:-}
       LLM_PRICE_OUTPUT: ${LLM_PRICE_OUTPUT:-}
       EMBEDDING_PRICE_INPUT: ${EMBEDDING_PRICE_INPUT:-}
+      # Background jobs (docs/install.md). All empty by default, which uses the defaults. The API copies the caps, runs and
+      # time limit onto each job it queues and enforces the limits; the worker runs the jobs.
+      JOB_TOKEN_CAP: ${JOB_TOKEN_CAP:-}
+      JOB_COST_CAP: ${JOB_COST_CAP:-}
+      JOB_MAX_RUNS: ${JOB_MAX_RUNS:-}
+      JOB_TIME_LIMIT: ${JOB_TIME_LIMIT:-}
+      JOBS_PER_ACCOUNT: ${JOBS_PER_ACCOUNT:-}
+      PROVIDER_CHECK_COOLDOWN: ${PROVIDER_CHECK_COOLDOWN:-}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-}
+      WORKER_HEALTH_PORT: ${WORKER_HEALTH_PORT:-}
     extra_hosts:
       # So a model server on the host (Ollama) is reachable as host.docker.internal on Linux too.
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      # The image has no curl; Node does the request. 3001 is WORKER_HEALTH_PORT's default: change both together.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy

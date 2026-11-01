@@ -5,6 +5,8 @@ import { RouterProvider } from 'react-router/dom';
 import { ApiError } from './api/errors.js';
 import { AppShell } from './components/AppShell.js';
 import { RouteError } from './components/RouteError.js';
+import { JobPage } from './pages/JobPage.js';
+import { JobsPage } from './pages/JobsPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { NotFoundPage } from './pages/NotFoundPage.js';
 import { ProjectPage } from './pages/ProjectPage.js';
@@ -59,6 +61,8 @@ export const appRoutes: RouteObject[] = [
                   { path: '/', element: <Navigate to="/projects" replace /> },
                   { path: '/projects', element: <ProjectsPage /> },
                   { path: '/projects/:projectId', element: <ProjectPage /> },
+                  { path: '/jobs', element: <JobsPage /> },
+                  { path: '/jobs/:jobId', element: <JobPage /> },
                   {
                     // The Threats tab is the page's own address, so existing links keep working.
                     path: '/threat-models/:threatModelId',

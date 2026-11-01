@@ -57,13 +57,68 @@ const COLUMNS = {
     created_at: true,
     updated_at: true,
   },
+  jobs: {
+    id: true,
+    kind: true,
+    input: true,
+    state: true,
+    created_by: true,
+    queued_at: true,
+    next_run_at: true,
+    started_at: true,
+    deadline_at: true,
+    finished_at: true,
+    run: true,
+    claim: true,
+    max_runs: true,
+    time_limit_ms: true,
+    token_cap: true,
+    cost_cap_usd: true,
+    worker_id: true,
+    lease_expires_at: true,
+    cancel_requested_at: true,
+    cancelled_by: true,
+    progress: true,
+    failure_category: true,
+    failure_detail: true,
+    result: true,
+  },
+  job_usage: {
+    id: true,
+    job_id: true,
+    run: true,
+    operation: true,
+    provider: true,
+    model: true,
+    outcome: true,
+    attempts: true,
+    input_tokens: true,
+    output_tokens: true,
+    tokens_estimated: true,
+    cost_usd: true,
+    cost_estimated: true,
+    price_source: true,
+    temperature_applied: true,
+    duration_ms: true,
+    recorded_at: true,
+  },
+  workers: { id: true, started_at: true, last_seen_at: true, stopping: true },
 } satisfies { [T in keyof Database]: Record<keyof Database[T], true> };
 
 afterAll(closePool);
 
 describe('the Kysely table types match the database (research #1)', () => {
-  it('describes exactly the five domain tables', () => {
-    expect(Object.keys(COLUMNS).sort()).toEqual(['elements', 'mitigations', 'projects', 'threat_models', 'threats']);
+  it('describes exactly the five domain tables and the three job tables', () => {
+    expect(Object.keys(COLUMNS).sort()).toEqual([
+      'elements',
+      'job_usage',
+      'jobs',
+      'mitigations',
+      'projects',
+      'threat_models',
+      'threats',
+      'workers',
+    ]);
   });
 
   for (const table of Object.keys(COLUMNS) as (keyof typeof COLUMNS)[]) {

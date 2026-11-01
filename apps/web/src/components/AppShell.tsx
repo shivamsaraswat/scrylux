@@ -33,7 +33,10 @@ export function AppShell() {
   return (
     <>
       <header className="shell-header">
-        <Link to="/projects">Scrylux</Link>
+        <nav className="actions" aria-label="Main">
+          <Link to="/projects">Scrylux</Link>
+          <Link to="/jobs">Jobs</Link>
+        </nav>
         <div className="actions">
           <span>{account?.username}</span>
           <button type="button" onClick={() => askOrDo('logout')}>

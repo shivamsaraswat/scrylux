@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { afterEach, describe, expect, it } from 'vitest';
+import { checkJobConfig } from '../../src/jobs/config.js';
 import { checkLlmConfig, llmEnvironment } from '../../src/llm-startup.js';
 
 const ANTHROPIC = { LLM_PROVIDER: 'anthropic', LLM_MODEL: 'claude-haiku-5-5' };
@@ -33,9 +34,43 @@ describe('checkLlmConfig', () => {
   });
 
   it('refuses a bad setting with a message that names the variable', () => {
-    expect(checkLlmConfig({ ...ANTHROPIC }, {})).toEqual({
+    expect(checkLlmConfig({ LLM_PROVIDER: 'anthropic' }, {})).toEqual({
       ok: false,
-      line: 'Startup failed: invalid AI provider configuration: LLM_API_KEY must be set when LLM_PROVIDER is anthropic',
+      line: 'Startup failed: invalid AI provider configuration: LLM_MODEL must be set when LLM_PROVIDER is anthropic',
+    });
+  });
+
+  // Phase 3 Milestone 2, FR-071: only the worker holds a provider key. The API reports whether AI is configured and starts
+  // without one; the worker keeps Milestone 1's rule that a key is required (test/worker/startup.test.ts).
+  describe('without a provider key (FR-071)', () => {
+    it('starts with a hosted provider selected and no key, and reports it', () => {
+      expect(checkLlmConfig({ ...ANTHROPIC }, {})).toEqual({ ok: true, line: 'AI providers: generation anthropic (hosted), embeddings off' });
+      expect(checkLlmConfig({ LLM_PROVIDER: 'gemini', LLM_MODEL: 'gemini-3-flash', EMBEDDING_PROVIDER: 'gemini', EMBEDDING_MODEL: 'gemini-embedding-001' }, {})).toEqual({
+        ok: true,
+        line: 'AI providers: generation gemini (hosted), embeddings gemini (hosted)',
+      });
+    });
+
+    it('still refuses a key set for a provider that takes none', () => {
+      const bedrock = { LLM_PROVIDER: 'bedrock', LLM_MODEL: 'anthropic.claude-haiku-5-5-v1:0', LLM_REGION: 'us-east-1' };
+      expect(checkLlmConfig(bedrock, {}).ok).toBe(true);
+      expect(checkLlmConfig({ ...bedrock, LLM_API_KEY: 'k' }, {})).toEqual({
+        ok: false,
+        line: expect.stringContaining('LLM_API_KEY') as unknown,
+      });
+    });
+
+    it('still refuses a vendor variable left in the environment', () => {
+      const result = checkLlmConfig({ ...ANTHROPIC, ANTHROPIC_BASE_URL: 'https://elsewhere.example' }, {});
+      expect(result.ok).toBe(false);
+      expect(result.line).toContain('ANTHROPIC_BASE_URL');
+      expect(result.line).not.toContain('elsewhere');
+    });
+
+    it('still refuses the same bad settings as the worker does, for everything but the key', () => {
+      for (const env of [{ LLM_PROVIDER: 'mistral', LLM_MODEL: 'x' }, { ...ANTHROPIC, LLM_LOCAL: 'true' }, { ...ANTHROPIC, LLM_TIMEOUT: '1s' }]) {
+        expect(checkLlmConfig(env, {}).ok, JSON.stringify(env)).toBe(false);
+      }
     });
   });
 
@@ -88,5 +123,20 @@ describe('starting makes no connection to a provider (FR-007)', () => {
     expect(checkLlmConfig(env, {}).ok).toBe(true);
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(requests).toEqual([]);
+  });
+});
+
+describe('the job settings at the API’s start-up (Phase 3 Milestone 2, FR-040, FR-004)', () => {
+  it('accepts the defaults, and every setting a good value', () => {
+    expect(checkJobConfig({})).toMatchObject({ ok: true });
+    expect(checkJobConfig({ JOB_TOKEN_CAP: '1000', JOB_COST_CAP: '1.5', JOB_MAX_RUNS: '2', JOB_TIME_LIMIT: '10m', JOBS_PER_ACCOUNT: '5', PROVIDER_CHECK_COOLDOWN: '0', WORKER_CONCURRENCY: '2', WORKER_HEALTH_PORT: '4000' })).toMatchObject({ ok: true });
+  });
+
+  it('refuses a bad setting with a fixed line that names it and not its value', () => {
+    expect(checkJobConfig({ JOB_MAX_RUNS: '9' })).toEqual({ ok: false, line: 'Startup failed: JOB_MAX_RUNS must be a whole number from 1 to 5' });
+    const secret = checkJobConfig({ JOB_TOKEN_CAP: 'secret-value' });
+    expect(secret.ok).toBe(false);
+    expect(secret).toEqual({ ok: false, line: expect.stringContaining('JOB_TOKEN_CAP') as unknown });
+    expect(JSON.stringify(secret)).not.toContain('secret-value');
   });
 });

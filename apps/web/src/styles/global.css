@@ -265,3 +265,26 @@ dialog::backdrop {
   margin-left: 0;
   color: var(--danger);
 }
+
+.notice {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 4px;
+}
+
+.job-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.job-facts dt {
+  color: var(--muted);
+}
+
+.job-facts dd {
+  margin: 0;
+}

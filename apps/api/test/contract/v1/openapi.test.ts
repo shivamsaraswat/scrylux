@@ -44,6 +44,12 @@ const OPERATION_IDS = [
   'getMitigation',
   'updateMitigation',
   'deleteMitigation',
+  // Phase 3 Milestone 2, contracts/http-api.md.
+  'getJobsStatus',
+  'listJobs',
+  'createJob',
+  'getJob',
+  'cancelJob',
   'getOpenApiDocument',
 ];
 const METHODS = ['get', 'post', 'patch', 'delete'] as const;
@@ -127,7 +133,11 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
       // ThreatGenerationInput is deliberately the empty object (it takes no options), so its `properties` is {}.
       // The `file` of an import is deliberately any JSON object: it is bounded and then parsed by the format's own schema
       // (research #6), so what its members may hold is {}.
-      const intended = pointer === '/components/schemas/ThreatGenerationInput/properties' || pointer === '/components/schemas/ImportInput/properties/file/additionalProperties';
+      // A provider check takes no input (Phase 3 Milestone 2, FR-093), so the input of JobCreateInput is deliberately the empty object.
+      const intended =
+        pointer === '/components/schemas/ThreatGenerationInput/properties' ||
+        pointer === '/components/schemas/ImportInput/properties/file/additionalProperties' ||
+        pointer === '/components/schemas/JobCreateInput/oneOf/0/properties/input/properties';
       if (isEmptyObject && !intended && !path.includes('default') && !path.includes('example')) empty.push(pointer);
     });
     expect(empty).toEqual([]);
@@ -148,13 +158,14 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
       for (const { path } of operationsOf(doc())) expect(path.startsWith('/api/v1/'), path).toBe(true);
     });
 
-    it('describes exactly the 33 operations of the contract', () => {
+    it('describes exactly the operations of the contract', () => {
       const ids = operationsOf(doc()).map(({ op }) => op.operationId);
       expect(ids.sort()).toEqual([...OPERATION_IDS].sort());
     });
 
     it('states the order of each of the 6 lists (FR-003)', () => {
-      const lists = operationsOf(doc()).filter(({ op }) => op.operationId.startsWith('list'));
+      // The jobs list states its own order (Phase 3 Milestone 2).
+      const lists = operationsOf(doc()).filter(({ op }) => op.operationId.startsWith('list') && op.operationId !== 'listJobs');
       expect(lists).toHaveLength(6);
       for (const { op } of lists) expect(op.description, op.operationId).toBe(LIST_ORDER_DESCRIPTION);
     });
@@ -239,8 +250,26 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
     it('documents a query parameter on no other operation', () => {
       for (const { op } of operationsOf(doc())) {
         const inQuery = (op.parameters ?? []).filter((p) => p.in === 'query');
-        if (op.operationId !== 'getThreatModelReport' && op.operationId !== 'exportThreatModel') expect(inQuery, op.operationId).toEqual([]);
+        if (!['getThreatModelReport', 'exportThreatModel', 'listJobs'].includes(op.operationId)) expect(inQuery, op.operationId).toEqual([]);
       }
+    });
+
+    it('documents the job operations with their query, their body, their errors and no key or address (Phase 3 Milestone 2, contracts/http-api.md)', () => {
+      const document = doc();
+      const list = document.paths['/api/v1/jobs']?.get;
+      expect(list?.parameters?.map((p) => [p.name, p.in, p.required])).toEqual([
+        ['limit', 'query', false],
+        ['offset', 'query', false],
+      ]);
+      expect(list?.parameters?.[0]?.schema).toMatchObject({ type: 'integer', minimum: 1, maximum: 100 });
+      expect(list?.parameters?.[1]?.schema).toMatchObject({ type: 'integer', minimum: 0 });
+      expect(Object.keys(list?.responses ?? {}).sort()).toEqual(['200', '400', '401', '500']);
+      expect(Object.keys(document.paths['/api/v1/jobs']?.post?.responses ?? {}).sort()).toEqual(['201', '400', '401', '409', '413', '415', '429', '500']);
+      expect(document.paths['/api/v1/jobs/status']?.get?.operationId).toBe('getJobsStatus');
+      expect(Object.keys(document.paths['/api/v1/jobs/{id}']?.get?.responses ?? {}).sort()).toEqual(['200', '400', '401', '404', '500']);
+      for (const name of ['JobsStatus', 'JobRecord', 'JobDetail', 'JobList', 'JobCreateInput']) expect(document.components.schemas[name], name).toBeDefined();
+      // The records can hold neither a key nor an address (FR-051, FR-091).
+      expect(JSON.stringify([document.components.schemas.JobsStatus, document.components.schemas.JobDetail])).not.toMatch(/api_key|base_url|apiKey|baseUrl/);
     });
 
     it('documents generateThreats with its {} body, its counts and its errors (contracts/generate-threats-api.md)', () => {

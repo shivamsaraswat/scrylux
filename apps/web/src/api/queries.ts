@@ -1,8 +1,12 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
   ElementBatchResult,
   ElementRecord,
   ImportResult,
+  JobDetail,
+  JobList,
+  JobRecord,
+  JobsStatus,
   MitigationRecord,
   ProjectRecord,
   ThreatGenerationResult,
@@ -37,6 +41,9 @@ export const keys = {
   elements: (threatModelId: string) => ['elements', threatModelId] as const,
   threats: (threatModelId: string) => ['threats', threatModelId] as const,
   mitigations: (threatModelId: string) => ['mitigations', threatModelId] as const,
+  jobs: ['jobs'] as const,
+  jobsStatus: ['jobs-status'] as const,
+  job: (id: string) => ['job', id] as const,
 };
 
 // Changes a list the page holds, with what the server answered. A list that was never loaded is left alone. A read
@@ -301,5 +308,63 @@ export function useGenerateThreats(threatModelId: string) {
         client.invalidateQueries({ queryKey: keys.threats(threatModelId) }),
         client.invalidateQueries({ queryKey: keys.mitigations(threatModelId) }),
       ]),
+  });
+}
+
+// ---- jobs (Phase 3 Milestone 2) ----
+//
+// A job that is queued or running changes under the person's eyes, so what is on screen is read again every
+// JOB_POLL_MS while any job shown is active, and not at all otherwise (FR-061). Only the Jobs page and the job page ask,
+// so no other page ever reads a job (FR-061a). The reads are not optimistic: the screen shows what the server last said.
+
+export const JOB_POLL_MS = 2000;
+const JOBS_PAGE_SIZE = 25;
+
+export const isActiveJob = (job: { state: string }): boolean => job.state === 'queued' || job.state === 'running';
+
+export function useJobsStatus(poll: boolean) {
+  return useQuery({
+    queryKey: keys.jobsStatus,
+    queryFn: () => apiGet('/api/v1/jobs/status', JobsStatus),
+    refetchInterval: poll ? JOB_POLL_MS : false,
+  });
+}
+
+// Newest first, a page at a time: each page asks from the number of jobs already shown. A refresh reads every page again.
+export function useJobs() {
+  return useInfiniteQuery({
+    queryKey: keys.jobs,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => apiGet(`/api/v1/jobs?limit=${JOBS_PAGE_SIZE}&offset=${pageParam}`, JobList),
+    getNextPageParam: (last, pages) => (last.has_more ? pages.reduce((sum, page) => sum + page.jobs.length, 0) : undefined),
+    refetchInterval: (query) => (query.state.data?.pages.some((page) => page.jobs.some(isActiveJob)) ? JOB_POLL_MS : false),
+  });
+}
+
+export function useJob(id: string) {
+  return useQuery({
+    queryKey: keys.job(id),
+    queryFn: () => apiGet(`/api/v1/jobs/${id}`, JobDetail),
+    refetchInterval: (query) => (query.state.data !== undefined && isActiveJob(query.state.data) ? JOB_POLL_MS : false),
+  });
+}
+
+// A provider check takes no input: the person only chooses to start it (FR-093).
+export function useStartProviderCheck() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPost('/api/v1/jobs', JobRecord, { kind: 'provider_check', input: {} }),
+    // A refusal (the limit, the cooldown) changes what the page may offer, so the status is read again either way.
+    onSettled: () => Promise.all([client.invalidateQueries({ queryKey: keys.jobs }), client.invalidateQueries({ queryKey: keys.jobsStatus })]),
+  });
+}
+
+// Cancels a job. The answer is the job as it is now: ended at once if it was queued, still running with the request marked if
+// its worker is alive. Either way, and when it had already finished (409), what is shown is read again from the server.
+export function useCancelJob(id: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPost(`/api/v1/jobs/${id}/cancel`, JobRecord, undefined),
+    onSettled: () => Promise.all([client.invalidateQueries({ queryKey: keys.job(id) }), client.invalidateQueries({ queryKey: keys.jobs })]),
   });
 }

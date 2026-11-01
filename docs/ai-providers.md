@@ -2,7 +2,7 @@
 
 Scrylux can ask a language model for structured answers and for embeddings. You choose where the model runs, with environment values, and you can run without one. This page says how to set each provider up, what leaves your install, and what a request costs. The variables are listed in [Install and run](install.md#environment-variables).
 
-No Scrylux feature sends your content to a model yet. This release builds the layer, and the [check](#checking-the-configuration) is the only thing that sends a request, with fixed text and none of your data.
+No Scrylux feature sends your content to a model yet. The [check](#checking-the-configuration) is the only thing that sends a request, with fixed text and none of your data. It runs from the **Jobs** page, in the background, in a separate [worker](install.md#running-the-worker) process: the worker is the only process that talks to a provider, and the only one that holds its key.
 
 ## Running without AI
 
@@ -12,7 +12,7 @@ If you set a provider, Scrylux checks every setting it needs when it starts, and
 
 ## Hosted or local
 
-Data sent to a **hosted** provider leaves your install. Data sent to a **local** one stays in it. Scrylux reports one of the two for each provider it uses, and a later release will show it in the interface.
+Data sent to a **hosted** provider leaves your install. Data sent to a **local** one stays in it. Scrylux reports one of the two for each provider it uses, on the **Jobs** page and in every provider check's result.
 
 - Anthropic, Amazon Bedrock and Gemini are always hosted.
 - An `openai-compatible` provider is hosted unless you say it is local with `LLM_LOCAL=true` (or `EMBEDDING_LOCAL=true`). Scrylux cannot check that statement: a private address can be a proxy to a hosted service, so the address alone proves nothing. Declare it local only when you run the model yourself.
@@ -21,7 +21,7 @@ Data sent to a **hosted** provider leaves your install. Data sent to a **local**
 
 ## Setting up each provider
 
-Put the values in the environment of the `app` service, for example in a `.env` file next to the compose file (never commit it), or export them in your shell. [`.env.example`](../.env.example) lists them all.
+Put the values in a `.env` file next to the compose file (never commit it), or export them in your shell. [`.env.example`](../.env.example) lists them all. Compose passes every setting to both the `app` and the `worker` service, except the keys (`LLM_API_KEY`, `EMBEDDING_API_KEY`), which go to the `worker` alone. The app only reports which providers are configured and whether each is hosted or local, so it starts without a key; the worker needs it.
 
 ### Anthropic
 
@@ -130,7 +130,7 @@ This is the Gemini Developer API with an API key. Gemini through Google Cloud's 
 
 Export it in your shell, or put it in a `.env` file, which is git-ignored. Do not write it into `docker-compose.yml`. On AWS, store it in the Secrets Manager secret that `DB_SECRET_ID` names, under the key `LLM_API_KEY` (and `EMBEDDING_API_KEY`); a value there overrides the environment's.
 
-Scrylux never logs a key, stores it in the database, or sends it to the browser.
+Scrylux never logs a key, stores it in the database, or sends it to the browser. Only the worker uses a key, but both processes read the secret that `DB_SECRET_ID` names (for the database credentials), so a key kept there reaches the app as well, though the app never uses it. To keep a key from the app, set it in the worker's environment instead ([Which process gets what](install.md#which-process-gets-what)).
 
 ## Prices
 
@@ -141,6 +141,8 @@ Each request reports its tokens and what it cost. Scrylux ships a list of prices
 - **Tokens the provider does not report** are estimated from the text and marked as estimated.
 
 ## Limits
+
+- **Per job.** A background job is capped in tokens (`JOB_TOKEN_CAP`, 500,000 by default) and in dollars (`JOB_COST_CAP`, $5). Before each request the job works out the most that request could use, counting every attempt Scrylux may make for it, and does not send it if that would take the job past a cap, counting everything the job has used in all its runs. The job then ends as "cap reached". The dollar cap cannot be applied to a request whose model has no known price: the token cap still is, and the job says its cost is unknown. A provider check on a model with output priced above about $60 per million tokens needs a larger `JOB_COST_CAP`, because one check could use about 90,000 tokens at the largest. These caps bound one job, not your spend over time: set a spending limit on the provider account too.
 
 - **Time.** One request to a provider may take at most `LLM_TIMEOUT` (default five minutes). A request that fails because the provider is overloaded or does not answer is tried again at most twice more, after one and two seconds; a provider that asks for a longer wait than a minute is not waited for.
 - **Output.** A request asks for at most 16,000 tokens of answer unless the feature asks for more, and never more than 32,000. An answer cut off at the limit is not asked for again.
@@ -164,14 +166,18 @@ A test reads the installed provider libraries and fails when one starts reading 
 
 ## Checking the configuration
 
-After you set a provider, check that it works. The check sends one tiny fixed request, with none of your data, to the generation provider and, if you set one, to the embedding provider. It is the only thing in this release that makes a live request.
+After you set a provider, check that it works. The check sends one tiny fixed request, with none of your data, to the generation provider and, if you set one, to the embedding provider. It is the only thing that makes a live request, and there are two ways to run it.
+
+**From the Jobs page.** Any signed-in person can choose **Check AI provider**. It runs as a background job, so a [worker](install.md#running-the-worker) must be running; the page says when none is. The job shows, for each operation, the provider, the model, whether its data leaves the install, whether it worked or why not and what to look at, and what it used. A check costs a few cents at most on a hosted model, so each account can start one every `PROVIDER_CHECK_COOLDOWN` (five minutes by default) and may have `JOBS_PER_ACCOUNT` jobs queued or running. Cancelling a check does not shorten the wait. The job can be cancelled while it runs.
+
+**From a shell.** The same check, where Scrylux is deployed. Run it in the worker's container, because the worker is the one that holds the key:
 
 ```sh
-docker compose exec app node dist/llm-check.js     # in the published container
+docker compose exec worker node dist/llm-check.js  # in the published container
 pnpm --filter @scrylux/api llm:check                # from a source checkout
 ```
 
-It reads the same environment and secrets-manager secret as Scrylux, never the database. Example:
+It sends the same request as the job. It reads the same environment and secrets-manager secret as Scrylux, never the database. Example:
 
 ```text
 Generation: anthropic, model claude-sonnet-5-5, hosted (data sent to it leaves this install)
@@ -200,6 +206,6 @@ The report never shows a key, an address, the provider's own error text or the m
 | `1` | At least one configured operation failed |
 | `2` | A setting is invalid, and the message says which |
 
-A check against a provider that never answers waits for `LLM_TIMEOUT` three times, which is about fifteen minutes at the default. For a quicker answer, shorten it for that run: `docker compose exec -e LLM_TIMEOUT=30s app node dist/llm-check.js`.
+A check against a provider that never answers waits for `LLM_TIMEOUT` three times, which is about fifteen minutes at the default. For a quicker answer, shorten it for that run: `docker compose exec -e LLM_TIMEOUT=30s worker node dist/llm-check.js`.
 
-The check asks for the same output limit as any other request (16,000 tokens), because a model that reasons counts its reasoning against it. On a hosted reasoning model that can cost a few cents.
+The check asks for the same output limit as any other request (16,000 tokens), because a model that reasons counts its reasoning against it. On a hosted reasoning model that can cost a few cents. The Jobs page shows what each check cost.

@@ -1,42 +1,47 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.13.1 → 1.14.0
-Rationale: Phase 3 Milestone 1 (the LLM provider layer, specs/phase-3/milestone-1-llm-provider-layer/) adds `packages/llm`, its
-  four provider adapters (Anthropic, OpenAI-compatible, Amazon Bedrock, Google Gemini), a configuration of 16 environment
-  variables and an operator check command. It adds an asset (LLM provider API keys, and the AWS role Bedrock uses) and a trust
-  boundary (the outbound connection to a hosted model provider), and Principle V requires the Threat Model section, and the
-  committed model, to say so in the same change. This is a MINOR: materially expanded guidance (the threat model's assets,
-  boundaries and four risks, and two rules aligned with what the milestone actually ships). It adds no principle, no endpoint,
-  no table and no UI. No user content is sent to a provider in this milestone.
+Version change: 1.14.0 → 1.15.0
+Rationale: Phase 3 Milestone 2 (the worker and its jobs, specs/phase-3/milestone-2-worker-jobs/) adds a second process, the worker,
+  and five job routes under `/api/v1`. The worker is the only process that talks to an LLM provider and the only one that holds
+  its key; the API holds none. It adds assets (job records and their usage records, which hold no content), entry points (the
+  five routes: start, list, read and cancel a job, and the Jobs page's status), a process, and a change in what any signed-in
+  account can do (see and cancel every job, and start a provider check, which spends on the provider). Principle V requires the
+  Threat Model section, and the committed model, to say so in the same change. This is a MINOR: materially expanded guidance
+  (assets, entry points, a process, and the risks below) and a corrected layout rule. It adds no principle and no UI beyond the
+  Jobs pages.
 Modified principles:
-  - IV: the reference for documenting every environment variable is corrected from `README.md`'s table to the table in
-    `docs/install.md`, where the table moved when the README was shortened for v0.1.
-  - VI: states when its notice that data leaves the install is required: from the first milestone in which user content can
-    reach a provider (Phase 3 Milestone 3, which sends document chunks for embedding). A request made only of fixed text that
-    Scrylux ships, such as the operator's check, holds no user content.
+  - III: the target layout no longer names `apps/worker`. The worker is a second entry point of `apps/api` (`dist/worker.js`, the
+    same image with another command), so the image does not carry a second copy of the dependencies and one configuration loader
+    serves both processes (research #2 of the milestone). The maintainer decided this at planning. `plan.md` changes with it.
   - V (applied, not reworded): the section and `docs/threat-model/` are updated in the same change.
 Added sections: none (existing section set retained: Core Principles, Threat Model (STRIDE),
   Development Workflow & Quality Gates, Governance)
 Removed sections: none
-Threat Model changes: assets (LLM provider API keys, which move from planned to current, and the AWS role for Bedrock) and a
-  trust boundary (the outbound connection to a hosted model provider) are added, with four risks:
-  - Information Disclosure: a provider key disclosed (mitigated: only from the environment or the secrets-manager secret, never
-    logged, stored or sent to the browser, and a variable the provider libraries read on their own is refused at start-up); a
-    hosted provider as a path for data to leave the install (accepted for this milestone: no user content is sent yet).
-  - Tampering: a hostile or misconfigured endpoint answering with crafted output (mitigated: every answer is checked against its
-    schema, no tools are offered, nothing is executed, and a hosted provider must be reached over `https`).
-  - Denial of Service: runaway spend or a hung request (partially mitigated: a time limit per attempt, at most three tries and
-    cancellation here; per-job token and cost caps are Phase 3 Milestone 2's).
-Development Workflow: the sentence that requires eval-harness results for a change to a prompt, a provider adapter or the
-  extraction pipeline is aligned with Principle II: it applies once an LLM-backed feature exists and the harness (Phase 3
-  Milestone 7) is in place. Until then such a pull request says that the gate does not yet apply and how it was tested instead.
-  The sentence said "from Phase 3 onward" without that condition, which this milestone could not meet, and the harness it
-  needs does not exist yet.
+Threat Model changes: assets (job records and their usage records; the provider keys, now held by the worker alone), a process
+  (the worker, started from the same image, with a health port that serves no data), entry points (the five job routes) and
+  the outbound provider boundary, which the worker now uses, are added, with these risks:
+  - Tampering: a job run twice, by a worker that was only slow and one that took the job over (mitigated: every write a worker
+    makes is fenced by a claim number that only goes up; `apps/api/test/jobs/store.test.ts`, `apps/api/test/worker/recovery.test.ts`).
+  - Information Disclosure: a provider key kept in the shared secrets-manager secret reaches the API process, which never uses it
+    (accepted: both processes read that secret for the database credentials; set the keys in the worker's environment instead);
+    job and usage records hold no prompt, answer, key or address (mitigated; `apps/api/test/worker/canary.test.ts`).
+  - Denial of Service: runaway spend (partially mitigated: a token cap and a cost cap on every job, checked against the most the
+    next request could use before it is sent and counting every run; a limit on an account's active jobs; a cooldown between its
+    provider checks; a time limit on the whole job. Open: any account can create more accounts, and one request a crashed
+    worker was making may be uncounted); a job that never ends (mitigated: the job's deadline); the job tables growing (accepted:
+    kept indefinitely, small, and slowed by the cooldown).
+  - Elevation of Privilege: any signed-in account can now see and cancel every job and start a provider check (a justified
+    widening, until Phase 6 brings roles; bounded by the caps, the limit and the cooldown).
+Development Workflow: unchanged. The eval gate does not apply: no prompt, adapter or extraction pipeline changed.
 Development Workflow (kept): a pull request that updates the Threat Model section also updates `docs/threat-model/`.
 Deferred / TODO items: none
 Templates requiring follow-up: none checked in this run (scope of this change is the constitution file only; dependent
   templates read it at runtime per the scope guard).
+Previous change (1.13.1 → 1.14.0): Phase 3 Milestone 1 (the LLM provider layer) added `packages/llm`, its four provider adapters, a
+  configuration of 16 variables and an operator check command; an asset (LLM provider API keys, and the AWS role Bedrock uses),
+  a trust boundary (the outbound connection to a hosted model provider) and four risks; the notice of Principle VI from the first
+  milestone that sends user content; and the eval gate aligned with Principle II. A MINOR.
 Previous change (1.13.0 → 1.13.1): the product was renamed from Specter to Scrylux before its first release, after the name check
   for v0.1 found "Specter" taken (docs/releasing.md). A PATCH: the name changed throughout, and no principle, section, rule or
   risk changed.
@@ -112,8 +117,8 @@ AI pipeline, where regressions are far more expensive to find by hand.
 ### III. Code Quality & Simplicity
 Modules stay small and single-purpose (one route file per resource, one concern per function),
 matching `apps/api/src/v1/` and `apps/api/src/routes/` (one file per resource) and the target layout in
-plan.md (`apps/api`, `apps/web`, `apps/worker`, `packages/core`, `packages/db`,
-`packages/threat-library`, `packages/llm`). From Phase 1 onward all code MUST be strict-mode
+plan.md (`apps/api`, `apps/web`, `packages/core`, `packages/db`,
+`packages/threat-library`, `packages/llm`; the worker is a second entry point of `apps/api`, `src/worker.ts`). From Phase 1 onward all code MUST be strict-mode
 TypeScript; a bare `any` requires an inline justification. Do not introduce an abstraction,
 configuration option, dependency, or a later phase's feature while an earlier phase is in
 progress — plan.md is phased deliberately, and each phase MUST stay YAGNI relative to the
@@ -215,7 +220,10 @@ threat entry records and Milestone 4's legacy links no longer exist: Milestone 5
 published image, `ghcr.io/shivamsaraswat/scrylux`, which every user runs, and the credential the release pipeline holds to publish
 it (the run's `GITHUB_TOKEN` as held by its two publishing jobs; no other secret exists in that pipeline). Since Phase 3 Milestone 1
 (`specs/phase-3/milestone-1-llm-provider-layer/`): LLM provider API keys (`LLM_API_KEY` and `EMBEDDING_API_KEY`, from the environment
-or the secrets-manager secret, never in the database) and, for Bedrock, the AWS role of the host.
+or the secrets-manager secret, never in the database) and, for Bedrock, the AWS role of the host. Since Phase 3 Milestone 2
+(`specs/phase-3/milestone-2-worker-jobs/`): job records and the usage record of every model request a job made (`jobs`, `job_usage`
+and `workers`, kept indefinitely), which hold no prompt, answer, key or address; and the provider keys are held by the worker
+process alone, which is the only one that sends a request to a provider.
 **Assets (planned, not yet implemented)**: from Phase 3 — uploaded design documents, extracted
 text chunks and embeddings, and the LLM outputs derived from them; from
 Phase 4 — read-only repository/IaC access tokens and cloned source code; from Phase 5 —
@@ -240,11 +248,18 @@ boundary sits inside it: the release pipeline (`.github/workflows/release.yml`) 
 creation of a `v*` tag**, which only the repository owner can make (ruleset `release-tags`); the pipelines of pull requests, of
 forks included, hold none. Since Phase 3 Milestone 1 an outbound boundary also exists: from the Scrylux process to a hosted LLM
 provider (Anthropic, OpenAI or Azure OpenAI, Amazon Bedrock, Google Gemini, or an OpenAI-compatible endpoint that the operator has
-not declared local). Today only the operator's check command (`node dist/llm-check.js`) uses it, with fixed text and no user data.
-A model on the operator's own hardware, declared local, stays inside the trust boundary.
+not declared local). Today the worker (for the provider check that a signed-in person starts from the Jobs page) and the operator's
+check command (`node dist/llm-check.js`) use it, both with fixed text and no user data.
+A model on the operator's own hardware, declared local, stays inside the trust boundary. Since Phase 3 Milestone 2 the worker is the
+process that crosses it (`apps/api/src/worker.ts`, started from the same image with another command; it imports no Express and no
+route, and the API never reaches the code that sends a provider request, `apps/api/test/worker/imports.test.ts`). It holds the
+database credentials and the provider keys, and nothing of the web sign-in. Its health port (`WORKER_HEALTH_PORT`, 3001) answers
+`GET /health` with 200 and serves nothing else; the compose files do not publish it. The entry points it adds are five authenticated
+routes under `/api/v1`: `GET /jobs/status`, `GET /jobs`, `POST /jobs`, `GET /jobs/{id}` and `POST /jobs/{id}/cancel`. The OpenAPI document
+describes them. The only job kind is the provider check, which sends the layer's fixed request and takes no input from the person who
+starts it.
 **Trust boundaries (planned)**: Phase 3 adds an inbound boundary for untrusted document content flowing into prompts
-(Milestone 3 onward; prompt-injection surface — see Principle VI), and the worker process of Milestone 2 will use the outbound
-boundary to the LLM provider above. Phase 4 adds a boundary into external source-control/IaC systems (read-only,
+(Milestone 3 onward; prompt-injection surface — see Principle VI). Phase 4 adds a boundary into external source-control/IaC systems (read-only,
 code never executed). Phase 5 adds boundaries into external SaaS integrations and inbound
 webhooks.
 
@@ -376,7 +391,12 @@ webhooks.
   checked against its schema before anything uses it, and a field the schema does not name makes it invalid
   (`packages/llm/src/attempts.ts`); the model is offered no tool and nothing in an answer is executed; and a hosted provider
   must be reached over `https`, with `http` allowed only for a provider the operator declares local, which is the operator's own
-  statement and is not checked.
+  statement and is not checked. *Mitigated (Phase 3 Milestone 2)*: a job run twice, by a worker that was only slow and one that took
+  the job over. A job is held on a lease that its worker renews; every write a worker makes (progress, result, state) is fenced by a
+  claim number that only a new claim changes, so a worker that lost its lease writes nothing after another has the job, and a job
+  that has ended can never change again (a trigger refuses it). Usage records are not fenced, because a request that was made counts
+  against the job's caps whoever records it (`apps/api/test/jobs/store.test.ts`, `apps/api/test/worker/recovery.test.ts`). A job
+  input is checked against its kind's schema before it is queued, a provider check takes none, and no caps can be set by a request.
 - **Repudiation**: *Open risk*: no audit trail persists who created, updated, or deleted a
   threat-model record or a user — the JWT's `sub` is known per-request but never written to storage.
   This is a notable gap precisely because Repudiation is one of the STRIDE categories the app
@@ -442,6 +462,14 @@ webhooks.
   the pipeline from a clean checkout filtered by `.dockerignore`, never from a person's machine (`docs/releasing.md`); the pipeline
   references no secret but the per-run token (`scripts/workflows.test.ts`); and the demo and the release's text files are scanned for
   credential, email address, IP address and cloud-account patterns (`apps/api/test/demo/`).
+  *Mitigated (Phase 3 Milestone 2)*: a job's rows and records hold no prompt, answer, key or address. A failure shows fixed text and a
+  fixed hint (`apps/api/data/failures.yaml`), never the provider's own error; a provider check's result names the provider, the model
+  and whether the provider is hosted or local, and nothing else; and the worker's log lines carry ids and counts only. A fake key and
+  fake content put in a model's answer and in a provider's error are searched for in every log line, row and API answer for each way
+  a job can end (`apps/api/test/worker/canary.test.ts`). *Accepted (Phase 3 Milestone 2)*: a provider key kept in the secrets-manager
+  secret that `DB_SECRET_ID` names also reaches the API process, because both processes read that secret for the database credentials.
+  The API never uses it. To keep a key from the API, set it in the worker's environment, as the compose files do; a separate secret
+  for the worker would close the gap and is left for a later milestone.
 - **Denial of Service**: JSON payloads are capped at 100kb (64 MiB for the two import operations); the `/api/v1` lists are not
   paginated, so a list returns every matching record (low risk at current expected scale, and
   specs/phase-1/milestone-5-rest-api-v1 SC-007 measures a threat model of 1,000 threats and 2,000 mitigations). *Partially mitigated (Phase 1 Milestone 6)*: failed sign-ins are throttled per address, never per
@@ -475,9 +503,20 @@ webhooks.
   (Phase 6) is the remedy. *Open risk*: no rate limiting on any other route. *Planned*: Phase 6 adds general
   rate limiting explicitly. *Partially mitigated (Phase 3 Milestone 1)*: a request to an LLM provider has
   a time limit for each attempt (300 seconds unless the operator changes it), at most three tries against a failing provider, a
-  bounded output size and cancellation, and every request reports its tokens and cost; nothing sends one on a request path yet.
-  *Planned*: from Phase 3 Milestone 2, LLM calls MUST carry per-job token/cost caps (plan.md) so a single job cannot exhaust
-  provider budget or worker capacity.
+  bounded output size and cancellation, and every request reports its tokens and cost. *Partially mitigated (Phase 3 Milestone 2)*:
+  runaway spend by a job. Every job has a token cap (`JOB_TOKEN_CAP`, 500,000) and a cost cap (`JOB_COST_CAP`, $5), copied onto it when
+  it is queued and out of a request's reach. Before each model request the job works out the most that request could use, counting every
+  attempt the layer may make, and does not send it if that would take the job past a cap, counting everything the job has used in every
+  run; so a job's recorded usage stays under its caps, apart from the error of the estimate of its input. The cost cap cannot be applied to
+  a request whose model has no known price (the token cap still is, and the job says its cost is unknown). A job runs at most three times
+  and lives at most an hour, runs and waits together; an account may have three jobs queued or running, and may start a provider check every
+  five minutes (`apps/api/test/worker/budget.test.ts`, `apps/api/test/jobs/store.test.ts`). *Open risk (Phase 3 Milestone 2)*: the
+  caps bound one job, not spend over time. Any signed-in account can create more accounts, each with its own cooldown, and a request
+  that a crashed worker was making may be uncounted, though the provider may bill it. The operator's answer is a spending limit on the
+  provider account (`docs/ai-providers.md`); Phase 6's roles and rate limiting are the remedy. A job that never ends is bounded by its
+  deadline, which the heartbeat notices within seconds while a worker runs; with no worker alive, a job waiting past its deadline is
+  failed by the next worker to start. *Accepted (Phase 3 Milestone 2)*: job and usage records are kept indefinitely and grow with
+  every job; they are small, the cooldown slows provider checks, and the operator watches the storage as for other records.
 - **Elevation of Privilege**: *Open risk, by design, currently unmitigated*: there is no role
   model. Any authenticated user can create additional users (`POST /api/users`) and, since Phase 1
   Milestone 5, can read, change and delete every project, threat model, element, threat and
@@ -522,6 +561,11 @@ webhooks.
   per run, per job, a stored secret nowhere, started only by a tag only the owner can create, refused six ways before it builds, and
   its write jobs run only `docker`, `skopeo` and `gh`; publishing from a maintainer's machine would put a long-lived credential on a
   laptop with nothing between a typo and the registry.
+  *Justified widening (Phase 3 Milestone 2, Principle V)*: any signed-in account can now see and cancel every job, not only its own, and
+  can start a provider check, which makes the provider spend, where until now only an operator with a shell could. There are no roles
+  before Phase 6, a job is not private to its starter, and a provider check spends little: it is bounded by the caps, the limit on an
+  account's active jobs and the cooldown, and the Jobs page says which provider is used and whether its data leaves the install. The
+  widening was called out in the milestone's spec (FR-065) and is accepted until Phase 6.
 
 Any change that adds an endpoint, a new external integration, or a new credential type MUST add
 or update a bullet above in the same PR, whether or not the surrounding phase has been reached.
@@ -564,4 +608,4 @@ rather than silently merged. This file is the source of truth for "why" a rule e
 implementation-level how-to guidance belongs in `README.md`, `API.md`, `CONTRIBUTING.md`, `SECURITY.md`, `plan.md`, and code
 comments, not here.
 
-**Version**: 1.14.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-21
+**Version**: 1.15.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-11-01

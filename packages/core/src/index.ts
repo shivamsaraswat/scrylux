@@ -27,6 +27,7 @@ export * from './schemas/generation.js';
 export * from './schemas/threat.js';
 export * from './schemas/mitigation.js';
 export * from './schemas/report.js';
+export * from './schemas/job.js';
 export * from './exchange/formats.js';
 export * from './exchange/import-io.js';
 export * from './exchange/names.js';

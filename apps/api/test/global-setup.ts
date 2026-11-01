@@ -65,7 +65,11 @@ export default async function setup(): Promise<() => Promise<void>> {
       await pool.query(
         `DELETE FROM projects WHERE created_by IN (SELECT id FROM users WHERE username LIKE 'm6-test-%')`,
       );
-      await pool.query(`DELETE FROM users WHERE username LIKE 'm6-test-%'`);
+      // Phase 3 Milestone 2: the job tests (and the browser spec for jobs) start jobs under these accounts, and jobs.created_by and
+      // jobs.cancelled_by are ON DELETE RESTRICT too. The job tests' own accounts are named jobs-test-*.
+      const testUsers = `SELECT id FROM users WHERE username LIKE 'm6-test-%' OR username LIKE 'jobs-test-%'`;
+      await pool.query(`DELETE FROM jobs WHERE created_by IN (${testUsers}) OR cancelled_by IN (${testUsers})`);
+      await pool.query(`DELETE FROM users WHERE username LIKE 'm6-test-%' OR username LIKE 'jobs-test-%'`);
     } finally {
       await pool.end();
     }

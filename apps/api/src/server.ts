@@ -4,6 +4,7 @@ import config, { parseSessionConfig } from './config.js';
 import { createApp } from './app.js';
 import migrate from './migrate.js';
 import { seedAdminUser } from './auth.js';
+import { checkJobConfig } from './jobs/config.js';
 import { checkLlmConfig } from './llm-startup.js';
 
 // The built web app, resolved relative to this module (never an absolute path, Principle IV). From
@@ -54,6 +55,13 @@ async function main(): Promise<void> {
     return;
   }
   console.log(llm.line);
+  // The job settings (Phase 3 Milestone 2): the API copies them onto every job it queues, so a bad value stops it here.
+  const jobs = checkJobConfig(process.env);
+  if (!jobs.ok) {
+    console.error(jobs.line);
+    process.exit(1);
+    return;
+  }
   await initDatabase();
 
   // Without a build, such as the API run alone in development, only the API is served. The line is

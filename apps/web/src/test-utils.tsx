@@ -25,6 +25,7 @@ interface FakeCall {
 interface FakeContext {
   params: Record<string, string>;
   body: unknown;
+  query: URLSearchParams;
 }
 
 // "GET /api/v1/projects/:id" => handler. A handler may return a Promise, to hold a response open.
@@ -66,7 +67,7 @@ export function installFakeApi(handlers: FakeHandlers = {}) {
       const match = route.regex.exec(url.pathname);
       if (match && route.method === method) {
         const params = Object.fromEntries(route.names.map((name, i) => [name, match[i + 1] ?? '']));
-        return route.handler({ params, body });
+        return route.handler({ params, body, query: url.searchParams });
       }
     }
     throw new Error(`Unexpected request: ${method} ${url.pathname}`);
@@ -166,5 +167,54 @@ export const threatModel = (overrides: Record<string, unknown> = {}) => ({
   status: 'draft',
   created_at: '2026-10-02T10:00:00.000Z',
   updated_at: '2026-10-02T10:00:00.000Z',
+  ...overrides,
+});
+
+export const JOB_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+export const JOB_ID_2 = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+
+export const jobTotals = (overrides: Record<string, unknown> = {}) => ({
+  requests: 0,
+  input_tokens: 0,
+  output_tokens: 0,
+  tokens_estimated: false,
+  cost_usd: 0,
+  cost_known_usd: 0,
+  cost_estimated: false,
+  cost_cap_applied: true,
+  duration_ms: 0,
+  ...overrides,
+});
+
+// A job as the API sends it (JobRecord): queued, started by the signed-in account, with no usage yet.
+export const job = (overrides: Record<string, unknown> = {}) => ({
+  id: JOB_ID,
+  kind: 'provider_check',
+  state: 'queued',
+  started_by: { id: 7, username: 'ada' },
+  cancelled_by: null,
+  cancel_requested: false,
+  worker_lost: false,
+  queued_at: '2026-11-01T10:00:00.000Z',
+  started_at: null,
+  finished_at: null,
+  next_run_at: null,
+  deadline_at: null,
+  run: 0,
+  max_runs: 3,
+  caps: { tokens: 500000, cost_usd: 5 },
+  progress: null,
+  failure: null,
+  totals: jobTotals(),
+  ...overrides,
+});
+
+// A job with its usage records and result (JobDetail).
+export const jobDetail = (overrides: Record<string, unknown> = {}) => ({ ...job(), usage: [], result: null, ...overrides });
+
+export const jobsStatus = (overrides: Record<string, unknown> = {}) => ({
+  worker_alive: true,
+  ai: { generation: { provider: 'openai-compatible', model: 'llama3.2', hosted: false }, embedding: null },
+  provider_check: { offered: true, next_allowed_at: null },
   ...overrides,
 });

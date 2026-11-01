@@ -13,9 +13,9 @@ import { assertStrict, sanitizeFor, toJsonSchema } from './schema.js';
 import type { EmbedResult, EmbeddingRequest, GenerateResult, Llm, LlmConfig, OperationConfig, StructuredRequest, Usage } from './types.js';
 import { buildUsage } from './usage.js';
 
-const DEFAULT_MAX_OUTPUT_TOKENS = 16_000;
+export const DEFAULT_MAX_OUTPUT_TOKENS = 16_000;
 const MAX_OUTPUT_TOKENS = 32_000;
-const DEFAULT_ATTEMPT_LIMIT = 3;
+export const DEFAULT_ATTEMPT_LIMIT = 3;
 const SCHEMA_NAME = /^[a-zA-Z0-9_-]{1,64}$/;
 // A guard against an accidental unbounded call; Milestone 3 may change it when it knows its chunk counts.
 const MAX_EMBEDDING_TEXTS = 1000;

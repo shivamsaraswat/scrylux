@@ -16,6 +16,11 @@ export interface AnthropicAdapterOptions {
  * Anthropic's Messages API through the official SDK, which is loaded here and nowhere else. Retries are the attempt
  * loop's, so the SDK's are off. Every client option that has an environment default is set explicitly, so a stray
  * ANTHROPIC_* variable cannot change the key, the address or the logging (FR-043a, research #12).
+ *
+ * The SDK sends API version 2026-10-21, on which a request that carries `temperature`, `top_p` or `top_k` is refused with a
+ * 400 on every model. So this adapter never sends a temperature, whatever `GenerateInput.temperature` says, and
+ * `data/models.yaml` marks every Anthropic model `temperature: omit` so that the usage record says none was applied.
+ * https://platform.claude.com/docs/en/api/migration-2026-10-21
  */
 export async function createAnthropicAdapter(options: AnthropicAdapterOptions): Promise<Adapter> {
   const sdk = await import('@anthropic-ai/sdk');
@@ -60,7 +65,6 @@ export async function createAnthropicAdapter(options: AnthropicAdapterOptions): 
             max_tokens: input.maxOutputTokens,
             system: input.system,
             messages: [{ role: 'user', content: userTurn(input) }],
-            ...(input.temperature === undefined ? {} : { temperature: input.temperature }),
             ...(input.mode === 'native' ? { output_config: { format: { type: 'json_schema' as const, schema: input.jsonSchema } } } : {}),
           },
           { timeout: input.timeoutMs, signal: input.signal },

@@ -207,9 +207,13 @@ describe('transient retries (FR-022, SC-008)', () => {
 });
 
 describe('free resends (research #4, #6)', () => {
+  // A model that models.yaml says accepts a temperature. Every Anthropic model is marked as refusing one now (API version
+  // 2026-10-21), so these tests use Gemini 2.5, which sends 0.
+  const SENDS_TEMPERATURE = { provider: 'gemini', model: 'gemini-2.5-flash' } as const;
+
   it('14. resends once without a temperature, remembers, and counts no attempt', async () => {
     const { adapter, calls } = scripted(new AdapterError('rejected', { rejectedParam: 'temperature' }), answer(GOOD));
-    const r = await runGenerate(adapter, request(), deps().deps);
+    const r = await runGenerate(adapter, request(SENDS_TEMPERATURE), deps().deps);
     expect(r.outcome.ok).toBe(true);
     expect(calls.map((c) => c.temperature)).toEqual([0, undefined]);
     expect(r.attempts).toBe(1);
@@ -217,7 +221,7 @@ describe('free resends (research #4, #6)', () => {
     expect(r.temperatureApplied).toBe(false);
 
     const next = scripted(answer(GOOD));
-    await runGenerate(next.adapter, request(), deps().deps);
+    await runGenerate(next.adapter, request(SENDS_TEMPERATURE), deps().deps);
     expect(next.calls[0]?.temperature).toBeUndefined();
   });
 
@@ -349,7 +353,7 @@ describe('the time limit (FR-010), enforced in the loop', () => {
 describe('what the adapter is given', () => {
   it('21. temperature is 0 when the model accepts one, and temperatureApplied says so', async () => {
     const { adapter, calls } = scripted(answer(GOOD));
-    const r = await runGenerate(adapter, request(), deps().deps);
+    const r = await runGenerate(adapter, request({ provider: 'gemini', model: 'gemini-2.5-flash' }), deps().deps);
     expect(calls[0]?.temperature).toBe(0);
     expect(r.temperatureApplied).toBe(true);
   });
@@ -359,6 +363,15 @@ describe('what the adapter is given', () => {
     const r = await runGenerate(adapter, request({ model: 'claude-opus-5-5' }), deps().deps);
     expect(calls[0]?.temperature).toBeUndefined();
     expect(r.temperatureApplied).toBe(false);
+  });
+
+  it('21d. no temperature for any Anthropic model, an old one or one the file does not know, and temperatureApplied is false', async () => {
+    for (const model of ['claude-sonnet-4-6', 'claude-haiku-4-5', 'claude-test']) {
+      const { adapter, calls } = scripted(answer(GOOD));
+      const r = await runGenerate(adapter, request({ model }), deps().deps);
+      expect(calls[0]?.temperature, model).toBeUndefined();
+      expect(r.temperatureApplied, model).toBe(false);
+    }
   });
 
   it('21c. passes the limits, the schema name and the time limit through', async () => {

@@ -31,8 +31,12 @@ anthropic:
     temperature: omit
     reason: "This model does not accept a temperature; a request that sets one is refused with a 400"
     source: https://platform.claude.com/docs/en/about-claude/models/overview
+  # Every other Claude model. The SDK sends API version 2026-10-21, which refuses a temperature on every model, including
+  # the older ones that accept one on the previous version. The entries above say the same for the models they name.
   - match: "*"
-    temperature: send
+    temperature: omit
+    reason: "API version 2026-10-21, which the SDK sends, refuses temperature, top_p and top_k with a 400 on every model"
+    source: https://platform.claude.com/docs/en/api/migration-2026-10-21
     structured_output: native
 
 openai-compatible:

@@ -144,11 +144,13 @@ describe('the shipped models.yaml', () => {
 
   it.each([
     ['anthropic', 'claude-opus-5-5', 'omit'],
-    ['anthropic', 'claude-opus-4-6', 'send'],
+    // API version 2026-10-21 (the SDK's) refuses a temperature on every model, the older ones included.
+    ['anthropic', 'claude-opus-4-6', 'omit'],
     ['anthropic', 'claude-sonnet-5-5', 'omit'],
     ['anthropic', 'claude-haiku-5-5', 'omit'],
-    ['anthropic', 'claude-sonnet-4-6', 'send'],
-    ['anthropic', 'claude-haiku-4-5', 'send'],
+    ['anthropic', 'claude-sonnet-4-6', 'omit'],
+    ['anthropic', 'claude-haiku-4-5', 'omit'],
+    ['anthropic', 'a-claude-model-from-the-future', 'omit'],
     ['gemini', 'gemini-2.5-flash', 'send'],
     ['gemini', 'gemini-3.8-flash', 'omit'],
     ['gemini', 'gemini-4-argon', 'omit'],

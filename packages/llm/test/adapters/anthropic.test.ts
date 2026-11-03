@@ -62,10 +62,19 @@ describe('the request', () => {
     expect(req?.body).not.toHaveProperty('stream');
   });
 
-  it('sends temperature 0 only when given one', async () => {
+  it('never sends a temperature, even when given one: API version 2026-10-21 refuses it on every model', async () => {
     stub.enqueue(anthropicMessage());
     await adapter.generateOnce(input({ temperature: 0 }));
-    expect(stub.requests[0]?.body).toMatchObject({ temperature: 0 });
+    const body = stub.requests[0]?.body;
+    expect(body).not.toHaveProperty('temperature');
+    expect(body).not.toHaveProperty('top_p');
+    expect(body).not.toHaveProperty('top_k');
+  });
+
+  it('asks for API version 2026-10-21', async () => {
+    stub.enqueue(anthropicMessage());
+    await adapter.generateOnce(input());
+    expect(stub.requests[0]?.headers['anthropic-version']).toBe('2026-10-21');
   });
 
   it('asks for JSON in the instructions only, with no output_config', async () => {
@@ -81,12 +90,14 @@ describe('the request', () => {
     expect(body.messages[0]?.content).toBe('USER-TEXT\n\nRETRY-NOTE');
   });
 
-  it('authenticates with x-api-key and sends no bearer token', async () => {
+  // SDK 1.x sends an API key as `Authorization: Bearer` (the Claude API accepts either header). Nothing else is sent: one
+  // credential per request, and no second copy of the key in x-api-key.
+  it('authenticates with the key as a bearer token and sends no x-api-key', async () => {
     stub.enqueue(anthropicMessage());
     await adapter.generateOnce(input());
     const headers = stub.requests[0]?.headers ?? {};
-    expect(headers['x-api-key']).toBe('sk-fake-key');
-    expect(headers).not.toHaveProperty('authorization');
+    expect(headers['authorization']).toBe('Bearer sk-fake-key');
+    expect(headers).not.toHaveProperty('x-api-key');
   });
 });
 

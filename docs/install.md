@@ -109,6 +109,8 @@ The original threat tracker was removed in Phase 1 Milestone 5. On the first sta
 | `EXTRACT_MEMORY_MB` | no | `1024` | The most memory reading one file may use, from 128 to 8,192. A 10 MB PDF needs about 640 MB however little text it holds, and a Word file of a million characters about 320 MB (the worker reads it) |
 | `EXTRACT_UNPACKED_MB` | no | `50` | The most the parts of a Word file that are read may unpack to, from 1 to 1,000 MB (the worker reads it) |
 | `EXTRACT_MAX_PAGES` | no | `2000` | The most pages of one PDF, from 1 to 100,000 (the worker reads it) |
+| `EXTRACTION_CONTEXT_CHARS` | no | `36000` | The most chunk text one extraction sends to the generation model, from 2,000 to 2,000,000 characters. A threat model whose ready documents fit it is read whole; a larger one is read in part, by the chunks most relevant to a system model. At the default one request needs a model context of **32,768 tokens**; about 1,000 more tokens of context for every 4,000 characters you add (both the app and the worker read it, and they should agree) |
+| `EXTRACTION_MAX_OUTPUT_TOKENS` | no | `12000` | The longest draft the model may write, from 1,000 to 32,000 tokens. A draft cut off at it fails as "output limit reached" and is not tried again until you raise it or change the model (both the app and the worker read it, and they should agree) |
 | `STORAGE_BACKEND` | no | `local` | Where the files that are being processed are kept: `local` (a directory) or `s3` (an S3-compatible service). Both processes need the same value |
 | `STORAGE_DIR` | no | `storage` | `local` only: a directory, relative to the working directory (`/app/apps/api/storage` in the image) or absolute. Both processes must be able to write it, which the `storage` volume of the compose files does |
 | `STORAGE_S3_BUCKET` | with `s3` | — | The bucket. Give Scrylux a bucket of its own, or a prefix of its own in one: it deletes what it finds under its prefix that has the shape of its files |
@@ -157,6 +159,7 @@ Both compose files already run it as a `worker` service next to `app`. To run mo
 | `SOURCE_MAX_MB`, `SOURCES_PER_THREAT_MODEL`, `INGESTION_JOBS_PER_ACCOUNT` | yes: it checks the limits when a document is added | no |
 | `DOCUMENT_SPACE` | yes | yes |
 | `SOURCE_MAX_CHARS`, `EXTRACT_*` | no | yes |
+| `EXTRACTION_CONTEXT_CHARS`, `EXTRACTION_MAX_OUTPUT_TOKENS` | yes: it decides how a start goes and which retries it allows | yes: it sends the request |
 | `STORAGE_*` | yes: it stores the uploads | yes: it reads them and removes them |
 | **`STORAGE_S3_ACCESS_KEY_ID`, `STORAGE_S3_SECRET_ACCESS_KEY`** | **yes** (it stores uploads) | **yes** |
 
@@ -166,7 +169,7 @@ With the keys on the worker, `docker compose exec app node dist/llm-check.js` re
 
 ## Documents and storage
 
-From v0.2 a threat model can hold **documents**: design documents, as `.md`, `.txt`, `.pdf` and `.docx` files or pasted text. Scrylux reads each one, cuts its text into chunks of at most 2,000 characters and gives each chunk an embedding, which later releases search. **Adding documents needs an embedding provider** (`EMBEDDING_PROVIDER`, [AI providers](ai-providers.md)) and a running worker; without them, everything else works as before and the Sources tab says what is missing.
+From v0.2 a threat model can hold **documents**: design documents, as `.md`, `.txt`, `.pdf` and `.docx` files or pasted text. Scrylux reads each one, cuts its text into chunks of at most 2,000 characters and gives each chunk an embedding, which extraction searches when your documents are too large to read whole. **Adding documents needs an embedding provider** (`EMBEDDING_PROVIDER`, [AI providers](ai-providers.md)) and a running worker; without them, everything else works as before and the Sources tab says what is missing.
 
 ### Storage
 

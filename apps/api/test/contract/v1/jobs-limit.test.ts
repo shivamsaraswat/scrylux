@@ -25,7 +25,7 @@ describe('/api/v1/jobs: the limit on active jobs per account (FR-046)', () => {
     await server.close();
   });
   beforeEach(async () => {
-    await db.query('TRUNCATE jobs, job_usage, workers');
+    await db.query('TRUNCATE jobs, job_usage, workers CASCADE');
   });
 
   const start = (who: V1Client = c) => who.raw('/jobs', { method: 'POST', body: JSON.stringify({ kind: 'provider_check', input: {} }) });

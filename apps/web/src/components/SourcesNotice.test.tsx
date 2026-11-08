@@ -15,10 +15,11 @@ describe('the wording', () => {
     expect(screen.getByRole('note').textContent).toContain('Text you add here is sent to Anthropic outside this install, to make its embeddings.');
   });
 
-  it('says the AI features of later releases send the text out, when generation is hosted', () => {
+  it('says that starting an extraction on the Draft tab sends the text out, when generation is hosted', () => {
     render(<SourcesNotice ai={{ generation: { provider: 'gemini', model: 'g', hosted: true }, embedding: LOCAL }} />);
     const text = screen.getByRole('note').textContent;
-    expect(text).toContain('When the AI features of later releases run, they send this text to Google Gemini outside this install.');
+    expect(text).toContain('When you start an extraction on the Draft tab, it sends this text to Google Gemini outside this install.');
+    expect(text).not.toContain('later releases');
     // The embeddings are local, so nothing is said to be sent for them.
     expect(text).not.toContain('to make its embeddings');
   });
@@ -27,7 +28,7 @@ describe('the wording', () => {
     render(<SourcesNotice ai={{ generation: { provider: 'bedrock', model: 'b', hosted: true }, embedding: HOSTED }} />);
     const text = screen.getByRole('note').textContent;
     expect(text).toContain('sent to Anthropic outside this install');
-    expect(text).toContain('send this text to Amazon Bedrock outside this install');
+    expect(text).toContain('it sends this text to Amazon Bedrock outside this install');
   });
 
   it('says the text stays in the install when every configured provider is local', () => {
@@ -102,7 +103,7 @@ describe('on the Sources tab', () => {
     expect(await screen.findByText(/Adding documents needs an embedding provider/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Upload' })).toBeNull();
     const note = screen.getByRole('note');
-    expect(note.textContent).toContain('send this text to Anthropic outside this install');
+    expect(note.textContent).toContain('it sends this text to Anthropic outside this install');
   });
 
   it('is on screen again on a later visit', async () => {

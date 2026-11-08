@@ -22,7 +22,7 @@ describe('/api/v1/jobs with AI off', () => {
     await server.close();
   });
   beforeEach(async () => {
-    await db.query('TRUNCATE jobs, job_usage, workers');
+    await db.query('TRUNCATE jobs, job_usage, workers CASCADE');
   });
 
   it('reports no provider and does not offer the check', async () => {

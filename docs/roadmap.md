@@ -13,6 +13,6 @@ Built one phase at a time; each phase ends with something usable.
 | 6 | Enterprise readiness: RBAC, SSO (OIDC/SAML), audit log, versioning and approvals, Helm chart | v1.0 |
 | 7 | More methodologies and frameworks: LINDDUN, MAESTRO (agentic AI), attack trees, ATT&CK/CAPEC/CWE mapping, compliance mapping | v1.x |
 
-Phase 3 is built a milestone at a time. So far on the main branch: the provider layer and the worker that runs jobs, and, as the third milestone, **documents**: a threat model can hold `.md`, `.txt`, `.pdf` and `.docx` files and pasted text, which Scrylux reads, cuts into chunks and gives embeddings (nothing is drafted from them yet; that is the next milestone, and v0.2 is not yet released). See [Documents and storage](install.md#documents-and-storage).
+Phase 3 is built a milestone at a time. So far on the main branch: the provider layer and the worker that runs jobs; **documents**, as the third milestone: a threat model can hold `.md`, `.txt`, `.pdf` and `.docx` files and pasted text, which Scrylux reads, cuts into chunks and gives embeddings; and, as the fourth, **system extraction**: **Start extraction** on a threat model's Draft tab asks your generation model to propose the system the documents describe, as a read-only draft with a rationale and a quoted passage for every item. A draft is not part of the threat model, and accepting its items is the next milestone; v0.2 is not yet released. See [Documents and storage](install.md#documents-and-storage) and [Extraction](ai-providers.md#extraction).
 
 Back to the [README](../README.md).

@@ -32,7 +32,7 @@ export async function makeUser(): Promise<number> {
   return row.id;
 }
 
-export const resetJobTables = (): Promise<unknown> => db.query('TRUNCATE jobs, job_usage, workers');
+export const resetJobTables = (): Promise<unknown> => db.query('TRUNCATE jobs, job_usage, workers CASCADE');
 
 /** A provider configuration whose models are served by the stub at `url`, declared local so plain http is accepted. */
 export function localConfig(url: string, options: { embeddings?: boolean; extra?: Record<string, string> } = {}): LlmConfig {

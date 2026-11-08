@@ -215,8 +215,9 @@ export const job = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-// A job with its usage records and result (JobDetail). `ingestion` is what an ingestion kept of its run: counts only.
-export const jobDetail = (overrides: Record<string, unknown> = {}) => ({ ...job(), usage: [], result: null, ingestion: null, ...overrides });
+// A job with its usage records and result (JobDetail). `ingestion` is what an ingestion kept of its run, and `extraction` what an
+// extraction kept of its run: counts only.
+export const jobDetail = (overrides: Record<string, unknown> = {}) => ({ ...job(), usage: [], result: null, ingestion: null, extraction: null, ...overrides });
 
 export const jobsStatus = (overrides: Record<string, unknown> = {}) => ({
   worker_alive: true,
@@ -284,3 +285,111 @@ export const chunk = (overrides: Record<string, unknown> = {}) => ({
   heading: null,
   ...overrides,
 });
+
+// ---- extraction and the draft (Phase 3 Milestone 4) ----
+
+export const DRAFT_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+export const DRAFT_API_ID = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a1a1';
+export const DRAFT_DB_ID = 'a2a2a2a2-a2a2-42a2-82a2-a2a2a2a2a2a2';
+export const DRAFT_FLOW_ID = 'a3a3a3a3-a3a3-43a3-83a3-a3a3a3a3a3a3';
+export const DRAFT_BOUNDARY_ID = 'a4a4a4a4-a4a4-44a4-84a4-a4a4a4a4a4a4';
+export const DRAFT_ASSET_ID = 'a5a5a5a5-a5a5-45a5-85a5-a5a5a5a5a5a5';
+export const DRAFT_ASSUMPTION_ID = 'a6a6a6a6-a6a6-46a6-86a6-a6a6a6a6a6a6';
+
+/** A chunk a citation points at: where in which source it is. */
+export const citedChunk = (overrides: Record<string, unknown> = {}) => ({
+  id: CHUNK_ID,
+  source_id: SOURCE_ID,
+  source_name: 'design.md',
+  position: 3,
+  page_first: null,
+  page_last: null,
+  line_first: 10,
+  line_last: 24,
+  heading: 'Architecture',
+  ...overrides,
+});
+
+export const citation = (overrides: Record<string, unknown> = {}) => ({ chunk: citedChunk(), quote: 'The API is exposed to the internet', ...overrides });
+
+/** A small draft: a boundary holding a database, an API, a flow between them, an asset and an assumption. */
+export const draftRecord = (overrides: Record<string, unknown> = {}) => ({
+  id: DRAFT_ID,
+  threat_model_id: MODEL_ID,
+  made_at: '2026-11-08T10:00:00.000Z',
+  started_by: { id: 7, username: 'ada' },
+  job_id: JOB_ID,
+  generation_model: 'claude-test',
+  prompt_version: 'extract-system/0123456789ab',
+  path: 'whole',
+  chunks_read: 18,
+  chunks_available: 18,
+  sources: [
+    { id: SOURCE_ID, name: 'design.md', read: true },
+    { id: SOURCE_ID_2, name: 'notes.txt', read: true },
+    { id: 'abababab-abab-4bab-8bab-abababababab', name: 'ops.md', read: true },
+  ],
+  sources_deleted: 0,
+  sources_changed: false,
+  nothing_found: null,
+  elements: [
+    {
+      id: DRAFT_API_ID,
+      type: 'process',
+      name: 'API',
+      boundary_id: null,
+      source_id: null,
+      target_id: null,
+      flags: [{ flag: 'internet_facing', value: true, citations: [citation()] }],
+      rationale: 'The API serves the web application.',
+      citations: [citation()],
+    },
+    {
+      id: DRAFT_DB_ID,
+      type: 'data_store',
+      name: 'Database',
+      boundary_id: DRAFT_BOUNDARY_ID,
+      source_id: null,
+      target_id: null,
+      flags: [],
+      rationale: 'Threats are kept in a database.',
+      citations: [citation({ quote: 'stores threats in a PostgreSQL database' })],
+    },
+    {
+      id: DRAFT_FLOW_ID,
+      type: 'data_flow',
+      name: 'Threat data',
+      boundary_id: null,
+      source_id: DRAFT_API_ID,
+      target_id: DRAFT_DB_ID,
+      flags: [],
+      rationale: 'The API reads and writes threats.',
+      citations: [citation()],
+    },
+    {
+      id: DRAFT_BOUNDARY_ID,
+      type: 'trust_boundary',
+      name: 'Private network',
+      boundary_id: null,
+      source_id: null,
+      target_id: null,
+      flags: [],
+      rationale: 'The database is on a private network.',
+      citations: [citation({ quote: 'runs in a private network' })],
+    },
+  ],
+  assets: [{ id: DRAFT_ASSET_ID, name: 'Threat data', description: 'The threats the application stores.', held_by: [DRAFT_DB_ID], rationale: 'The database holds them.', citations: [citation()] }],
+  assumptions: [{ id: DRAFT_ASSUMPTION_ID, statement: 'The network keeps outsiders away from the database.', rationale: 'The design relies on it.', citations: [citation()] }],
+  read_chunks: [{ source_id: SOURCE_ID, position: 0 }],
+  ...overrides,
+});
+
+export const extractionStatus = (overrides: Record<string, unknown> = {}) => ({
+  latest: null,
+  start: { offered: true, path: 'whole', replaces_draft: false },
+  chunks_available: 18,
+  budget_chars: 36000,
+  ...overrides,
+});
+
+export const notOffered = (reason: string, message: string, source_ids: string[] = []) => ({ offered: false, reason, message, source_ids });

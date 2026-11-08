@@ -27,7 +27,7 @@ describe('/api/v1/jobs: the cooldown between provider checks (FR-047)', () => {
     await server.close();
   });
   beforeEach(async () => {
-    await db.query('TRUNCATE jobs, job_usage, workers');
+    await db.query('TRUNCATE jobs, job_usage, workers CASCADE');
   });
 
   const status = async (who: V1Client = c) => JobsStatus.parse((await who.get('/jobs/status')).body);

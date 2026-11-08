@@ -1,5 +1,6 @@
 import { elementOperations } from './elements.js';
 import { exchangeOperations } from './exchange.js';
+import { extractionOperations } from './extraction.js';
 import { generateOperations } from './generate.js';
 import { jobOperations } from './jobs.js';
 import { mitigationOperations } from './mitigations.js';
@@ -22,4 +23,5 @@ export const resourceOperations: Operation<unknown>[] = [
   ...mitigationOperations,
   ...jobOperations,
   ...sourceOperations,
+  ...extractionOperations,
 ];

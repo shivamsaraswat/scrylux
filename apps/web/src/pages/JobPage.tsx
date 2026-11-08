@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router';
 import { isActiveJob, useCancelJob, useJob } from '../api/queries.js';
 import { isGone, writeErrorMessage } from '../api/errors.js';
 import { ConfirmDialog } from '../components/ConfirmDialog.js';
-import { KIND_LABEL, costText, dollars, failureWords, progressLabel, stateLabel, time, tokenText } from '../components/job-format.js';
+import { KIND_LABEL, costText, dollars, failureWords, itemCountsText, leftOutText, progressLabel, readSummary, stateLabel, time, tokenText } from '../components/job-format.js';
 import { LoadError } from '../components/LoadError.js';
 import { NotFoundPage } from './NotFoundPage.js';
 
@@ -67,7 +67,15 @@ function JobView({ id }: { id: string }) {
         <dd>{stateLabel(job)}</dd>
         <dt>Started by</dt>
         <dd>{job.started_by.username}</dd>
-        {job.kind !== 'provider_check' && (
+        {job.kind === 'extract_system' && (
+          <>
+            <dt>Threat model</dt>
+            <dd>
+              {job.threat_model_id !== null ? <Link to={`/threat-models/${job.threat_model_id}/draft`}>Open the draft</Link> : 'The threat model was deleted'}
+            </dd>
+          </>
+        )}
+        {(job.kind === 'ingest_source' || job.kind === 'refresh_embeddings') && (
           <>
             <dt>Document</dt>
             <dd>
@@ -172,6 +180,14 @@ function JobView({ id }: { id: string }) {
         </section>
       )}
 
+      {job.extraction !== null && (
+        <section aria-labelledby="extraction-heading">
+          <h2 id="extraction-heading">Result</h2>
+          <p>{readSummary(job.extraction)}</p>
+          <p>{itemCountsText(job.extraction.items)}</p>
+          {leftOutText(job.extraction.sources_left_out) !== null && <p>{leftOutText(job.extraction.sources_left_out)}</p>}
+        </section>
+      )}
       {job.ingestion !== null && (
         <section aria-labelledby="ingestion-heading">
           <h2 id="ingestion-heading">Result</h2>

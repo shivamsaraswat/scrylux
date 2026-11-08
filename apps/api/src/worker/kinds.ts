@@ -5,11 +5,11 @@ import type { Llm, LlmConfig, Usage } from '@scrylux/llm';
 import type { ClaimedJob, RunCommit } from '../jobs/store.js';
 import type { StopReason } from './stop.js';
 import { runProviderCheck, type CheckResult } from '../provider-check.js';
+import { extractSystem } from './extract-system.js';
 import { ingestSource } from './ingest.js';
 import { refreshEmbeddings } from './refresh.js';
 
-// The job kinds the worker can run (Phase 3 Milestone 2, FR-013): a fixed list that ships with Scrylux. This milestone has
-// one, the provider check. Each kind says whether it calls a model, and does its work through the context the run gives
+// The job kinds the worker can run (Phase 3 Milestone 2, FR-013): a fixed list that ships with Scrylux. Each kind says whether it calls a model, and does its work through the context the run gives
 // it, which is also how it is stopped: it sends nothing without `beforeRequest`, and it stops when `signal` aborts.
 
 type JsonObject = Record<string, JsonValue>;
@@ -25,7 +25,8 @@ export interface RunContext {
   /** Records the step the job is on (FR-015). */
   progress(progress: JobProgress): Promise<void>;
   /** Awaited before each model request; throws RunStopped to stop the job (the gate and the caps, FR-042). */
-  beforeRequest(request: { operation: 'generate' | 'embed'; inputChars: number }): Promise<void>;
+  /** `maxOutputTokens` is the request's own output limit where it is not the layer's default, so the cap check counts the right worst case (Phase 3 Milestone 4). */
+  beforeRequest(request: { operation: 'generate' | 'embed'; inputChars: number; maxOutputTokens?: number }): Promise<void>;
   /** Stores the usage record of a request that was made, and returns its id (FR-050). */
   record(usage: Usage): Promise<number>;
   /** Keeps the result so far, so that it is stored however the run ends (FR-092). */
@@ -94,4 +95,9 @@ const providerCheck: Kind = {
   },
 };
 
-export const kinds: Record<JobKind, Kind> = { provider_check: providerCheck, ingest_source: ingestSource, refresh_embeddings: refreshEmbeddings };
+export const kinds: Record<JobKind, Kind> = {
+  provider_check: providerCheck,
+  ingest_source: ingestSource,
+  refresh_embeddings: refreshEmbeddings,
+  extract_system: extractSystem,
+};

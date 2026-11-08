@@ -1,0 +1,56 @@
+/* The Draft tab (Phase 3 Milestone 4, contracts/ui.md). The diagram and the nodes reuse diagram.css. */
+.draft-diagram {
+  height: 420px;
+  border: 1px solid #cbd2d9;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.draft-view {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .draft-view {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.draft-list ul,
+.draft-citations,
+.draft-facts,
+.draft-flags {
+  margin: 0 0 12px;
+  padding-left: 18px;
+}
+
+.draft-item {
+  margin: 2px 0;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.draft-item[aria-pressed='true'] {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.draft-quote {
+  margin: 4px 0;
+  padding-left: 10px;
+  border-left: 3px solid #cbd2d9;
+  overflow-wrap: anywhere;
+}
+
+.draft-panel {
+  padding: 12px;
+  border: 1px solid #cbd2d9;
+  border-radius: 6px;
+}

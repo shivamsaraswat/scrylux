@@ -242,3 +242,52 @@ describe('keeping embeddings in step with the model (FR-034)', () => {
     await waitFor(() => expect(api.callsTo('POST', `/api/v1/sources/${SOURCE_ID}/retry`)).toHaveLength(1));
   });
 });
+
+// Phase 3 Milestone 4 (contracts/ui.md "Changes elsewhere"): a citation of a draft opens the source at its chunk, and marks it.
+describe('opening at a chunk (?offset=)', () => {
+  const at = (offset: string) => `${PAGE}?offset=${offset}`;
+  const fromOffset = (offset: number, limit: number) => ({
+    chunks: Array.from({ length: Math.min(limit, 3) }, (_, i) => chunk({ id: chunkId(offset + i + 1), position: offset + i, text: `Text of chunk ${offset + i + 1}` })),
+    has_more: false,
+  });
+
+  it('asks for the chunks from that position, and marks the cited chunk', async () => {
+    const api = installFakeApi(handlers({ chunks: fromOffset }));
+    renderApp(at('37'));
+    const cited = await screen.findByRole('listitem', { name: 'Chunk 38' });
+    expect(cited.getAttribute('aria-current')).toBe('true');
+    expect(within(cited).getByText('Cited in the draft')).toBeTruthy();
+    expect(screen.getByRole('listitem', { name: 'Chunk 39' }).getAttribute('aria-current')).toBeNull();
+    expect(api.callsTo('GET', /\/chunks$/).length).toBeGreaterThan(0);
+    expect(api.calls.some((c) => c.path.endsWith('/chunks'))).toBe(true);
+  });
+
+  it('sends offset 37 to the API and says the list starts there, with a way back to the start', async () => {
+    let seen: number | null = null;
+    installFakeApi(handlers({ chunks: (offset, limit) => { seen = offset; return fromOffset(offset, limit); } }));
+    renderApp(at('37'));
+    await screen.findByRole('listitem', { name: 'Chunk 38' });
+    expect(seen).toBe(37);
+    expect(screen.getByText('Showing from chunk 38.')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Show from the start' }).getAttribute('href')).toBe(PAGE);
+  });
+
+  it.each(['abc', '-1', '1.5', '', '99999999999', '0x10'])('opens at the start for the offset %j, and marks nothing', async (offset) => {
+    let seen: number | null = null;
+    installFakeApi(handlers({ chunks: (o, limit) => { seen = o; return fromOffset(o, limit); } }));
+    renderApp(at(offset));
+    await screen.findByRole('listitem', { name: 'Chunk 1' });
+    expect(seen).toBe(0);
+    expect(screen.queryByText('Cited in the draft')).toBeNull();
+    expect(screen.queryByText(/Showing from chunk/)).toBeNull();
+  });
+
+  it('opens at the start, as before, when there is no offset', async () => {
+    let seen: number | null = null;
+    installFakeApi(handlers({ chunks: (o, limit) => { seen = o; return fromOffset(o, limit); } }));
+    renderApp(PAGE);
+    await screen.findByRole('listitem', { name: 'Chunk 1' });
+    expect(seen).toBe(0);
+    expect(screen.queryByText('Cited in the draft')).toBeNull();
+  });
+});

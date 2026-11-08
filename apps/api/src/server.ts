@@ -6,6 +6,7 @@ import migrate from './migrate.js';
 import { seedAdminUser } from './auth.js';
 import { checkJobConfig } from './jobs/config.js';
 import { checkLlmConfig } from './llm-startup.js';
+import { checkExtractionConfig } from './extract-system/config.js';
 import { checkSourceConfig } from './sources/config.js';
 import { checkStorageConfig, storageEnvironment } from './storage/config.js';
 import { createStorage } from './storage/index.js';
@@ -73,6 +74,13 @@ async function main(): Promise<void> {
   const sources = checkSourceConfig(process.env);
   if (!sources.ok) {
     console.error(sources.line);
+    process.exit(1);
+    return;
+  }
+  // The extraction settings (Phase 3 Milestone 4): the API decides which path a start takes and which retries it allows from them.
+  const extraction = checkExtractionConfig(process.env);
+  if (!extraction.ok) {
+    console.error(extraction.line);
     process.exit(1);
     return;
   }

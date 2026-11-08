@@ -140,7 +140,8 @@ A mitigation's text is its `description` when that starts with its `name`; other
 
 An OTM file written by Scrylux describes the system, its threats and its mitigations. It holds none of the **documents** added to the
 threat model (Phase 3 Milestone 3): not the files, not the text read from them, not their chunks or embeddings. An import never creates
-one either. Add the documents again to the imported threat model.
+one either. Add the documents again to the imported threat model. It holds no **draft** either (what an extraction proposed from the
+documents, Phase 3 Milestone 4): a draft is not part of the threat model until a person accepts it.
 
 ## What an import does not carry over
 

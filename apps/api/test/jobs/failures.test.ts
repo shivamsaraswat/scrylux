@@ -14,9 +14,12 @@ const JOB_KEYS = [
   'cap_reached',
   'damaged',
   'document_space_full',
+  'embeddings_out_of_date',
   'encrypted',
   'job_error',
+  'no_ready_source',
   'no_text_found',
+  'sources_changed',
   'storage_unavailable',
   'timed_out',
   'too_large',
@@ -30,6 +33,8 @@ const JOB_KEYS = [
   'worker_lost',
 ];
 const KIND_NAMES = ['ingest_source', 'refresh_embeddings'];
+// Phase 3 Milestone 4: an extraction has a hint of its own for three of the layer's categories.
+const EXTRACTION_HINTS = ['input_too_large', 'output_limit_reached', 'invalid_output'];
 
 const FILE_TEXT = readFileSync(new URL('../../data/failures.yaml', import.meta.url), 'utf8');
 
@@ -43,7 +48,10 @@ function valid(): {
   return {
     provider: Object.fromEntries(PROVIDER_CATEGORIES.map((c) => [c, `Check {prefix}_MODEL for ${c}.`])),
     job: Object.fromEntries(JOB_KEYS.map((k) => [k, { message: `The ${k} message.`, hint: `The ${k} hint.` }])),
-    kinds: Object.fromEntries(KIND_NAMES.map((k) => [k, { input_too_large: `The ${k} hint for a chunk that is too large.` }])),
+    kinds: {
+      ...Object.fromEntries(KIND_NAMES.map((k) => [k, { input_too_large: `The ${k} hint for a chunk that is too large.` }])),
+      extract_system: Object.fromEntries(EXTRACTION_HINTS.map((c) => [c, `The extract_system hint for ${c}.`])),
+    },
     source: { cancelled: { message: 'The source message.', hint: 'The source hint.' } },
   };
 }
@@ -281,7 +289,7 @@ describe('parseFailuresFile, for the sections of Milestone 3', () => {
     expect(() => parseFailuresFile(noSource)).toThrow();
   });
 
-  it('refuses a kind that is not one of the two, and a category under a kind that has no hint of its own', () => {
+  it('refuses a kind that is not one of the three, and a category under a kind that has no hint of its own', () => {
     const unknownKind = valid();
     unknownKind.kinds.provider_check = { input_too_large: 'h' };
     expect(() => parseFailuresFile(toYaml(unknownKind))).toThrow();
@@ -344,5 +352,51 @@ describe('the shipped file’s new texts', () => {
   it('gives the file a header that points to the rules', () => {
     expect(FILE.split('\n')[0]).toMatch(/^#/);
     expect(FILE).toContain('apps/api/test/jobs/failures.test.ts');
+  });
+});
+
+describe('the categories and hints of extraction (Phase 3 Milestone 4, FR-044)', () => {
+  const NEW = ['no_ready_source', 'embeddings_out_of_date', 'sources_changed'] as const;
+
+  it('gives each new category a message and a hint of its own, from the file, with nothing left to fill', () => {
+    for (const category of NEW) {
+      const { message, hint } = describeFailure(category, null, 'LLM', 'extract_system');
+      expect({ message, hint }, category).toEqual(loadFailures().job[category]);
+      expect(message.length, category).toBeGreaterThan(10);
+      expect(hint.length, category).toBeGreaterThan(10);
+      expect(`${message} ${hint}`, category).not.toMatch(/[{}]/);
+    }
+  });
+
+  it('tells a person what to do: add a source, refresh the embeddings, or look again', () => {
+    expect(describeFailure('no_ready_source', null, 'LLM').hint).toMatch(/Sources tab/);
+    expect(describeFailure('embeddings_out_of_date', null, 'LLM').hint).toMatch(/Refresh/);
+    expect(describeFailure('sources_changed', null, 'LLM').message).toMatch(/deleted/i);
+  });
+
+  it('gives an extraction its own hint for a model that refuses the input, cuts the draft off, or will not answer in shape', () => {
+    const tooLarge = describeFailure('input_too_large', null, 'LLM', 'extract_system');
+    expect(tooLarge.message).toBe(FAILURE_MESSAGES.input_too_large);
+    expect(tooLarge.hint).toContain('EXTRACTION_CONTEXT_CHARS');
+    expect(tooLarge.hint).toContain('OLLAMA_CONTEXT_LENGTH');
+    const cutOff = describeFailure('output_limit_reached', null, 'LLM', 'extract_system');
+    expect(cutOff.message).toBe(FAILURE_MESSAGES.output_limit_reached);
+    expect(cutOff.hint).toContain('EXTRACTION_MAX_OUTPUT_TOKENS');
+    const invalid = describeFailure('invalid_output', null, 'LLM', 'extract_system');
+    expect(invalid.message).toBe(FAILURE_MESSAGES.invalid_output);
+    expect(invalid.hint).toMatch(/3 attempts/);
+    expect(invalid.hint).toMatch(/larger/);
+    for (const hint of [tooLarge.hint, cutOff.hint, invalid.hint]) expect(hint).not.toMatch(/[{}]/);
+  });
+
+  it('keeps Milestone 1’s hint for these categories under any other kind, and when no kind is given', () => {
+    for (const category of ['input_too_large', 'output_limit_reached', 'invalid_output'] as const) {
+      expect(describeFailure(category, null, 'LLM', 'provider_check').hint).toBe(providerHint(category, 'LLM'));
+      expect(describeFailure(category, null, 'LLM').hint).toBe(providerHint(category, 'LLM'));
+    }
+  });
+
+  it('does not change a category that has no hint of its own for an extraction', () => {
+    expect(describeFailure('rate_limited', null, 'LLM', 'extract_system').hint).toBe(providerHint('rate_limited', 'LLM'));
   });
 });

@@ -1,5 +1,6 @@
 import { LlmConfigError, parseLlmConfig, type LlmConfig } from '@scrylux/llm';
 import { checkJobConfig, type JobConfig } from '../jobs/config.js';
+import { checkExtractionConfig, type ExtractionConfig } from '../extract-system/config.js';
 import { describeOperation, llmEnvironment, type AiKeys } from '../llm-startup.js';
 import { checkSourceConfig, type SourceConfig } from '../sources/config.js';
 import { checkStorageConfig, storageEnvironment, type StorageConfig, type StorageKeys } from '../storage/config.js';
@@ -8,7 +9,9 @@ import { checkStorageConfig, storageEnvironment, type StorageConfig, type Storag
 // required because the worker is the one process that uses them. It refuses a bad configuration with a line that names the
 // setting and never its value, and it never contacts a provider (Milestone 1, FR-007).
 
-export type WorkerStartup = { ok: true; line: string; llm: LlmConfig; jobs: JobConfig; sources: SourceConfig; storage: StorageConfig } | { ok: false; line: string };
+export type WorkerStartup =
+  | { ok: true; line: string; llm: LlmConfig; jobs: JobConfig; sources: SourceConfig; storage: StorageConfig; extraction: ExtractionConfig }
+  | { ok: false; line: string };
 
 /**
  * `keys` are the AI and storage keys that config.load() resolved: the environment's, overridden by the secrets-manager secret.
@@ -29,6 +32,9 @@ export function checkWorkerStartup(env: NodeJS.ProcessEnv, keys: AiKeys & Storag
   if (!sources.ok) return sources;
   const storage = checkStorageConfig(storageEnvironment(env, keys));
   if (!storage.ok) return storage;
+  // Phase 3 Milestone 4: the worker sends the extraction request, so it checks the budget and the output limit as the API does.
+  const extraction = checkExtractionConfig(env);
+  if (!extraction.ok) return extraction;
   return {
     ok: true,
     line: `AI providers: generation ${describeOperation(llm.generation)}, embeddings ${describeOperation(llm.embedding)}`,
@@ -36,5 +42,6 @@ export function checkWorkerStartup(env: NodeJS.ProcessEnv, keys: AiKeys & Storag
     jobs: jobs.config,
     sources: sources.config,
     storage: storage.config,
+    extraction: extraction.config,
   };
 }

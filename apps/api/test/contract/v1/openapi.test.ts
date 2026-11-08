@@ -59,6 +59,11 @@ const OPERATION_IDS = [
   'retrySource',
   'refreshSource',
   'deleteSource',
+  // Phase 3 Milestone 4, contracts/http-api.md.
+  'getExtraction',
+  'startExtraction',
+  'getDraft',
+  'discardDraft',
   'getOpenApiDocument',
 ];
 const METHODS = ['get', 'post', 'patch', 'delete'] as const;

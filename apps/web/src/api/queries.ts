@@ -1,7 +1,9 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
+  DraftRecord,
   ElementBatchResult,
   ElementRecord,
+  ExtractionStatus,
   ImportResult,
   JobDetail,
   JobList,
@@ -51,6 +53,8 @@ export const keys = {
   sources: (threatModelId: string) => ['sources', threatModelId] as const,
   source: (id: string) => ['source', id] as const,
   chunks: (id: string) => ['chunks', id] as const,
+  extraction: (threatModelId: string) => ['extraction', threatModelId] as const,
+  draft: (threatModelId: string) => ['draft', threatModelId] as const,
 };
 
 // Changes a list the page holds, with what the server answered. A list that was never loaded is left alone. A read
@@ -427,14 +431,17 @@ export function useSource(id: string) {
   });
 }
 
-/** A ready source's chunks in order, 50 at a time: "Show more" asks from the number already shown. They never change (FR-023). */
-export function useChunks(id: string, enabled: boolean) {
+/**
+ * A ready source's chunks in order, 50 at a time: "Show more" asks from the number already shown. They never change (FR-023). `start`
+ * is the position the list opens at: 0 for the whole document, or the position of a chunk that a draft cites (Phase 3 Milestone 4).
+ */
+export function useChunks(id: string, enabled: boolean, start = 0) {
   return useInfiniteQuery({
-    queryKey: keys.chunks(id),
+    queryKey: [...keys.chunks(id), start],
     enabled,
-    initialPageParam: 0,
+    initialPageParam: start,
     queryFn: ({ pageParam }) => apiGet(`/api/v1/sources/${id}/chunks?limit=${CHUNKS_PAGE_SIZE}&offset=${pageParam}`, ChunkPage),
-    getNextPageParam: (last, pages) => (last.has_more ? pages.reduce((sum, page) => sum + page.chunks.length, 0) : undefined),
+    getNextPageParam: (last, pages) => (last.has_more ? start + pages.reduce((sum, page) => sum + page.chunks.length, 0) : undefined),
   });
 }
 
@@ -467,5 +474,57 @@ export function useRefreshSource(threatModelId: string) {
   return useMutation({
     mutationFn: (id: string) => apiPost(`/api/v1/sources/${id}/refresh`, SourceRecord, undefined),
     onSettled: (_, __, id) => Promise.all([client.invalidateQueries({ queryKey: keys.sources(threatModelId) }), client.invalidateQueries({ queryKey: keys.source(id) })]),
+  });
+}
+
+
+// ---- extraction and the draft (Phase 3 Milestone 4) ----
+//
+// An extraction that is queued or running changes under the person's eyes, so its status is read again every JOB_POLL_MS while it is
+// active, and not at all otherwise (FR-063). Only a threat model's Draft tab asks. Starting is not optimistic: the page shows what the
+// server said, and the status is read again either way, because a refusal (a source still processing, an extraction already running)
+// changes what the next start will be.
+
+export function useExtraction(threatModelId: string) {
+  return useQuery({
+    queryKey: keys.extraction(threatModelId),
+    queryFn: () => apiGet(`/api/v1/threat-models/${threatModelId}/extraction`, ExtractionStatus),
+    refetchInterval: (query) => {
+      const latest = query.state.data?.latest;
+      return latest !== null && latest !== undefined && isActiveJob(latest) ? JOB_POLL_MS : false;
+    },
+  });
+}
+
+/** The threat model's draft, or null when it has none: a 404 is the answer "there is no draft" and not an error (FR-052). */
+export function useDraft(threatModelId: string) {
+  return useQuery({
+    queryKey: keys.draft(threatModelId),
+    queryFn: async () => {
+      try {
+        return await apiGet(`/api/v1/threat-models/${threatModelId}/draft`, DraftRecord);
+      } catch (error) {
+        if (isGone(error)) return null;
+        throw error;
+      }
+    },
+  });
+}
+
+/** Starts an extraction, or starts the last one again. A refusal says why (FR-002 to FR-004, FR-015, FR-042, FR-045). */
+export function useStartExtraction(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPost(`/api/v1/threat-models/${threatModelId}/extraction`, JobRecord, undefined),
+    onSettled: () => Promise.all([client.invalidateQueries({ queryKey: keys.extraction(threatModelId) }), client.invalidateQueries({ queryKey: keys.sources(threatModelId) })]),
+  });
+}
+
+/** Discards the draft (FR-055). The draft and the status are read again either way: a draft that was already gone is what was wanted. */
+export function useDiscardDraft(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiDelete(`/api/v1/threat-models/${threatModelId}/draft`),
+    onSettled: () => Promise.all([client.invalidateQueries({ queryKey: keys.draft(threatModelId) }), client.invalidateQueries({ queryKey: keys.extraction(threatModelId) })]),
   });
 }

@@ -137,14 +137,51 @@ const COLUMNS = {
     heading: true,
     embedding: true,
   },
+  drafts: {
+    id: true,
+    threat_model_id: true,
+    job_id: true,
+    started_by: true,
+    made_at: true,
+    generation_model: true,
+    prompt_version: true,
+    path: true,
+    chunks_read: true,
+    chunks_available: true,
+    sources_total: true,
+    nothing_found: true,
+  },
+  draft_sources: { draft_id: true, source_id: true, read: true },
+  draft_read_chunks: { draft_id: true, chunk_id: true, label: true },
+  draft_items: {
+    id: true,
+    draft_id: true,
+    position: true,
+    kind: true,
+    name: true,
+    body: true,
+    rationale: true,
+    boundary_id: true,
+    source_item_id: true,
+    target_item_id: true,
+    flags: true,
+  },
+  draft_asset_holders: { asset_id: true, element_id: true },
+  draft_citations: { id: true, item_id: true, flag: true, position: true, chunk_id: true, quote_start: true, quote_end: true },
 } satisfies { [T in keyof Database]: Record<keyof Database[T], true> };
 
 afterAll(closePool);
 
 describe('the Kysely table types match the database (research #1)', () => {
-  it('describes exactly the five domain tables, the three job tables and the two source tables', () => {
+  it('describes exactly the five domain tables, the three job tables, the two source tables and the six draft tables', () => {
     expect(Object.keys(COLUMNS).sort()).toEqual([
       'chunks',
+      'draft_asset_holders',
+      'draft_citations',
+      'draft_items',
+      'draft_read_chunks',
+      'draft_sources',
+      'drafts',
       'elements',
       'job_usage',
       'jobs',

@@ -138,6 +138,7 @@ function ThreatModelView({ id }: { id: string }) {
           Threats
         </NavLink>
         <NavLink to={`/threat-models/${id}/sources`}>Sources</NavLink>
+        <NavLink to={`/threat-models/${id}/draft`}>Draft</NavLink>
       </nav>
       <DiagramEditorProvider key={id} threatModelId={id}>
         <GenerateThreats threatModelId={id} />

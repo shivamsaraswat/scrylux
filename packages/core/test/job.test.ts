@@ -122,7 +122,7 @@ describe('JobRecord', () => {
     expect(JobRecord.safeParse(job(over)).success).toBe(false);
   });
 
-  it('knows the twenty-three failure categories a job can carry: Milestone 2’s fourteen and the nine of ingestion', () => {
+  it('knows the twenty-six failure categories a job can carry: Milestone 2’s fourteen, the nine of ingestion and the three of extraction', () => {
     expect([...JOB_FAILURE_CATEGORIES].sort()).toEqual(
       [
         'cap_reached',
@@ -149,6 +149,10 @@ describe('JobRecord', () => {
         'too_large_unpacked',
         'unreadable',
         'unsupported_type',
+        // Phase 3 Milestone 4.
+        'embeddings_out_of_date',
+        'no_ready_source',
+        'sources_changed',
       ].sort(),
     );
   });
@@ -192,24 +196,57 @@ describe('JobDetail', () => {
       usage: [usageRow(), usageRow({ id: 13, operation: 'embed', temperature_applied: null, output_tokens: 0, cost_usd: null, price_source: 'none' })],
       result: { generation: operation(), embeddings: { status: 'not_configured' } },
       ingestion: null,
+      extraction: null,
     });
     expect(detail.usage).toHaveLength(2);
     expect(detail.result?.embeddings.status).toBe('not_configured');
   });
 
   it('accepts a job with no result yet', () => {
-    expect(JobDetail.parse({ ...job(), usage: [], result: null, ingestion: null }).result).toBeNull();
+    expect(JobDetail.parse({ ...job(), usage: [], result: null, ingestion: null, extraction: null }).result).toBeNull();
   });
 
   it('refuses an extra field in a usage row', () => {
-    expect(JobDetail.safeParse({ ...job(), usage: [usageRow({ api_key: 'k' })], result: null, ingestion: null }).success).toBe(false);
+    expect(JobDetail.safeParse({ ...job(), usage: [usageRow({ api_key: 'k' })], result: null, ingestion: null, extraction: null }).success).toBe(false);
   });
 
   it('keeps what an ingestion kept of its run apart from a provider check’s result, as counts only (FR-051)', () => {
-    const detail = JobDetail.parse({ ...job({ kind: 'ingest_source' }), usage: [], result: null, ingestion: { chunks: 12, pages_without_text: 2 } });
+    const detail = JobDetail.parse({ ...job({ kind: 'ingest_source' }), usage: [], result: null, ingestion: { chunks: 12, pages_without_text: 2 }, extraction: null });
     expect(detail.ingestion).toEqual({ chunks: 12, pages_without_text: 2 });
-    expect(JobDetail.safeParse({ ...job(), usage: [], result: null, ingestion: { chunks: 12, pages_without_text: null, text: 'a document' } }).success).toBe(false);
+    expect(JobDetail.safeParse({ ...job(), usage: [], result: null, ingestion: { chunks: 12, pages_without_text: null, text: 'a document' }, extraction: null }).success).toBe(false);
     expect(JobDetail.safeParse({ ...job(), usage: [], result: null }).success).toBe(false);
+  });
+
+  // Phase 3 Milestone 4 (contracts/worker.md "Result"): what an extraction kept of its run is counts and the two settings the retry
+  // rules compare, never a name, text, label or reference (FR-065).
+  describe('what an extraction kept of its run', () => {
+    const kept = {
+      path: 'retrieval',
+      chunks_read: 20,
+      chunks_available: 412,
+      sources_read: 4,
+      sources_left_out: 1,
+      items: { elements: 18, assets: 3, assumptions: 2 },
+      context_chars: 36_000,
+      max_output_tokens: 12_000,
+    };
+    const detail = (extraction: unknown) => ({ ...job({ kind: 'extract_system' }), usage: [], result: null, ingestion: null, extraction });
+
+    it('is parsed apart from an ingestion’s and a provider check’s', () => {
+      expect(JobDetail.parse(detail(kept)).extraction).toEqual(kept);
+      expect(JobDetail.parse(detail(null)).extraction).toBeNull();
+    });
+
+    it('is required, like the ingestion’s, so an API that forgets it is a server bug and not a leak', () => {
+      expect(JobDetail.safeParse({ ...job(), usage: [], result: null, ingestion: null }).success).toBe(false);
+    });
+
+    it('refuses a field that could hold text, and a path that is not one of the two', () => {
+      expect(JobDetail.safeParse(detail({ ...kept, name: 'Payment service' })).success).toBe(false);
+      expect(JobDetail.safeParse(detail({ ...kept, items: { ...kept.items, labels: ['c1'] } })).success).toBe(false);
+      expect(JobDetail.safeParse(detail({ ...kept, path: 'partial' })).success).toBe(false);
+      expect(JobDetail.safeParse(detail({ ...kept, chunks_read: -1 })).success).toBe(false);
+    });
   });
 });
 

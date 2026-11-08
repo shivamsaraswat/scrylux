@@ -1,50 +1,60 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.15.0 → 1.16.0
-Rationale: Phase 3 Milestone 3 (document ingestion, specs/phase-3/milestone-3-ingestion/) lets a person add design documents to a
-  threat model: `.md`, `.txt`, `.pdf` and `.docx` files and pasted text. It adds eight routes under `/api/v1` (list, upload, paste, read,
-  chunks, retry, refresh and delete a source), a place where the originals wait (a local volume or an S3-compatible bucket), a child
-  process that reads untrusted files with no secret, and the first user content sent to a provider (a document's chunks, to make their
-  embeddings). Principle V requires the Threat Model section, and the committed model, to say so in the same change. This is a MINOR:
-  materially expanded guidance (assets, a process, entry points, two boundaries and the risks below). It adds no principle; Principle VI's
-  notice that data leaves the install ships here, as it said it would.
+Version change: 1.16.0 → 1.17.0
+Rationale: Phase 3 Milestone 4 (system extraction, specs/phase-3/milestone-4-system-extraction/) lets a person ask the generation model for
+  a draft system (processes, data stores, external entities, flows, trust boundaries, assets and assumptions) from the ready sources of a
+  threat model. It adds four routes under `/api/v1` (read the extraction's status, start or retry it, read the draft, discard it), a worker
+  job kind (`extract_system`), six tables for the draft (apart from the threat model; nothing is written to `elements`, `threats` or
+  `mitigations`), and the first document text sent to a generation model. Principle V requires the Threat Model section, and the
+  committed model, to say so in the same change. This is a MINOR: materially expanded guidance (a current asset, entry points, a boundary
+  that was planned, and the risks below). It adds no principle and removes none.
 Modified principles:
-  - VI (applied, not reworded): the notice that data leaves the install is now shown, in the form that adds a document and again above the
-    list, for every hosted provider that receives a source's text, on every visit (`apps/web/src/components/SourcesNotice.test.tsx`,
-    `apps/web/e2e/sources.spec.ts`). Principle VI's sentence says it shipped here.
+  - II (clarified, not removed): the sentence that a change to a prompt, provider adapter or extraction pipeline MUST pass the eval harness
+    now says when it starts to apply: from Phase 3 Milestone 7, when the harness ships. Until then such a change passes the tests with
+    simulated answers, and the milestone records a manual run against a hosted model and, where the maintainer has hardware for one, a local model, before release (the local run is conditional on hardware by the maintainer's decision of 2026-11-09, made when no
+    hardware for a model large enough was available). Development Workflow
+    already said the same ("until then, such a PR states that the gate does not yet apply"); the two now agree.
+  - VI (applied, not reworded): documents are delimited in prompts, never executed and never allowed to trigger a tool call; the
+    notice that text leaves the install is now shown on the Draft tab, before the control that starts an extraction, on every visit
+    (`apps/web/src/pages/DraftTab.test.tsx`, `apps/web/e2e/draft.spec.ts`). Every proposed item and flag carries a rationale and a
+    citation whose quote is checked against the chunk it names.
   - V (applied, not reworded): the section and `docs/threat-model/` are updated in the same change.
 Added sections: none (existing section set retained: Core Principles, Threat Model (STRIDE),
   Development Workflow & Quality Gates, Governance)
 Removed sections: none
-Threat Model changes: assets (sources, the originals while they wait, chunks, embeddings; the S3 credentials, held by the app and the
-  worker), a process (the extraction child, which holds no secret and reads untrusted files), entry points (the eight source routes,
-  open to every signed-in account), the inbound boundary for untrusted document content (current), the outbound provider boundary, which
-  now carries user content, and a new outbound boundary to the storage service when it is S3, with these risks:
-  - Tampering / Denial of Service: a malicious file (a PDF or Word file crafted to exhaust the worker or reach what it must not). Mitigated:
-    the file's type comes from its content; the worker reads it in a child process started with no environment, under a time, a memory, an
-    unpacked-size and a page bound; nothing a file points at is fetched or run; the API never loads a parser
-    (`apps/api/test/extract/failures.test.ts`, `apps/api/test/worker/imports.test.ts`). Accepted: the child still has the worker's network.
-  - Information Disclosure: data that outlives its deletion or its need. Mitigated: the original is deleted when the source is ready or
-    deleted, a sweep removes what a failed removal left (1 hour 10 minutes at most), and a threat model's or a project's deletion removes
-    the originals of everything under it (`apps/api/test/storage/sweep.test.ts`, `apps/api/test/contract/v1/sources-delete.test.ts`);
-    the original is never served; a shared bucket is defended by a dedicated prefix and a key pattern, and no other object is touched.
-  - Information Disclosure: a document's text sent to a hosted provider. Moved from "accepted for this milestone" to mitigated by the
-    notice (Principle VI); a fully local provider remains supported.
-  - Information Disclosure: a name, text or chunk in a log, a job record or an error. Mitigated: they appear only in the source's own
-    records (`apps/api/test/worker/canary.test.ts`).
-  - Denial of Service: runaway embedding spend and storage exhaustion. Partially mitigated: the job caps, an account's own limit on
-    documents waiting or processing (`INGESTION_JOBS_PER_ACCOUNT`), a count and a size limit, and the install-wide `DOCUMENT_SPACE`.
-    Open until Phase 6: any account can create more accounts, and one account can fill the space for all.
-  - Tampering: stored prompt injection. Documents are untrusted input, stored and shown as text and sent only to embeddings, which follow
-    no instructions; delimiting them in prompts is Milestone 4's, under Principle VI.
-  - Elevation of Privilege: any signed-in account can see, retry, refresh and delete every source (a justified widening until Phase 6).
-Development Workflow: unchanged. The eval gate does not apply: no prompt, adapter or generation pipeline changed, and the eval harness
-  arrives in Milestone 7.
+Threat Model changes: an asset (the draft: AI text derived from confidential documents, held until it is discarded or replaced, with
+  citations that store a span and never the quoted text), entry points (the four extraction and draft routes, open to every signed-in
+  account), the inbound boundary for untrusted document content into generation prompts (moved from planned to current), and the outbound
+  provider boundary, which now carries document text to the generation provider, with these risks:
+  - Tampering / Spoofing: indirect prompt injection. Mitigated: a document is placed only in a section delimited by a random value drawn
+    for each request, with the instructions kept outside it; chunks are named by labels and never by id; no tool is offered; the
+    answer must match a fixed strict schema and a set of request checks; every quote is checked against the chunk it cites; the only effect
+    of an answer is a stored draft; the UI renders it as text; and a person reviews it in Milestone 5
+    (`apps/api/test/extract-system/injection.test.ts`, `checks.test.ts`, `acceptable.test.ts`). The retry note that asks the model to try
+    again no longer repeats any part of the answer (`packages/llm/test/attempts.test.ts`), so nothing the model wrote reaches the prompt
+    outside the marked section. Accepted: a document can still change what is proposed, including a component the design does not have,
+    if it can quote its own text in support; the reviewer sees the quote.
+  - Tampering: a fabricated or misdirected citation. Mitigated: a citation names a chunk the request sent and quotes it exactly; the
+    draft stores the span, not the text (`apps/api/test/extract-system/checks.test.ts`, `map.test.ts`).
+  - Information Disclosure: the draft's text in a log, a job record or an error. Mitigated: it appears only in the draft's own tables
+    (`apps/api/test/extract-system/canary.test.ts`); exports, imports and reports never read a draft; a draft that outlives a deleted source
+    says so and shows "Source deleted". Accepted: the text sent to a hosted provider leaves the install, which the notice says.
+  - Denial of Service / spend: runaway generation cost. Mitigated: the job's token and cost caps are checked against the worst case before
+    each request (`apps/api/test/extract-system/caps.test.ts`), one extraction runs per threat model at a time, and an account's job limit
+    counts extractions. Open until Phase 6: any account can create more accounts.
+  - Elevation of Privilege: any signed-in account can start, read and discard any draft (a justified widening until Phase 6).
+  Resolved: the Spoofing item that said the handling of untrusted input MUST be verified before this milestone ships, and the accepted
+  item of Milestone 3 on stored prompt injection, each by `apps/api/test/extract-system/injection.test.ts`.
+Development Workflow: unchanged. The eval gate does not apply: the harness arrives in Milestone 7; the milestone records a manual run
+  instead (`evals/manual-runs/m4.md`).
 Development Workflow (kept): a pull request that updates the Threat Model section also updates `docs/threat-model/`.
 Deferred / TODO items: none
 Templates requiring follow-up: none checked in this run (scope of this change is the constitution file only; dependent
   templates read it at runtime per the scope guard).
+Previous change (1.15.0 → 1.16.0): Phase 3 Milestone 3 (document ingestion) added eight source routes, a place where the originals wait
+  (a local volume or an S3-compatible bucket), the extraction child that reads untrusted files with no secret, and the first user content
+  sent to a provider (chunks, for embeddings); the notice of Principle VI shipped with it. A MINOR.
 Previous change (1.14.0 → 1.15.0): Phase 3 Milestone 2 (the worker and its jobs) added a second process, the worker, which alone talks to
   an LLM provider and holds its key, and five job routes; assets (job records and their usage records, which hold no content), an
   entry point, a process, and the justified widening that any signed-in account can see and cancel every job and start a provider check.
@@ -114,11 +124,11 @@ Postgres service container; this check also builds the app and runs the Playwrig
 against it, since Phase 1 Milestone 6), and Docker build — these are enforced by a branch ruleset on `main`
 with no bypass actors, including for repository admins (`.github/rulesets/main.json`; see
 `docs/ci.md`); Dependabot and CodeQL (query suite `security-and-quality`) MUST stay enabled and
-remain informational/non-blocking in this milestone. Once any LLM-backed feature exists (Phase
-3+), a change to a prompt, provider
+remain informational/non-blocking in this milestone. From Phase 3 Milestone 7, when the eval harness ships, a change to a prompt, provider
 adapter, or extraction/threat-generation pipeline MUST pass the eval harness (`pnpm eval`)
 against its committed thresholds (starting point per plan.md: ≥70% threat recall, 100%
-schema-valid output after retries, 100% valid citations) before merge. Tests assert observable
+schema-valid output after retries, 100% valid citations) before merge. Until then such a change passes the tests with simulated
+answers, and the milestone that makes it records a manual run against a hosted model and, where the maintainer has hardware for one, a local model, before release. Tests assert observable
 behavior (status codes, response shape, persisted rows, eval metrics) — not implementation
 details.
 **Rationale**: The project's own test suite is currently thin (one file); growing it test-first
@@ -199,7 +209,8 @@ LLM provider integration MUST stay behind Scrylux's own provider-agnostic interf
 the UI MUST clearly disclose that data leaves the install. That notice is required from the first milestone in which user content can
 reach a provider, which was Phase 3 Milestone 3 (document chunks, sent for embedding): the Sources tab shows it in the form that adds a
 document and again above the list, naming the provider, on every visit; a request made only of fixed text that Scrylux ships, such as
-the operator's check of its configuration, holds no user content.
+the operator's check of its configuration, holds no user content. The Draft tab shows it too, before the control that starts an extraction,
+on every visit, because an extraction sends the text of a threat model's sources to the generation provider.
 **Rationale**: This is Scrylux's core trust proposition (plan.md guiding principles: "AI output
 is a draft with provenance... nothing AI-generated enters the threat model silently", "private
 by default", "provider-agnostic LLM layer") — without it, an AI-assisted threat model is not
@@ -242,8 +253,13 @@ S3-compatible bucket, and nowhere else; it is deleted when the source is ready o
 as **chunks** of at most 2,000 characters, and each chunk's **embedding** (`sources` and `chunks`, kept until a person deletes the source,
 the threat model or the project), and the credentials of an S3-compatible storage service (`STORAGE_S3_ACCESS_KEY_ID` and
 `STORAGE_S3_SECRET_ACCESS_KEY`, from the environment or the secrets-manager secret, never in the database), which both the app, that
-stores uploads, and the worker, that reads and removes them, hold.
-**Assets (planned, not yet implemented)**: from Phase 3 — the LLM outputs derived from documents; from
+stores uploads, and the worker, that reads and removes them, hold. Since Phase 3 Milestone 4 (`specs/phase-3/milestone-4-system-extraction/`):
+**the draft**, the system a generation model proposed from a threat model's ready sources, which is AI text derived from confidential
+documents: each item's name and rationale, each flag's rationale and each assumption's statement (`drafts`, `draft_items`,
+`draft_asset_holders`, `draft_citations`, `draft_sources` and `draft_read_chunks`), held until a person discards it or the next extraction
+replaces it, and after a source it read is deleted; its citations store a span of a chunk and never the quoted text. It is apart from the
+threat model: nothing is written to `elements`, `threats` or `mitigations`.
+**Assets (planned, not yet implemented)**: from Phase 3 Milestone 5 on — the accepted parts of a draft, which are threat-model records; from
 Phase 4 — read-only repository/IaC access tokens and cloned source code; from Phase 5 —
 third-party OAuth tokens (Jira, Confluence, Google Docs, Linear, Azure DevOps) and outbound
 webhook targets.
@@ -287,8 +303,15 @@ the embedding provider, in batches, and to nothing else; the Sources tab says so
 hosted. **The storage service is an outbound boundary when it is S3-compatible**: the app puts uploads there and the worker reads, lists
 and deletes them, with the least access each needs (`docs/install.md`, "Storage"), and neither process contacts it when it starts. All
 eight routes are open to every signed-in account (see Elevation of Privilege).
-**Trust boundaries (planned)**: Phase 3 Milestone 4 adds the boundary of untrusted document content flowing into prompts (the
-prompt-injection surface — see Principle VI); until then a document's text goes only to embeddings, which follow no instructions. Phase 4 adds a boundary into external source-control/IaC systems (read-only,
+Since Phase 3 Milestone 4 two things change. **The boundary of untrusted document content flowing into prompts is current** (it was
+planned): the worker's `extract_system` job puts chunks of a threat model's ready sources in one section of a request to the generation
+model, delimited by a random value drawn for that request, with the instructions outside it, labels where ids would be, and no tool
+offered (`apps/api/src/extract-system/`, `packages/llm`). **The outbound provider boundary now carries document text to generation**, not
+to embeddings alone; the Draft tab says so before an extraction can be started, when the provider is hosted. The entry points it adds are
+four authenticated routes under `/api/v1`, open to every signed-in account: `GET` and `POST /threat-models/{id}/extraction` and `GET` and
+`DELETE /threat-models/{id}/draft`. The OpenAPI document describes them. What the model answers is validated against a fixed schema and a
+set of checks before it is stored, and the only effect of an answer is a draft.
+**Trust boundaries (planned)**: Phase 4 adds a boundary into external source-control/IaC systems (read-only,
 code never executed). Phase 5 adds boundaries into external SaaS integrations and inbound
 webhooks.
 
@@ -306,12 +329,18 @@ webhooks.
   /64s is slowed per address but not stopped; `/api/login` bearer tokens are not revoked by sign out
   everywhere and live until they expire; a credential more than one rotation old matches nothing and
   is answered 401 without triggering reuse detection, because only the previous credential is stored
-  (the holder gains nothing, so no token-family table is kept). *Planned*: from
-  Phase 3 Milestone 4, indirect prompt injection from an ingested document could attempt to "spoof"
-  instructions to the LLM (e.g. impersonate the system prompt); Principle VI's untrusted-input
-  handling is the primary mitigation and MUST be verified before that milestone ships. *Accepted (Phase 3 Milestone 3)*: a document
-  can hold text written to steer a model. Nothing in this milestone sends a source to generation: the text is stored as untrusted input,
-  shown as text, and sent only to the embedding provider, which follows no instruction in it.
+  (the holder gains nothing, so no token-family table is kept). *Mitigated (Phase 3 Milestone 4)*:
+  indirect prompt injection from an ingested document could attempt to "spoof" instructions to the LLM (e.g. impersonate the system
+  prompt). A document is placed only in a section delimited by a random value drawn for each request, so it cannot close the section by typing
+  an end marker, with the instructions outside it and a statement that the section is data; chunks are named by labels and never by id; no
+  tool is offered; the answer must match a fixed strict schema and the request's checks, and every quote must be a passage of the chunk it cites;
+  and the only effect of an answer is a stored draft. Verified by tests that show a document stays inside the marked section it cannot close, that the marker is new for every extraction, that
+  no tool is offered, that an answer which follows the document is refused and none of its text is in the next request, and that the only
+  effect of an answer is a draft that is not part of the threat model (`apps/api/test/extract-system/injection.test.ts`). The retry note names the problems of an
+  answer by their place and never repeats what the model wrote, so a model's text cannot reach the instructions of the next request
+  (`packages/llm/test/attempts.test.ts`). *Accepted*: a document can still change what is proposed, including a component its design does not
+  have, if it can quote its own text in support; a person reviews the draft and sees the quote, in Milestone 5. The earlier acceptance
+  that a document is only stored and embedded (Phase 3 Milestone 3) is superseded by this item.
   *Accepted risk (Phase 2 Milestone 6)*: provenance can be claimed by a file. A Scrylux file, or an OTM file carrying Scrylux's
   mark, may say a threat is rule-generated, with any rule reference, and Scrylux cannot check it: generation then treats
   that threat as its own, so it may flag it stale or match it instead of creating one. Nothing else follows from it. The
@@ -436,10 +465,12 @@ webhooks.
   (`apps/api/test/extract/failures.test.ts`, which also listens for a request from a file that points at an address and finds none). A
   chunk is committed only with the source's other chunks, its embeddings and its ready state, in one transaction fenced by the job's claim,
   so a worker that lost its job writes nothing, a source never holds a part of its text, and one never holds two models' embeddings
-  (`apps/api/test/sources/ingest.test.ts`, `ingest-refresh.test.ts`, `ingest-delete.test.ts`). *Accepted (Phase 3 Milestone 3)*: stored
-  **prompt injection**. A document is untrusted input that may hold text written to steer a model. It is stored and shown as text, and
-  its only use in this milestone is to make embeddings; delimiting it in prompts, and never letting it trigger an action, is
-  Milestone 4's, under Principle VI, and this item stays until that milestone verifies it.
+  (`apps/api/test/sources/ingest.test.ts`, `ingest-refresh.test.ts`, `ingest-delete.test.ts`). *Mitigated (Phase 3 Milestone 4)*: stored
+  **prompt injection**. A document is untrusted input that may hold text written to steer a model. It is now delimited in the prompts of
+  an extraction and can trigger no tool call and no action: see Spoofing, and `apps/api/test/extract-system/injection.test.ts`, which
+  closes the item that Milestone 3 left open. *Mitigated (Phase 3 Milestone 4)*: a fabricated or misdirected citation. A citation names a
+  chunk the request sent and quotes it exactly, whitespace aside, or the answer is retried and then refused; the draft stores the span, not the
+  text (`apps/api/test/extract-system/checks.test.ts`, `map.test.ts`).
 - **Repudiation**: *Open risk*: no audit trail persists who created, updated, or deleted a
   threat-model record or a user — the JWT's `sub` is known per-request but never written to storage.
   This is a notable gap precisely because Repudiation is one of the STRIDE categories the app
@@ -531,7 +562,14 @@ webhooks.
   records, and every error carry ids, types, sizes and counts (`apps/api/test/worker/canary.test.ts`). *Accepted (Phase 3 Milestone 3)*:
   the app and the worker both hold the storage credentials when they are given as keys (the instance or task role holds none), and a key
   kept in the shared secret reaches the app as the provider keys do; the stored text and embeddings are as readable by the database's
-  users as every other record, and a database backup holds them.
+  users as every other record, and a database backup holds them. *Mitigated (Phase 3 Milestone 4)*: **a draft's text stays in the draft**.
+  The names, rationales and statements of a draft, which are AI text derived from confidential documents, are written only to the draft's
+  tables: the logs, the job and usage records, and every error carry ids, counts and fixed messages, never a name, a quote or a rationale
+  (`apps/api/test/extract-system/canary.test.ts`); the two write routes log only the account, the threat model and the job; an export, an
+  import and a report never read a draft; a citation stores a span and not the text, and one whose source was deleted shows "Source
+  deleted". The retry note of the layer repeats nothing of an answer (`packages/llm/test/attempts.test.ts`). *Accepted (Phase 3 Milestone
+  4)*: the text of the sources is sent to the generation provider, which the Draft tab says before an extraction can be started, and a
+  draft stays after the sources it read are changed or deleted until a person discards it; the page says the sources changed.
 - **Denial of Service**: JSON payloads are capped at 100kb (64 MiB for the two import operations); the `/api/v1` lists are not
   paginated, so a list returns every matching record (low risk at current expected scale, and
   specs/phase-1/milestone-5-rest-api-v1 SC-007 measures a threat model of 1,000 threats and 2,000 mitigations). *Partially mitigated (Phase 1 Milestone 6)*: failed sign-ins are throttled per address, never per
@@ -593,7 +631,13 @@ webhooks.
   a spending limit at the provider and a `DOCUMENT_SPACE` they can afford, and deleting what is not wanted frees the space at once. *Accepted
   (Phase 3 Milestone 3)*: the extraction child has the worker's network access, because Node offers no sandbox for it; a crafted file that
   achieved code execution in it could reach what the worker's network reaches, though it would find no credential. Limiting the
-  worker's egress to the provider and the storage is the operator's (`docs/install.md`, "Reading files safely").
+  worker's egress to the provider and the storage is the operator's (`docs/install.md`, "Reading files safely"). *Mitigated (Phase 3
+  Milestone 4)*: runaway generation spend. An extraction is bound by the job's token and cost caps, which are checked against the worst case
+  of each request before it is sent, and by an output limit; only one extraction of a threat model is queued or running, and it counts in
+  the account's job limit (`apps/api/test/extract-system/caps.test.ts`, `apps/api/test/contract/v1/extraction.test.ts`). A failure that a
+  retry would repeat is refused with the setting to change. *Open risk (Phase 3 Milestone 4)*: the same as for jobs, until Phase 6: any
+  signed-in account can create more accounts, and an extraction costs what its caps allow; the operator's answers are a spending limit at the
+  provider and caps they can afford.
 - **Elevation of Privilege**: *Open risk, by design, currently unmitigated*: there is no role
   model. Any authenticated user can create additional users (`POST /api/users`) and, since Phase 1
   Milestone 5, can read, change and delete every project, threat model, element, threat and
@@ -649,7 +693,12 @@ webhooks.
   the model it belongs to; what an account can do to it is bounded by the limits above, and a source's record says who added it and when.
   The widening was called out in the milestone's spec (FR-065, FR-080) and is accepted until Phase 6. *No widening*: the extraction child
   and the storage add no way to reach another account's data, and the worker, which already held the provider keys, gains only the
-  storage credentials.
+  storage credentials. *Justified widening (Phase 3 Milestone 4, Principle V)*: any signed-in account can now start an extraction on any
+  threat model, read its draft and discard it, whoever started it, and the draft is AI text derived from confidential documents. There are no
+  roles before Phase 6 and any signed-in account can already read, change and delete every threat model and every source, so a draft is no
+  more private than the documents it comes from; what an account can do is bounded by the limits above, and a draft names who started it and
+  when. The widening was called out in the milestone's spec (FR-068, FR-080) and is accepted until Phase 6. *No widening*: the draft is
+  apart from the threat model, so no account can change a diagram, a threat or a mitigation through it, and the worker gains no credential.
 
 Any change that adds an endpoint, a new external integration, or a new credential type MUST add
 or update a bullet above in the same PR, whether or not the surrounding phase has been reached.
@@ -692,4 +741,4 @@ rather than silently merged. This file is the source of truth for "why" a rule e
 implementation-level how-to guidance belongs in `README.md`, `API.md`, `CONTRIBUTING.md`, `SECURITY.md`, `plan.md`, and code
 comments, not here.
 
-**Version**: 1.16.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-11-01
+**Version**: 1.17.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-11-08

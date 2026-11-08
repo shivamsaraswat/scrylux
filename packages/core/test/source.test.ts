@@ -263,8 +263,8 @@ describe('ChunkPageQuery', () => {
 });
 
 describe('the changes to the job schemas', () => {
-  it('has the two ingestion kinds beside the provider check', () => {
-    expect(JOB_KINDS).toEqual(['provider_check', 'ingest_source', 'refresh_embeddings']);
+  it('has the two ingestion kinds beside the provider check, and the extraction of Phase 3 Milestone 4 after them', () => {
+    expect(JOB_KINDS).toEqual(['provider_check', 'ingest_source', 'refresh_embeddings', 'extract_system']);
   });
 
   it('has the failure categories of ingestion beside Milestone 2’s', () => {

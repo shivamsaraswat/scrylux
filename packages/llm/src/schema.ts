@@ -186,7 +186,9 @@ export function sanitizeFor(provider: ProviderName, json: JsonSchema): { schema:
           n.anyOf = n.oneOf;
           delete n.oneOf;
         }
-        const moved: Keyword[] = ['exclusiveMinimum', 'exclusiveMaximum', 'multipleOf', 'minLength', 'maxLength', 'pattern'];
+        // `maxItems` is moved too: Gemini answers 400 "invalid argument", with no detail, to a schema whose arrays allow more than
+        // about ten items (measured on gemini-3.6-flash with an extraction's schema: 40 and 15 are refused, 10 is accepted).
+        const moved: Keyword[] = ['exclusiveMinimum', 'exclusiveMaximum', 'multipleOf', 'minLength', 'maxLength', 'maxItems', 'pattern'];
         moveToDescription(n, moved);
         if (typeof n.format === 'string' && !GEMINI_FORMATS.has(n.format)) {
           describe(n, [`format: ${n.format}`]);

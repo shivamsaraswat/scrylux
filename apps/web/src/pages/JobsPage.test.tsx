@@ -308,3 +308,15 @@ describe('JobsPage: the jobs of documents (Phase 3 Milestone 3)', () => {
     expect(await screen.findByText('1200 in, 0 out')).toBeTruthy();
   });
 });
+
+describe('JobsPage: an extraction (Phase 3 Milestone 4)', () => {
+  it('names the kind as a link to the job', async () => {
+    installFakeApi({
+      'GET /api/v1/jobs/status': () => json(200, jobsStatus()),
+      'GET /api/v1/jobs': () => json(200, { jobs: [job({ id: JOB_ID, kind: 'extract_system', state: 'running', threat_model_id: MODEL_ID, progress: { step: 'generate' } })], has_more: false }),
+    });
+    renderApp('/jobs');
+    expect((await screen.findByRole('link', { name: 'System extraction' })).getAttribute('href')).toBe(`/jobs/${JOB_ID}`);
+    expect(screen.getByText('Asking the model for a draft')).toBeTruthy();
+  });
+});

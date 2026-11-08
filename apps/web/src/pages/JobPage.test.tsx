@@ -460,3 +460,63 @@ describe('JobPage: the job of a document (Phase 3 Milestone 3)', () => {
     expect(screen.getByText('Reason: encrypted')).toBeTruthy();
   });
 });
+
+describe('JobPage: the job of an extraction (Phase 3 Milestone 4)', () => {
+  const kept = {
+    path: 'whole',
+    chunks_read: 18,
+    chunks_available: 18,
+    sources_read: 3,
+    sources_left_out: 0,
+    items: { elements: 12, assets: 2, assumptions: 1 },
+    context_chars: 36_000,
+    max_output_tokens: 12_000,
+  };
+
+  it('names the kind, and links to the threat model’s Draft tab, not to a document it does not work on', async () => {
+    open({ kind: 'extract_system', threat_model_id: MODEL_ID, source_id: null });
+    expect(await screen.findByRole('heading', { name: 'System extraction' })).toBeTruthy();
+    const link = screen.getByRole('link', { name: 'Open the draft' });
+    expect(link.getAttribute('href')).toBe(`/threat-models/${MODEL_ID}/draft`);
+    expect(screen.queryByText('The document was deleted')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Open the document' })).toBeNull();
+  });
+
+  it('says the threat model was deleted when it is gone, and offers no link', async () => {
+    open({ kind: 'extract_system', threat_model_id: null });
+    expect(await screen.findByText('The threat model was deleted')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Open the draft' })).toBeNull();
+  });
+
+  it.each([
+    ['select', 'Choosing the chunks to read'],
+    ['generate', 'Asking the model for a draft'],
+    ['store', 'Checking and storing the draft'],
+  ])('says what the step %s is doing, in words', async (step, words) => {
+    open({ kind: 'extract_system', state: 'running', threat_model_id: MODEL_ID, progress: { step } });
+    expect(await screen.findByText(words)).toBeTruthy();
+  });
+
+  it('shows what an extraction kept of its run: what it read, and the counts of what it proposed', async () => {
+    open({ kind: 'extract_system', state: 'succeeded', threat_model_id: MODEL_ID, extraction: kept });
+    expect(await screen.findByText('Read all 18 chunks of 3 sources')).toBeTruthy();
+    expect(screen.getByText('12 elements, 2 assets, 1 assumption')).toBeTruthy();
+  });
+
+  it('says when it read part of the chunks, chosen by relevance, and how many sources were left out', async () => {
+    open({
+      kind: 'extract_system',
+      state: 'succeeded',
+      threat_model_id: MODEL_ID,
+      extraction: { ...kept, path: 'retrieval', chunks_read: 20, chunks_available: 412, sources_read: 4, sources_left_out: 1 },
+    });
+    expect(await screen.findByText('Read 20 of 412 chunks of 4 sources, chosen by relevance')).toBeTruthy();
+    expect(screen.getByText('1 source left out because it was not ready')).toBeTruthy();
+  });
+
+  it('shows no result for a failed extraction that kept none', async () => {
+    open({ kind: 'extract_system', state: 'failed', threat_model_id: MODEL_ID, extraction: null, failure: { category: 'no_ready_source', message: 'm', hint: 'h' } });
+    await screen.findByRole('heading', { name: 'System extraction' });
+    expect(screen.queryByText(/Read all/)).toBeNull();
+  });
+});

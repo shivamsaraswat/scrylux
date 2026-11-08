@@ -169,7 +169,10 @@ say '   every B-tree index passes bt_index_check(index, true)'
 
 COUNTS_AFTER=$(counts "$NEW" "$LIST")
 [ "$COUNTS_AFTER" = "$COUNTS_BEFORE" ] || { say "   before: $COUNTS_BEFORE" >&2; say "   after:  $COUNTS_AFTER" >&2; fail 'row counts changed'; }
-[ "$(q "$NEW" 'SELECT count(*) FROM schema_migrations')" = 17 ] || fail 'schema_migrations does not hold 17 rows'
+# Every migration file is applied by the time 017 has been (the migrator applies all of them), so the count follows the files:
+# it was a literal 17 until Phase 3 Milestone 4 added 018.
+MIGRATIONS=$(ls "$ROOT"/packages/db/migrations/*.sql | wc -l | tr -d ' ')
+[ "$(q "$NEW" 'SELECT count(*) FROM schema_migrations')" = "$MIGRATIONS" ] || fail "schema_migrations does not hold $MIGRATIONS rows"
 say '   no row was lost'
 
 say 'OK: a v0.1 or Milestone 2 volume survives the move to the pgvector image and migration 017.'

@@ -97,7 +97,12 @@ export async function runJob(deps: RunDeps, job: ClaimedJob): Promise<'ended' | 
       if (gated.status === 'lost') throw new RunStopped('lost');
       if (gated.status === 'cancel_requested') throw new RunStopped('cancelled');
       if (gated.status === 'deadline_passed') throw new RunStopped('timed_out');
-      const worst = worstCase(deps.llmConfig, request.operation === 'generate' ? { operation: 'generate', inputChars: request.inputChars } : { operation: 'embed', inputChars: request.inputChars });
+      const worst = worstCase(
+        deps.llmConfig,
+        request.operation === 'generate'
+          ? { operation: 'generate', inputChars: request.inputChars, ...(request.maxOutputTokens === undefined ? {} : { maxOutputTokens: request.maxOutputTokens }) }
+          : { operation: 'embed', inputChars: request.inputChars },
+      );
       const verdict = checkBudget(gated, { tokens: job.tokenCap, costUsd: job.costCapUsd }, worst);
       if (!verdict.ok) throw new RunStopped('cap_reached', verdict.detail);
     },

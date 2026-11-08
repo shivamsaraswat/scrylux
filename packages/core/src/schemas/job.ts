@@ -6,7 +6,7 @@ import { timestamp, uuid } from '../fields.js';
 // what it receives. Nothing here can hold a key, a base address, a prompt, an answer or a raw provider error (FR-051).
 // Every object is strict.
 
-export const JOB_KINDS = ['provider_check', 'ingest_source', 'refresh_embeddings'] as const;
+export const JOB_KINDS = ['provider_check', 'ingest_source', 'refresh_embeddings', 'extract_system'] as const;
 export const JobKind = z.enum(JOB_KINDS);
 export type JobKind = z.infer<typeof JobKind>;
 
@@ -43,12 +43,21 @@ export const JOB_FAILURE_CATEGORIES = [
   'unreadable',
   'storage_unavailable',
   'document_space_full',
+  // Phase 3 Milestone 4 (FR-044): an extraction that found nothing to read, whose embeddings were from another model, or whose sources
+  // changed under it.
+  'no_ready_source',
+  'embeddings_out_of_date',
+  'sources_changed',
 ] as const;
 export const JobFailureCategory = z.enum(JOB_FAILURE_CATEGORIES);
 export type JobFailureCategory = z.infer<typeof JobFailureCategory>;
 
-/** The categories a job retries (FR-020, and FR-013 of Phase 3 Milestone 3): the provider was unavailable or limiting requests, or storage could not be reached. */
-export const JOB_TRANSIENT_CATEGORIES = ['provider_unavailable', 'rate_limited', 'storage_unavailable'] as const satisfies readonly JobFailureCategory[];
+/**
+ * The categories a job retries (FR-020, and FR-013 of Phase 3 Milestone 3): the provider was unavailable or limiting requests, or
+ * storage could not be reached. Phase 3 Milestone 4 adds `sources_changed` (FR-044): a source the extraction read was deleted before
+ * its draft was stored, and running again reads what is there now.
+ */
+export const JOB_TRANSIENT_CATEGORIES = ['provider_unavailable', 'rate_limited', 'storage_unavailable', 'sources_changed'] as const satisfies readonly JobFailureCategory[];
 
 /**
  * What chooses the message of a failure that names a bound: which cap was lower than one request (FR-044), which limit a
@@ -71,8 +80,13 @@ export const INGESTION_STEPS = ['extract', 'chunk', 'embed'] as const;
 export const IngestionStep = z.enum(INGESTION_STEPS);
 export type IngestionStep = z.infer<typeof IngestionStep>;
 
+/** The steps of an extraction: choose the chunks, ask the model, check and store the draft (Phase 3 Milestone 4, FR-040). */
+export const EXTRACTION_STEPS = ['select', 'generate', 'store'] as const;
+export const ExtractionStep = z.enum(EXTRACTION_STEPS);
+export type ExtractionStep = z.infer<typeof ExtractionStep>;
+
 /** Every step a job can be on, from a fixed list for its kind (FR-015). */
-export const JobStep = z.enum([...PROVIDER_CHECK_STEPS, ...INGESTION_STEPS]);
+export const JobStep = z.enum([...PROVIDER_CHECK_STEPS, ...INGESTION_STEPS, ...EXTRACTION_STEPS]);
 export type JobStep = z.infer<typeof JobStep>;
 
 const count = z.number().int().min(0);
@@ -196,12 +210,30 @@ export type ProviderCheckResult = z.infer<typeof ProviderCheckResult>;
 export const IngestionResult = z.strictObject({ chunks: count, pages_without_text: count.nullable() });
 export type IngestionResult = z.infer<typeof IngestionResult>;
 
+/**
+ * What an extraction keeps of its run: counts and the two settings the retry rules compare, never a name, text, label or
+ * reference (Phase 3 Milestone 4, contracts/worker.md "Result", FR-065).
+ */
+export const ExtractionResult = z.strictObject({
+  path: z.enum(['whole', 'retrieval']),
+  chunks_read: count,
+  chunks_available: count,
+  sources_read: count,
+  sources_left_out: count,
+  items: z.strictObject({ elements: count, assets: count, assumptions: count }),
+  context_chars: z.number().int().min(1),
+  max_output_tokens: z.number().int().min(1),
+});
+export type ExtractionResult = z.infer<typeof ExtractionResult>;
+
 export const JobDetail = JobRecord.extend({
   usage: JobUsageRecord.array(),
   /** Each operation of a provider check; null for every other kind, and until the check has a result. */
   result: ProviderCheckResult.nullable(),
   /** What an ingestion or a refresh kept of its run; null for every other kind, and until it has a result. */
   ingestion: IngestionResult.nullable(),
+  /** What an extraction kept of its run; null for every other kind, and until it has a result (Phase 3 Milestone 4). */
+  extraction: ExtractionResult.nullable(),
 });
 export type JobDetail = z.infer<typeof JobDetail>;
 
@@ -220,9 +252,20 @@ export type JobsStatus = z.infer<typeof JobsStatus>;
 
 // A provider check takes no input from the person who starts it (FR-093). The caps, runs and time limit are the
 // operator's, copied onto the job by the server, so none of them can be set here (FR-045): every object is strict.
-export const JobCreateInput = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('provider_check'), input: z.strictObject({}).default({}) }),
-]);
+// The other kinds are started from a threat model's tabs and refused here with a message that says where (Phase 3 Milestone 4, FR-045a);
+// an unknown kind keeps the schema's own message. Neither repeats what the client sent.
+const STARTED_ELSEWHERE: Record<string, string> = {
+  extract_system: "This kind of job is started from a threat model's Draft tab.",
+  ingest_source: "This kind of job is started from a threat model's Sources tab.",
+  refresh_embeddings: "This kind of job is started from a threat model's Sources tab.",
+};
+export const JobCreateInput = z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('provider_check'), input: z.strictObject({}).default({}) })], {
+  error: (issue) => {
+    if (issue.code !== 'invalid_union' || typeof issue.input !== 'object' || issue.input === null) return undefined;
+    const kind = (issue.input as { kind?: unknown }).kind;
+    return typeof kind === 'string' && Object.hasOwn(STARTED_ELSEWHERE, kind) ? STARTED_ELSEWHERE[kind] : undefined;
+  },
+});
 export type JobCreateInput = z.infer<typeof JobCreateInput>;
 
 // The query of the list: one fixed message for every problem, which never repeats what the client sent, as ReportQuery.

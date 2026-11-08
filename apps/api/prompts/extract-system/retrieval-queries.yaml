@@ -1,0 +1,12 @@
+# The queries that choose which chunks of a large set of documents an extraction reads (Phase 3 Milestone 4, research #6, #12).
+# Each is embedded and compared with the chunks of the threat model, and the closest chunks of every query are read. They are
+# fixed text that ships with Scrylux and hold no user content. A change here changes the prompt version of every later draft.
+queries:
+  - The components and services of the system, such as applications, APIs, workers, jobs and libraries, and what each one does
+  - Databases, queues, caches, file and object storage, and the other places where data is kept
+  - The people, roles, customers, third-party services and outside systems that use the system or that it depends on
+  - The data flows, network connections, APIs, protocols and messages between components and with outside systems
+  - Networks, zones, environments and trust boundaries, such as the internet, a private network or another team's services
+  - Authentication, authorization, sessions, credentials, keys and secrets
+  - Sensitive data and valuable assets, such as personal data, payment data, tokens and signing keys
+  - Deployment, hosting, assumptions and constraints, and what the design relies on without checking

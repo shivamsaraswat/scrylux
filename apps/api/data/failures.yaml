@@ -78,6 +78,18 @@ job:
     message: "Adding this document would pass the space this install allows for documents."
     hint: "Delete sources that are no longer needed, or ask an operator to raise DOCUMENT_SPACE, then retry."
 
+  # Phase 3 Milestone 4 (FR-044): an extraction that found nothing to read, whose embeddings were from another model, or whose
+  # sources changed under it.
+  no_ready_source:
+    message: "This threat model had no ready source when the extraction ran."
+    hint: "Add a document on the Sources tab and wait until it is ready, then start the extraction again."
+  embeddings_out_of_date:
+    message: "The embeddings of a source are from another model than the one that is configured now."
+    hint: "These sources are larger than the extraction budget, so Scrylux chooses among their chunks by their embeddings. Refresh the embeddings on the Sources tab, then start the extraction again."
+  sources_changed:
+    message: "A source that the extraction read was deleted before its draft was stored."
+    hint: "Scrylux reads the sources again and tries again. If it keeps failing, wait until nobody is changing the sources and start the extraction again."
+
 # A hint that depends on the job kind. A model that refuses a chunk as too large is a different problem for an embedding of
 # a document than for the provider check (Milestone 1's hint is about the check's few words).
 kinds:
@@ -85,6 +97,12 @@ kinds:
     input_too_large: "This embedding model does not accept Scrylux's chunk size of 2,000 characters. Choose an embedding model that accepts at least 2,048 tokens: EMBEDDING_MODEL. For Ollama, keep the context at 2,048 or more."
   refresh_embeddings:
     input_too_large: "This embedding model does not accept Scrylux's chunk size of 2,000 characters. Choose an embedding model that accepts at least 2,048 tokens: EMBEDDING_MODEL. For Ollama, keep the context at 2,048 or more."
+  # An extraction asks a generation model for a whole draft (Phase 3 Milestone 4), so the hints are about its context, its output
+  # limit and its care in quoting, not about the check's few words.
+  extract_system:
+    input_too_large: "The input was too large for this model. Ask an operator to lower EXTRACTION_CONTEXT_CHARS, or to choose a generation model with a longer context: LLM_MODEL. For Ollama, set OLLAMA_CONTEXT_LENGTH to 32768 or more."
+    output_limit_reached: "The draft was larger than the output limit. Ask an operator to raise EXTRACTION_MAX_OUTPUT_TOKENS, or to choose another generation model: LLM_MODEL."
+    invalid_output: "The model did not return a draft that passed Scrylux's checks after 3 attempts. Try again, or ask an operator to choose a larger generation model: LLM_MODEL. A model that misquotes its documents fails these checks."
 
 # What a source shows when its ingestion was cancelled from the Jobs page (FR-044). Nothing failed.
 source:

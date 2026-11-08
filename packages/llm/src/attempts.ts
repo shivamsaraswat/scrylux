@@ -112,16 +112,40 @@ export function raceAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<
   });
 }
 
-/** The problems with an answer, by path. It names what was wrong and never quotes what was received. */
+// The codes whose message zod writes from the schema alone: a type name, a limit, a pattern, a format. These never hold a key
+// or a value the model wrote. `custom` is the message of the caller's own check, which the caller writes as fixed text.
+const MESSAGE_FROM_SCHEMA: ReadonlySet<string> = new Set([
+  'invalid_type',
+  'too_big',
+  'too_small',
+  'invalid_format',
+  'not_multiple_of',
+  'invalid_union',
+  'custom',
+]);
+
+/**
+ * The problems with an answer, by path. It names what was wrong and never quotes what was received (Phase 3 Milestone 4, research
+ * #2): this text goes back to the model in the user turn, after the content section's end marker, so anything a document made the
+ * model write that reached it would be in the model's instructions. zod's own message for an unknown field names the field, so
+ * that code, and any code not known to be safe, gets fixed text. The path is not echoed from a record's keys either: a schema sent
+ * to a provider for content that may come from a document uses arrays and strict objects, whose paths are the schema's own names.
+ */
 function describeIssues(error: z.ZodError): string {
   return error.issues
     .slice(0, MAX_ISSUES)
     .map((issue) => {
       const path = issue.path.length > 0 ? issue.path.map(String).join('.') : 'the answer';
-      const text =
-        issue.code === 'invalid_value' && 'values' in issue
-          ? `must be one of ${issue.values.map((v) => JSON.stringify(v)).join(', ')}`
-          : issue.message;
+      let text: string;
+      if (issue.code === 'invalid_value' && 'values' in issue) {
+        text = `must be one of ${issue.values.map((v) => JSON.stringify(v)).join(', ')}`;
+      } else if (issue.code === 'unrecognized_keys') {
+        text = 'has a field that is not allowed';
+      } else if (MESSAGE_FROM_SCHEMA.has(issue.code)) {
+        text = issue.message;
+      } else {
+        text = 'is not valid';
+      }
       return `- ${path}: ${text}`;
     })
     .join('\n');

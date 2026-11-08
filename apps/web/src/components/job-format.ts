@@ -1,9 +1,14 @@
-import type { JobProgress, JobRecord, JobTotals } from '@scrylux/core';
+import type { ExtractionResult, JobProgress, JobRecord, JobTotals } from '@scrylux/core';
 
 // How a job is written on the Jobs pages (Phase 3 Milestone 2, contracts/ui.md). Everything here returns plain text; the
 // pages render it as text, so nothing the API sends can become markup (FR-066).
 
-export const KIND_LABEL: Record<JobRecord['kind'], string> = { provider_check: 'Provider check', ingest_source: 'Process a document', refresh_embeddings: 'Refresh embeddings' };
+export const KIND_LABEL: Record<JobRecord['kind'], string> = {
+  provider_check: 'Provider check',
+  ingest_source: 'Process a document',
+  refresh_embeddings: 'Refresh embeddings',
+  extract_system: 'System extraction',
+};
 
 const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -20,6 +25,9 @@ const STEP_LABEL: Record<JobProgress['step'], string> = {
   extract: 'Reading the document',
   chunk: 'Splitting the text',
   embed: 'Embedding the chunks',
+  select: 'Choosing the chunks to read',
+  generate: 'Asking the model for a draft',
+  store: 'Checking and storing the draft',
 };
 
 export function progressLabel(progress: JobProgress): string {
@@ -42,3 +50,26 @@ export const tokenText = (totals: Pick<JobTotals, 'input_tokens' | 'output_token
   `${totals.input_tokens} in, ${totals.output_tokens} out${totals.tokens_estimated ? ' (estimated)' : ''}`;
 
 export const time = (iso: string): string => new Date(iso).toLocaleString();
+
+const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * What an extraction read, in words (Phase 3 Milestone 4, FR-014): all of the chunks, or part of them chosen by relevance, so a
+ * person can tell a component that is missing from the documents from one that was not read. Shown on the job's page and on the
+ * Draft tab.
+ */
+export function readSummary(read: Pick<ExtractionResult, 'path' | 'chunks_read' | 'chunks_available' | 'sources_read'>): string {
+  const sources = plural(read.sources_read, 'source', 'sources');
+  return read.path === 'whole'
+    ? `Read all ${plural(read.chunks_read, 'chunk', 'chunks')} of ${sources}`
+    : `Read ${read.chunks_read} of ${plural(read.chunks_available, 'chunk', 'chunks')} of ${sources}, chosen by relevance`;
+}
+
+/** The sources an extraction left out because they were not ready (FR-004), or null when it left none out. */
+export function leftOutText(count: number): string | null {
+  return count === 0 ? null : `${plural(count, 'source', 'sources')} left out because ${count === 1 ? 'it was' : 'they were'} not ready`;
+}
+
+/** What an extraction proposed, as counts. */
+export const itemCountsText = (items: ExtractionResult['items']): string =>
+  [plural(items.elements, 'element', 'elements'), plural(items.assets, 'asset', 'assets'), plural(items.assumptions, 'assumption', 'assumptions')].join(', ');

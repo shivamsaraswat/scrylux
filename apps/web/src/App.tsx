@@ -14,6 +14,7 @@ import { ProjectsPage } from './pages/ProjectsPage.js';
 import { DiagramTab } from './pages/DiagramTab.js';
 import { ThreatModelPage } from './pages/ThreatModelPage.js';
 import { SourcePage } from './pages/SourcePage.js';
+import { DraftTab } from './pages/DraftTab.js';
 import { SourcesTab } from './pages/SourcesTab.js';
 import { ThreatsTab } from './pages/ThreatsTab.js';
 import { RequireSession } from './session/RequireSession.js';
@@ -74,6 +75,7 @@ export const appRoutes: RouteObject[] = [
                       { index: true, element: <ThreatsTab /> },
                       { path: 'diagram', element: <DiagramTab /> },
                       { path: 'sources', element: <SourcesTab /> },
+                      { path: 'draft', element: <DraftTab /> },
                     ],
                   },
                   { path: '*', element: <NotFoundPage /> },

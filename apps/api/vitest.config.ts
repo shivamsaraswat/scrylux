@@ -7,6 +7,7 @@ const HEAVY = 'test/contract/v1/exchange-bound.test.ts';
 // The job and worker tests. A worker claims any queued job in the shared test database, so these files must not run
 // beside each other or beside a file that queues jobs: they run one at a time, after the others have finished. The source
 // tests (Phase 3 Milestone 3) queue ingestion jobs too, so the files that add sources or run an ingestion are in the group.
+// So do the extraction tests (Phase 3 Milestone 4): they queue extract_system jobs and run the kind in a worker.
 const JOBS = [
   'test/jobs/**/*.test.ts',
   'test/worker/**/*.test.ts',
@@ -14,6 +15,9 @@ const JOBS = [
   'test/contract/v1/sources*.test.ts',
   'test/sources/store*.test.ts',
   'test/sources/ingest*.test.ts',
+  'test/extract-system/*.test.ts',
+  'test/contract/v1/extraction*.test.ts',
+  'test/contract/v1/draft*.test.ts',
 ];
 
 export default defineConfig({

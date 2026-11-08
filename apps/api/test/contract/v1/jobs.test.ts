@@ -29,7 +29,7 @@ describe('/api/v1/jobs (FR-013, FR-060, FR-063)', () => {
   });
 
   beforeEach(async () => {
-    await db.query('TRUNCATE jobs, job_usage, workers');
+    await db.query('TRUNCATE jobs, job_usage, workers CASCADE');
   });
 
   const start = (body: unknown = { kind: 'provider_check', input: {} }) => c.post('/jobs', body);
@@ -102,6 +102,22 @@ describe('/api/v1/jobs (FR-013, FR-060, FR-063)', () => {
       expect(res.status).toBe(400);
       expect(res.body).toEqual({ error: expect.any(String) as unknown });
       expect((await db.query('SELECT 1 FROM jobs')).rowCount).toBe(0);
+    });
+
+    it.each([
+      ['extract_system', "kind: This kind of job is started from a threat model's Draft tab."],
+      ['ingest_source', "kind: This kind of job is started from a threat model's Sources tab."],
+      ['refresh_embeddings', "kind: This kind of job is started from a threat model's Sources tab."],
+    ])('refuses the kind %s, which has a route of its own, with 400 and a message that says where, and queues nothing (Milestone 4 FR-045a, SC-012)', async (kind, error) => {
+      const res = await start({ kind, input: {} });
+      expect(res).toEqual({ status: 400, body: { error } });
+      expect((await db.query('SELECT 1 FROM jobs')).rowCount).toBe(0);
+    });
+
+    it('keeps the schema\'s own message for a kind it does not know, and never repeats what was sent', async () => {
+      const res = await start({ kind: 'definitely-not-a-kind', input: {} });
+      expect(res.status).toBe(400);
+      expect(JSON.stringify(res.body)).not.toContain('definitely-not-a-kind');
     });
 
     it('answers 401 without a token', async () => {

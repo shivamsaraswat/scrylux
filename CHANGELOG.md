@@ -4,16 +4,27 @@ What changed in each release of Scrylux, newest first. Versions are `MAJOR.MINOR
 
 ## [Unreleased]
 
-### Documents in a threat model, with no AI feature yet
+### Documents in a threat model, and a draft of the system from them
 
-A threat model can now hold the design documents it was built from. Add `.md`, `.txt`, `.pdf` and `.docx` files, or paste text, on the new **Sources** tab. Scrylux reads each one, cuts its text into chunks of at most 2,000 characters and gives every chunk an embedding, which later releases will search. **Nothing is drafted from a document yet, and nothing sends a document to a generation model.** Adding a document needs an embedding provider; without one, everything else works as before.
+A threat model can now hold the design documents it was built from. Add `.md`, `.txt`, `.pdf` and `.docx` files, or paste text, on the new **Sources** tab. Scrylux reads each one, cuts its text into chunks of at most 2,000 characters and gives every chunk an embedding, which extraction searches when your documents are too large to read whole. Adding a document needs an embedding provider; without one, everything else works as before. **Start extraction** on the new **Draft** tab then asks your generation model to propose the system the documents describe, as a draft (below).
 
-- **Where your text goes is stated first.** Before a document can be added, the tab names the embedding provider and says the text leaves your install when that provider is hosted (and that later releases' AI features will send it to a hosted generation provider too), or that it stays when every provider is local. It says so on every visit, in the form and again above the list.
+- **Where your text goes is stated first.** Before a document can be added, the tab names the embedding provider and says the text leaves your install when that provider is hosted (and that starting an extraction sends it to a hosted generation provider too), or that it stays when every provider is local. It says so on every visit, in the form and again above the list.
 - **Read what Scrylux read.** A document's page shows its chunks in order, with their pages or lines and headings, as text; a PDF says how many pages had no text.
 - **Files are read safely.** A file's type comes from its content. A PDF or Word file is read in a separate process that holds no password or key, under a time, a memory, an unpacked-size and a page limit; nothing in a file is run or fetched. A document that cannot be read says why and what to do, and **Retry** is offered only where trying again can help.
 - **The original is kept only until the document is ready.** It waits on a volume or in an S3-compatible bucket (MinIO, R2, AWS S3), is deleted when the document is ready, and is never returned. Deleting a document, a threat model or a project removes its originals, text and chunks.
 - **Keep embeddings in step.** After you change the embedding model, a document says its embeddings are out of date and **Refresh embeddings** replaces them without changing a chunk. A document never holds the embeddings of two models.
 - **Limits you can see.** A file is at most 10 MB, a threat model holds 20 documents, an account may have 20 waiting or processing, and all documents together may take 2 GB of the database (text and embeddings counted), all settable.
+
+**System extraction: a draft of the system, with where each part came from.** On a threat model's **Draft** tab, **Start extraction** sends its documents to your generation model, which proposes the components, data stores, external entities, data flows, trust boundaries, assets and assumptions they describe. The result is a **draft**, shown as a read-only diagram and a list, and marked on every view as proposed by AI and not part of the threat model. Nothing in it enters the threat model; accepting items into it is the next release.
+
+- **Every item says why, and where from.** Each carries a rationale and the passages it came from, quoted exactly; so does each security flag it proposes. Scrylux checks that every quoted passage is really in the chunk it names, and asks the model again, up to three times, if one is not.
+- **The notice comes first.** The Draft tab says, beside the Start button and on every visit, that the text of your documents is sent to a hosted generation provider, naming it, or that it stays in your install.
+- **It says what it read.** A threat model whose documents fit `EXTRACTION_CONTEXT_CHARS` (36,000 characters) is read whole. A larger one is read in part, by the chunks most relevant to a system model, and the draft says how many of how many.
+- **A document cannot steer it.** Documents are sent only inside the section the model is told is data, under labels and never identifiers; the model has no tool; and an answer is stored only if it passes every check. Starting is refused while a document is still being processed, and one extraction at a time runs on a threat model.
+- **Not exported.** A draft is not in a Scrylux file, an OTM file or a report.
+- **Two settings.** `EXTRACTION_CONTEXT_CHARS` and `EXTRACTION_MAX_OUTPUT_TOKENS`, which the app and the worker should share. At the defaults a model needs a **32,768-token context**: for Ollama set `OLLAMA_CONTEXT_LENGTH`, because Ollama shortens longer input silently. [Extraction](docs/ai-providers.md#extraction) has the rest, including what a local model needs.
+- **Fixed with it:** Gemini refused the draft's answer schema because its lists allowed more than about ten items; its limits are now given to the model in words and checked by Scrylux. A failed extraction's hint named the embedding settings for a generation failure; it now names `LLM_MODEL`.
+- **A fix in the provider layer.** When a model's answer had a field that was not allowed, the note asking it to answer again named the field. That note goes to the model outside the section marked as data, so a document could plant text in it. The note now names only the field's place and the rule.
 
 ### Upgrading to this release
 

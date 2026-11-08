@@ -1,4 +1,4 @@
-// Kysely table types for the five domain tables, the three job tables and the two source tables. Types only: the tables themselves are
+// Kysely table types for the five domain tables, the three job tables, the two source tables and the six draft tables. Types only: the tables themselves are
 // defined by the SQL files in migrations/, and test/schema-types.test.ts checks these against the real columns.
 //
 // ColumnType<Select, Insert, Update>: `never` marks a column the database owns (set on insert, or
@@ -6,6 +6,7 @@
 // deliberately absent: they stay on plain parameterized `pg` queries.
 import type { ColumnType, Generated } from 'kysely';
 import type {
+  DraftPath,
   ElementType,
   Impact,
   JobFailureCategory,
@@ -211,6 +212,75 @@ interface ChunksTable {
   embedding: ColumnType<string, string, string>;
 }
 
+// ---- Drafts (Phase 3 Milestone 4, data-model.md) ----
+//
+// What a model proposed from a threat model's sources. Kept apart from the threat model: nothing here references `elements`, `threats` or
+// `mitigations`. A draft is written whole, by the worker, in the one transaction that ends its extraction; a draft is replaced or
+// deleted, never edited, so every column but a citation's chunk is fixed (and that one is cleared by the foreign key, never by a write).
+
+/** At most one per threat model (FR-052). */
+interface DraftsTable {
+  id: Generated<string>;
+  threat_model_id: Fixed<string>;
+  job_id: Fixed<string | null>;
+  started_by: Fixed<number>;
+  made_at: Timestamp;
+  generation_model: Fixed<string>;
+  prompt_version: Fixed<string>;
+  path: Fixed<DraftPath>;
+  chunks_read: Fixed<number>;
+  chunks_available: Fixed<number>;
+  sources_total: Fixed<number>;
+  nothing_found: Fixed<string | null>;
+}
+
+/** The sources an extraction considered, read or left out (FR-004). A deleted source takes its row with it. */
+interface DraftSourcesTable {
+  draft_id: Fixed<string>;
+  source_id: Fixed<string>;
+  read: Fixed<boolean>;
+}
+
+/** Which chunks were sent, and under which label (FR-014). */
+interface DraftReadChunksTable {
+  draft_id: Fixed<string>;
+  chunk_id: Fixed<string>;
+  label: Fixed<number>;
+}
+
+type DraftItemKind = 'process' | 'data_store' | 'external_entity' | 'data_flow' | 'trust_boundary' | 'asset' | 'assumption';
+
+/** An element, an asset or an assumption. The worker chooses the id, because the items point at each other before any is stored. */
+interface DraftItemsTable {
+  id: Settable<string>;
+  draft_id: Fixed<string>;
+  position: Fixed<number>;
+  kind: Fixed<DraftItemKind>;
+  name: Fixed<string | null>;
+  body: Fixed<string | null>;
+  rationale: Fixed<string>;
+  boundary_id: Fixed<string | null>;
+  source_item_id: Fixed<string | null>;
+  target_item_id: Fixed<string | null>;
+  flags: ColumnType<JsonObject, JsonObject | undefined, never>;
+}
+
+interface DraftAssetHoldersTable {
+  asset_id: Fixed<string>;
+  element_id: Fixed<string>;
+}
+
+/** A citation of an item, or of one of its flags. The quote is a span of the chunk, never a copy of its text (FR-054, research #4). */
+interface DraftCitationsTable {
+  id: Settable<string>;
+  item_id: Fixed<string>;
+  flag: Fixed<string | null>;
+  position: Fixed<number>;
+  chunk_id: Fixed<string | null>;
+  quote_start: Fixed<number>;
+  quote_end: Fixed<number>;
+}
+
 export interface Database {
   projects: ProjectsTable;
   threat_models: ThreatModelsTable;
@@ -222,4 +292,10 @@ export interface Database {
   workers: WorkersTable;
   sources: SourcesTable;
   chunks: ChunksTable;
+  drafts: DraftsTable;
+  draft_sources: DraftSourcesTable;
+  draft_read_chunks: DraftReadChunksTable;
+  draft_items: DraftItemsTable;
+  draft_asset_holders: DraftAssetHoldersTable;
+  draft_citations: DraftCitationsTable;
 }

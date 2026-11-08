@@ -1,5 +1,5 @@
+import { ExtractionResult, IngestionResult, JOB_TRANSIENT_CATEGORIES } from '@scrylux/core';
 import type {
-  IngestionResult,
   JobDetail,
   JobFailureCategory,
   JobFailureDetail,
@@ -48,12 +48,16 @@ export interface ClaimedJob extends Held {
   costCapUsd: number;
 }
 
+/** The failures that may pass (FR-020, and FR-013 of Phase 3 Milestone 3 and FR-044 of Milestone 4). */
+export type TransientCategory = (typeof JOB_TRANSIENT_CATEGORIES)[number];
+const isTransientCategory = (category: JobFailureCategory): category is TransientCategory => (JOB_TRANSIENT_CATEGORIES as readonly string[]).includes(category);
+
 /** How a run ended. The state a job is left in follows from it, and from whether a cancel was asked (research #4). */
 export type RunOutcome =
   | { kind: 'succeeded'; result?: JsonObject }
   | { kind: 'failed'; category: JobFailureCategory; detail?: JobFailureDetail; result?: JsonObject }
   /** A failure that may pass (FR-020): the job runs again after a wait while it has runs left, and fails otherwise. */
-  | { kind: 'transient'; category: 'provider_unavailable' | 'rate_limited' | 'storage_unavailable'; result?: JsonObject }
+  | { kind: 'transient'; category: TransientCategory; result?: JsonObject }
   | { kind: 'cancelled'; result?: JsonObject };
 
 const FINAL_STATES: readonly JobState[] = ['succeeded', 'failed', 'cancelled'];
@@ -122,21 +126,29 @@ export async function nextAllowedAt(db: Db, accountId: number, settings: Pick<Jo
  * Queues a job and returns its id. The caps, runs and time limit are copied from `settings` (FR-040, FR-045). The limits
  * are checked in the same transaction, after taking a lock on the account, so two starts at once cannot both pass.
  */
+/**
+ * Takes the lock on the account that every start takes, and refuses the start when the account already has its limit of jobs queued or
+ * running (FR-046). The ingestion kinds are counted apart (Phase 3 Milestone 3, FR-043); an extraction counts here (Milestone 4, FR-046).
+ */
+async function lockAccountAndCheckLimit(trx: Transaction<Database>, accountId: number, settings: Pick<JobSettings, 'jobsPerAccount'>): Promise<void> {
+  await sql`SELECT pg_advisory_xact_lock(${START_LOCK_NAMESPACE}::int, ${accountId}::int)`.execute(trx);
+
+  const { rows } = await sql<{ active: number }>`
+    SELECT count(*)::int AS active FROM jobs
+    WHERE created_by = ${accountId} AND state IN ('queued', 'running') AND kind NOT IN (${sql.join([...INGESTION_KINDS])})`.execute(trx);
+  if ((rows[0]?.active ?? 0) >= settings.jobsPerAccount) {
+    const n = settings.jobsPerAccount;
+    throw new JobLimitError('limit', LIMIT_RETRY_SECONDS, `You already have ${n} ${n === 1 ? 'job' : 'jobs'} queued or running. Wait for one to finish, or cancel one.`);
+  }
+}
+
 export async function enqueue(
   db: Db,
   job: { kind: JobKind; input: JsonObject; accountId: number },
   settings: JobSettings,
 ): Promise<string> {
   return db.transaction().execute(async (trx) => {
-    await sql`SELECT pg_advisory_xact_lock(${START_LOCK_NAMESPACE}::int, ${job.accountId}::int)`.execute(trx);
-
-    const { rows } = await sql<{ active: number }>`
-      SELECT count(*)::int AS active FROM jobs
-      WHERE created_by = ${job.accountId} AND state IN ('queued', 'running') AND kind NOT IN (${sql.join([...INGESTION_KINDS])})`.execute(trx);
-    if ((rows[0]?.active ?? 0) >= settings.jobsPerAccount) {
-      const n = settings.jobsPerAccount;
-      throw new JobLimitError('limit', LIMIT_RETRY_SECONDS, `You already have ${n} ${n === 1 ? 'job' : 'jobs'} queued or running. Wait for one to finish, or cancel one.`);
-    }
+    await lockAccountAndCheckLimit(trx, job.accountId, settings);
 
     // The cooldown between one account's provider checks (FR-047): counted from when the last was queued, whatever became of
     // it, so cancelling a check does not let the account start another sooner.
@@ -162,6 +174,47 @@ export async function enqueue(
       .executeTakeFirstOrThrow();
     return row.id;
   });
+}
+
+/** An extraction of this threat model is already queued or running (FR-042): the unique index of migration 018 refused a second. */
+export class ExtractionActiveError extends Error {
+  constructor() {
+    super('An extraction of this threat model is already queued or running.');
+    this.name = 'ExtractionActiveError';
+  }
+}
+
+/**
+ * Queues an extraction of a threat model, inside the transaction that checked that it may be started (Phase 3 Milestone 4, FR-040,
+ * FR-041, FR-042, FR-046). It takes the account's lock and counts against Milestone 2's limit on the account's active jobs, with no
+ * cooldown of its own. The job belongs to the threat model and its input holds nothing: the threat model is the job's own column, so no
+ * source's name or text and no draft is ever in it (M2 FR-051). A second active extraction of the same threat model is refused by the
+ * database, even when two starts race past the caller's check.
+ */
+export async function enqueueExtraction(trx: Transaction<Database>, job: { threatModelId: string; accountId: number }, settings: JobSettings): Promise<string> {
+  await lockAccountAndCheckLimit(trx, job.accountId, settings);
+  try {
+    const row = await trx
+      .insertInto('jobs')
+      .values({
+        kind: 'extract_system',
+        input: {},
+        created_by: job.accountId,
+        max_runs: settings.maxRuns,
+        time_limit_ms: settings.timeLimitMs,
+        token_cap: settings.tokenCap,
+        cost_cap_usd: settings.costCapUsd,
+        threat_model_id: job.threatModelId,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return row.id;
+  } catch (error) {
+    // The refusal aborts the transaction, which is rolled back as the error leaves it: the caller has nothing more to do in it.
+    const refused = error as { code?: string; constraint?: string };
+    if (refused.code === '23505' && refused.constraint === 'jobs_one_extraction_idx') throw new ExtractionActiveError();
+    throw error;
+  }
 }
 
 /** What queueing an ingestion job needs besides the caps of every job: the account's own limit (FR-043). */
@@ -270,9 +323,11 @@ const iso = (date: Date | null): string | null => (date === null ? null : date.t
 
 /**
  * The operation a failed job failed on, so that the hint names its settings: LLM or EMBEDDING. A provider check records
- * which of its two operations failed; ingestion and refresh only ever call the embedding provider.
+ * which of its two operations failed; ingestion and refresh only ever call the embedding provider; an extraction calls the
+ * generation provider, and the embedding provider only in its first step, when it has to choose among the chunks.
  */
 function failedPrefix(row: JobRow): Prefix {
+  if (row.kind === 'extract_system') return row.progress?.step === 'select' ? 'EMBEDDING' : 'LLM';
   if (row.kind !== 'provider_check') return 'EMBEDDING';
   const failed = row.failure_category;
   if (row.result?.generation?.status === failed) return 'LLM';
@@ -363,6 +418,20 @@ function describeCheck(result: ProviderCheckResult | null): ProviderCheckResult 
   return result === null ? null : { generation: describeOperation(result.generation, 'LLM'), embeddings: describeOperation(result.embeddings, 'EMBEDDING') };
 }
 
+/**
+ * The part of a job detail that a job's stored result goes in: an ingestion's counts, or an extraction's counts and settings
+ * (Phase 3 Milestone 4, contracts/worker.md "Result"). A result that is not whole, such as the empty one a job keeps when it failed
+ * before it had counts, is null: the route parses its answer with the strict JobDetail, and an unreadable job is worse than one
+ * with no counts. Nothing that could hold text gets through, since each record refuses a field it does not name.
+ */
+export function detailResults(kind: JobKind, stored: unknown): { ingestion: IngestionResult | null; extraction: ExtractionResult | null } {
+  const ingests = kind === 'ingest_source' || kind === 'refresh_embeddings';
+  return {
+    ingestion: ingests ? (IngestionResult.safeParse(stored).data ?? null) : null,
+    extraction: kind === 'extract_system' ? (ExtractionResult.safeParse(stored).data ?? null) : null,
+  };
+}
+
 /** A job with its usage records, oldest first, and, for a provider check, each operation's message and hint (FR-091). */
 export async function getDetail(db: Db, id: string): Promise<JobDetail | undefined> {
   const record = await getJob(db, id);
@@ -376,10 +445,10 @@ export async function getDetail(db: Db, id: string): Promise<JobDetail | undefin
   return {
     ...record,
     usage: rows.map((r) => ({ ...r, recorded_at: r.recorded_at.toISOString() })),
-    // A provider check keeps each operation's outcome, to which the message and hint are added here; an ingestion keeps
-    // counts only, which are shown as they are (FR-051).
+    // A provider check keeps each operation's outcome, to which the message and hint are added here; an ingestion and an
+    // extraction keep counts only, which are shown as they are (FR-051).
     result: record.kind === 'provider_check' ? describeCheck(result as ProviderCheckResult | null) : null,
-    ingestion: record.kind === 'provider_check' ? null : (result as IngestionResult | null),
+    ...detailResults(record.kind, result),
   };
 }
 
@@ -563,7 +632,13 @@ export async function finishRun(db: Db, job: Held, outcome: RunOutcome, commit?:
         effective = { kind: 'cancelled', ...kept };
       } else {
         const failure = await commit.check(trx);
-        if (failure !== undefined) effective = { kind: 'failed', category: failure.category, ...(failure.detail === undefined ? {} : { detail: failure.detail }), ...kept };
+        if (failure !== undefined) {
+          // A failure that may pass (an extraction whose sources changed under it) runs the job again while it has runs left, and
+          // fails it on the last; any other failure of the check ends the job at once.
+          effective = isTransientCategory(failure.category)
+            ? { kind: 'transient', category: failure.category, ...kept }
+            : { kind: 'failed', category: failure.category, ...(failure.detail === undefined ? {} : { detail: failure.detail }), ...kept };
+        }
       }
     }
     const state = await endRun(trx, job, effective);

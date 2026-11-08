@@ -90,6 +90,9 @@ demo.
 - **Documents** (sources): neither the files that were added to the threat model, nor the text read from them, nor their chunks or
   embeddings. A file exported from a threat model that has documents describes the system and its threats, not what they were built
   from, and an import brings none back (Phase 3 Milestone 3). Add the documents again to the imported threat model.
+- **Drafts** (what an extraction proposed from the documents): neither its elements, assets and assumptions, nor its rationales,
+  citations or quoted passages. A draft is not part of the threat model until a person accepts it, and a file describes the threat
+  model, so an export holds none and an import brings none back (Phase 3 Milestone 4).
 
 ## What an import checks
 

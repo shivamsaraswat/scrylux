@@ -7,9 +7,17 @@ import type { JobKind } from '@scrylux/core';
 //
 // Phase 3 Milestone 3 turned a yes-or-no into a choice: the provider check runs against whichever operation is configured
 // ('any'), while ingesting and refreshing need an embedding provider, whether or not generation is configured (FR-030, FR-047).
-export type Need = 'any' | 'embedding';
+// Phase 3 Milestone 4 adds the third: an extraction asks a generation model for a draft, so it needs the generation provider,
+// whether or not embeddings are configured (FR-002, FR-047). Whether it also needs embeddings depends on the sources, not on the
+// kind, and the start route decides that (FR-015).
+export type Need = 'any' | 'embedding' | 'generation';
 
-export const NEEDS: Readonly<Record<JobKind, Need>> = { provider_check: 'any', ingest_source: 'embedding', refresh_embeddings: 'embedding' };
+export const NEEDS: Readonly<Record<JobKind, Need>> = {
+  provider_check: 'any',
+  ingest_source: 'embedding',
+  refresh_embeddings: 'embedding',
+  extract_system: 'generation',
+};
 
 /** The operations that are configured, as the API sees them: a provider name and where its data goes, or null. */
 export interface ConfiguredOperations {
@@ -18,5 +26,8 @@ export interface ConfiguredOperations {
 }
 
 /** Whether the provider that a kind needs is configured. */
-export const isOffered = (need: Need, operations: ConfiguredOperations): boolean =>
-  need === 'embedding' ? operations.embedding !== null : operations.generation !== null || operations.embedding !== null;
+export const isOffered = (need: Need, operations: ConfiguredOperations): boolean => {
+  if (need === 'embedding') return operations.embedding !== null;
+  if (need === 'generation') return operations.generation !== null;
+  return operations.generation !== null || operations.embedding !== null;
+};

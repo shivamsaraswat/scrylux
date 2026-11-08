@@ -33,7 +33,7 @@ let alice: number;
 let bob: number;
 
 beforeEach(async () => {
-  await db.query('TRUNCATE jobs, job_usage, workers');
+  await db.query('TRUNCATE jobs, job_usage, workers CASCADE');
   alice = await makeUser();
   bob = await makeUser();
 });
@@ -710,7 +710,7 @@ describe('a run that failed for a reason that may pass (FR-020, FR-021)', () => 
       if (!held) throw new Error('nothing claimed');
       expect(await finishRun(kdb, held, { kind: 'failed', category }), category).toBe('failed');
       expect((await row(id)).run).toBe(1);
-      await db.query('TRUNCATE jobs, job_usage');
+      await db.query('TRUNCATE jobs, job_usage CASCADE');
     }
   });
 
@@ -1033,7 +1033,7 @@ describe('finishRun with a commit (research #2)', () => {
     const a = spyCommit(queued);
     expect(await finishRun(kdb, queued, { kind: 'transient', category: 'provider_unavailable' }, a.commit)).toBe('queued');
     expect(a.calls).not.toContain('write');
-    await db.query('TRUNCATE jobs, job_usage, workers');
+    await db.query('TRUNCATE jobs, job_usage, workers CASCADE');
     const failed = await ingestion();
     const b = spyCommit(failed);
     expect(await finishRun(kdb, failed, { kind: 'failed', category: 'damaged' }, b.commit)).toBe('failed');
@@ -1055,6 +1055,30 @@ describe('finishRun with a commit (research #2)', () => {
     const { commit } = spyCommit(job, { check: () => Promise.resolve({ category: 'too_large' as const, detail: 'chars' as const }) });
     await finishRun(kdb, job, { kind: 'succeeded' }, commit);
     expect((await getJob(kdb, job.id))?.failure?.message).toMatch(/characters/);
+  });
+
+  // Phase 3 Milestone 4 (FR-044): an extraction whose sources changed under it runs again, because running again reads what is there.
+  it('queues the job again when a check names a failure that may pass and the job has runs left, and writes nothing', async () => {
+    const job = await ingestion();
+    const { commit, calls } = spyCommit(job, { check: () => Promise.resolve({ category: 'sources_changed' as const }) });
+    expect(await finishRun(kdb, job, { kind: 'succeeded' }, commit)).toBe('queued');
+    expect(calls).not.toContain('write');
+    expect(await getJob(kdb, job.id)).toMatchObject({ state: 'queued', failure: null });
+  });
+
+  it('fails the job, with the category, when a check names a failure that may pass and this was its last run', async () => {
+    const job = await ingestion();
+    await db.query('UPDATE jobs SET max_runs = 1 WHERE id = $1', [job.id]);
+    const { commit, calls } = spyCommit(job, { check: () => Promise.resolve({ category: 'sources_changed' as const }) });
+    expect(await finishRun(kdb, job, { kind: 'succeeded' }, commit)).toBe('failed');
+    expect(calls).not.toContain('write');
+    expect(await getJob(kdb, job.id)).toMatchObject({ state: 'failed', failure: { category: 'sources_changed' } });
+  });
+
+  it('still fails at once for a check that names a failure that cannot pass, with runs left', async () => {
+    const job = await ingestion();
+    const { commit } = spyCommit(job, { check: () => Promise.resolve({ category: 'document_space_full' as const }) });
+    expect(await finishRun(kdb, job, { kind: 'succeeded' }, commit)).toBe('failed');
   });
 
   it('ends the job as cancelled and writes nothing when the rows to write are gone (the lock finds no source)', async () => {

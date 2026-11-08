@@ -1,6 +1,6 @@
 import { ChunkRecord, uuid, type SourceRecord } from '@scrylux/core';
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useChunks, useDeleteSource, useRefreshSource, useRetrySource, useSource } from '../api/queries.js';
 import { isGone, writeErrorMessage } from '../api/errors.js';
 import { ConfirmDialog } from '../components/ConfirmDialog.js';
@@ -29,6 +29,11 @@ function where(chunk: ChunkRecord): string | null {
   return range.first === range.last ? `${unit} ${range.first}` : `${unit}s ${range.first}–${range.last}`;
 }
 
+/** The position a source opens at: a whole number of up to six digits, or the start for anything else, including nothing. */
+function chunkOffset(raw: string | null): number {
+  return raw !== null && /^\d{1,6}$/.test(raw) ? Number(raw) : 0;
+}
+
 export function SourcePage() {
   const { threatModelId = '', sourceId = '' } = useParams();
   // A malformed id never reaches the API.
@@ -46,7 +51,10 @@ function SourceView({ threatModelId, id }: { threatModelId: string; id: string }
   const query = useSource(id);
   const source = query.data;
   const ready = source?.status === 'ready';
-  const chunks = useChunks(id, ready);
+  // A citation of a draft opens the source at its chunk (Phase 3 Milestone 4): `?offset=` is a position, and anything else is the start.
+  const [params] = useSearchParams();
+  const start = chunkOffset(params.get('offset'));
+  const chunks = useChunks(id, ready, start);
   const remove = useDeleteSource(threatModelId);
   const retry = useRetrySource(threatModelId);
   const refresh = useRefreshSource(threatModelId);
@@ -163,6 +171,11 @@ function SourceView({ threatModelId, id }: { threatModelId: string; id: string }
       {ready && (
         <section aria-labelledby="chunks-heading">
           <h2 id="chunks-heading">Chunks</h2>
+          {start > 0 && (
+            <p className="muted">
+              Showing from chunk {start + 1}. <Link to={`/threat-models/${threatModelId}/sources/${id}`}>Show from the start</Link>
+            </p>
+          )}
           {chunks.isPending && <p>Loading…</p>}
           {chunks.isError && <LoadError error={chunks.error} onRetry={() => void chunks.refetch()} />}
           {chunks.data && shown.length === 0 && <p>This document has no chunks.</p>}
@@ -170,8 +183,9 @@ function SourceView({ threatModelId, id }: { threatModelId: string; id: string }
             {shown.map((chunk) => {
               const place = where(chunk);
               return (
-                <li key={chunk.id} aria-label={`Chunk ${chunk.position + 1}`} className="chunk">
+                <li key={chunk.id} aria-label={`Chunk ${chunk.position + 1}`} className="chunk" aria-current={start > 0 && chunk.position === start ? 'true' : undefined}>
                   <h3>{`Chunk ${chunk.position + 1}`}</h3>
+                  {start > 0 && chunk.position === start && <p className="muted">Cited in the draft</p>}
                   {(place !== null || chunk.heading !== null) && (
                     <p className="muted">
                       {place !== null && <span>{place}</span>}

@@ -146,3 +146,30 @@ describe('the source and storage settings (FR-052)', () => {
   });
 });
 
+
+// Phase 3 Milestone 4 (FR-010): the worker checks the extraction settings as the API does, because the worker sends the request.
+describe('the extraction settings', () => {
+  it('returns them for the worker to use, with the defaults when unset', () => {
+    const result = checkWorkerStartup({}, {});
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.extraction).toEqual({ contextChars: 36_000, maxOutputTokens: 12_000 });
+  });
+
+  it('returns the operator’s values', () => {
+    const result = checkWorkerStartup({ EXTRACTION_CONTEXT_CHARS: '8000', EXTRACTION_MAX_OUTPUT_TOKENS: '4000' }, {});
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.extraction).toEqual({ contextChars: 8000, maxOutputTokens: 4000 });
+  });
+
+  it.each([
+    ['EXTRACTION_CONTEXT_CHARS', '100'],
+    ['EXTRACTION_MAX_OUTPUT_TOKENS', 'lots'],
+  ])('refuses a bad %s, naming it and never its value', (name, value) => {
+    const result = checkWorkerStartup({ [name]: value }, {});
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.line).toMatch(new RegExp(`^Startup failed: ${name} `));
+      expect(result.line).not.toContain(value);
+    }
+  });
+});

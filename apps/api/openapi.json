@@ -3754,6 +3754,295 @@
         }
       }
     },
+    "/api/v1/threat-models/{id}/extraction": {
+      "get": {
+        "operationId": "getExtraction",
+        "summary": "The extraction panel of a threat model: its latest extraction, and whether a start would be accepted now",
+        "description": "The latest extraction job of the threat model, or null; and whether starting one is offered, with the reason it is not (a source still being processed, no ready source, no generation provider, embeddings out of date, a failure that would repeat). The page reads it again while an extraction is queued or running.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no valid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "startExtraction",
+        "summary": "Start an extraction of a threat model, or start the last one again",
+        "description": "Queues a job that reads the threat model's ready sources and asks the generation model for a draft of the system they describe, and answers at once. There is no body. Starting again after a failure is the same call: it is refused when it would repeat the failure. 409: no generation provider is configured, an extraction is already queued or running, a source is still being processed (the answer counts them), there is no ready source, the embeddings are not usable for sources larger than the budget, or the last failure would repeat. 429: the account has too many jobs queued or running; Retry-After says how many seconds to wait. A draft that exists is replaced when the new one succeeds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no valid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many jobs, or too soon after the last provider check; Retry-After says how long to wait",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/threat-models/{id}/draft": {
+      "get": {
+        "operationId": "getDraft",
+        "summary": "The draft of a threat model: what an extraction proposed, with where each item came from",
+        "description": "Every item carries its rationale and citations. A citation whose source was deleted has no chunk and no quote. The text of every item is AI-generated or taken from a document, and is shown as text. 404: the threat model has no draft.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no valid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "discardDraft",
+        "summary": "Discard the draft of a threat model",
+        "description": "An extraction that is queued or running is not stopped: if it succeeds, it makes a new draft. 404: the threat model has no draft.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted; there is no body"
+          },
+          "400": {
+            "description": "The request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no valid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/openapi.json": {
       "get": {
         "operationId": "getOpenApiDocument",
@@ -5556,7 +5845,8 @@
             "enum": [
               "provider_check",
               "ingest_source",
-              "refresh_embeddings"
+              "refresh_embeddings",
+              "extract_system"
             ]
           },
           "state": {
@@ -5707,7 +5997,10 @@
                       "embeddings",
                       "extract",
                       "chunk",
-                      "embed"
+                      "embed",
+                      "select",
+                      "generate",
+                      "store"
                     ]
                   },
                   "done": {
@@ -5761,7 +6054,10 @@
                       "too_large_unpacked",
                       "unreadable",
                       "storage_unavailable",
-                      "document_space_full"
+                      "document_space_full",
+                      "no_ready_source",
+                      "embeddings_out_of_date",
+                      "sources_changed"
                     ]
                   },
                   "message": {
@@ -5906,7 +6202,8 @@
             "enum": [
               "provider_check",
               "ingest_source",
-              "refresh_embeddings"
+              "refresh_embeddings",
+              "extract_system"
             ]
           },
           "state": {
@@ -6057,7 +6354,10 @@
                       "embeddings",
                       "extract",
                       "chunk",
-                      "embed"
+                      "embed",
+                      "select",
+                      "generate",
+                      "store"
                     ]
                   },
                   "done": {
@@ -6111,7 +6411,10 @@
                       "too_large_unpacked",
                       "unreadable",
                       "storage_unavailable",
-                      "document_space_full"
+                      "document_space_full",
+                      "no_ready_source",
+                      "embeddings_out_of_date",
+                      "sources_changed"
                     ]
                   },
                   "message": {
@@ -6382,7 +6685,10 @@
                           "too_large_unpacked",
                           "unreadable",
                           "storage_unavailable",
-                          "document_space_full"
+                          "document_space_full",
+                          "no_ready_source",
+                          "embeddings_out_of_date",
+                          "sources_changed"
                         ]
                       },
                       "provider": {
@@ -6448,7 +6754,10 @@
                           "too_large_unpacked",
                           "unreadable",
                           "storage_unavailable",
-                          "document_space_full"
+                          "document_space_full",
+                          "no_ready_source",
+                          "embeddings_out_of_date",
+                          "sources_changed"
                         ]
                       },
                       "provider": {
@@ -6528,6 +6837,92 @@
                 "type": "null"
               }
             ]
+          },
+          "extraction": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "enum": [
+                      "whole",
+                      "retrieval"
+                    ]
+                  },
+                  "chunks_read": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "chunks_available": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "sources_read": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "sources_left_out": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "elements": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "assets": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "assumptions": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "elements",
+                      "assets",
+                      "assumptions"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "context_chars": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  },
+                  "max_output_tokens": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "path",
+                  "chunks_read",
+                  "chunks_available",
+                  "sources_read",
+                  "sources_left_out",
+                  "items",
+                  "context_chars",
+                  "max_output_tokens"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -6553,7 +6948,8 @@
           "source_id",
           "usage",
           "result",
-          "ingestion"
+          "ingestion",
+          "extraction"
         ],
         "additionalProperties": false
       },
@@ -6733,7 +7129,10 @@
                           "too_large_unpacked",
                           "unreadable",
                           "storage_unavailable",
-                          "document_space_full"
+                          "document_space_full",
+                          "no_ready_source",
+                          "embeddings_out_of_date",
+                          "sources_changed"
                         ]
                       },
                       {
@@ -6929,7 +7328,10 @@
                           "too_large_unpacked",
                           "unreadable",
                           "storage_unavailable",
-                          "document_space_full"
+                          "document_space_full",
+                          "no_ready_source",
+                          "embeddings_out_of_date",
+                          "sources_changed"
                         ]
                       },
                       {
@@ -7100,6 +7502,884 @@
         "required": [
           "chunks",
           "has_more"
+        ],
+        "additionalProperties": false
+      },
+      "ExtractionStatus": {
+        "type": "object",
+        "properties": {
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "offered": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "path": {
+                    "type": "string",
+                    "enum": [
+                      "whole",
+                      "retrieval"
+                    ]
+                  },
+                  "replaces_draft": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "offered",
+                  "path",
+                  "replaces_draft"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "offered": {
+                    "type": "boolean",
+                    "const": false
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "no_generation_provider",
+                      "extraction_active",
+                      "sources_processing",
+                      "no_ready_source",
+                      "no_embedding_provider",
+                      "embeddings_out_of_date",
+                      "would_repeat"
+                    ]
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "offered",
+                  "reason",
+                  "message",
+                  "source_ids"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "chunks_available": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "budget_chars": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "latest",
+          "start",
+          "chunks_available",
+          "budget_chars"
+        ],
+        "additionalProperties": false
+      },
+      "DraftRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "threat_model_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "made_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_by": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "username": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "username"
+            ],
+            "additionalProperties": false
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation_model": {
+            "type": "string"
+          },
+          "prompt_version": {
+            "type": "string",
+            "pattern": "^extract-system\\/[0-9a-f]{12}$"
+          },
+          "path": {
+            "type": "string",
+            "enum": [
+              "whole",
+              "retrieval"
+            ]
+          },
+          "chunks_read": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "chunks_available": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "read": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "read"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "sources_deleted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sources_changed": {
+            "type": "boolean"
+          },
+          "nothing_found": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "external_entity",
+                    "process",
+                    "data_store",
+                    "data_flow",
+                    "trust_boundary"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "boundary_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "source_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "target_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "flags": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "flag": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "boolean"
+                      },
+                      "citations": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "chunk": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "source_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "source_name": {
+                                      "type": "string"
+                                    },
+                                    "position": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "page_first": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "page_last": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "line_first": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "line_last": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "heading": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "source_id",
+                                    "source_name",
+                                    "position",
+                                    "page_first",
+                                    "page_last",
+                                    "line_first",
+                                    "line_last",
+                                    "heading"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "quote": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "chunk",
+                            "quote"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "flag",
+                      "value",
+                      "citations"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "rationale": {
+                  "type": "string"
+                },
+                "citations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "chunk": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "source_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "source_name": {
+                                "type": "string"
+                              },
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "page_first": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "page_last": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "line_first": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "line_last": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "heading": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "source_id",
+                              "source_name",
+                              "position",
+                              "page_first",
+                              "page_last",
+                              "line_first",
+                              "line_last",
+                              "heading"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "quote": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "chunk",
+                      "quote"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "name",
+                "boundary_id",
+                "source_id",
+                "target_id",
+                "flags",
+                "rationale",
+                "citations"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "held_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "rationale": {
+                  "type": "string"
+                },
+                "citations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "chunk": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "source_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "source_name": {
+                                "type": "string"
+                              },
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "page_first": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "page_last": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "line_first": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "line_last": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "heading": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "source_id",
+                              "source_name",
+                              "position",
+                              "page_first",
+                              "page_last",
+                              "line_first",
+                              "line_last",
+                              "heading"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "quote": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "chunk",
+                      "quote"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "description",
+                "held_by",
+                "rationale",
+                "citations"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "assumptions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "statement": {
+                  "type": "string"
+                },
+                "rationale": {
+                  "type": "string"
+                },
+                "citations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "chunk": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "source_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "source_name": {
+                                "type": "string"
+                              },
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "page_first": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "page_last": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "line_first": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "line_last": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "heading": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "source_id",
+                              "source_name",
+                              "position",
+                              "page_first",
+                              "page_last",
+                              "line_first",
+                              "line_last",
+                              "heading"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "quote": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "chunk",
+                      "quote"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "statement",
+                "rationale",
+                "citations"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "read_chunks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "source_id",
+                "position"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "threat_model_id",
+          "made_at",
+          "started_by",
+          "job_id",
+          "generation_model",
+          "prompt_version",
+          "path",
+          "chunks_read",
+          "chunks_available",
+          "sources",
+          "sources_deleted",
+          "sources_changed",
+          "nothing_found",
+          "elements",
+          "assets",
+          "assumptions",
+          "read_chunks"
         ],
         "additionalProperties": false
       },

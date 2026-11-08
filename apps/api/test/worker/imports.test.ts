@@ -138,6 +138,48 @@ describe('reading documents (FR-010)', () => {
   });
 });
 
+// Phase 3 Milestone 4, FR-037 and M2 FR-070: an extraction asks a model for a draft, and only the worker does that. The API process reaches the
+// routes that start one and the assessment of whether it may start, which read the database and the settings and send nothing, and never the
+// kind, the prompt files, the retrieval or the budget filling. None of the new modules reaches a web framework or a provider's SDK.
+describe('system extraction (FR-037, M2 FR-070)', () => {
+  const server = reach('server.ts');
+  const worker = reach('worker.ts');
+  const KIND_ONLY = ['worker/extract-system.ts', 'extract-system/prompt.ts', 'extract-system/retrieve.ts', 'extract-system/fill.ts'];
+
+  it('is started by the API through its routes and the start assessment, so the walk is real', () => {
+    expect(relative(server.files)).toEqual(expect.arrayContaining(['v1/extraction.ts', 'extract-system/start.ts', 'extract-system/draft.ts', 'extract-system/config.ts']));
+  });
+
+  it('is never reachable from the API process as the kind, the prompt, the retrieval or the budget filling', () => {
+    expect(relative(server.files).filter((f) => KIND_ONLY.includes(f))).toEqual([]);
+  });
+
+  it('is done by the worker, which reaches all of them, so the walk is real', () => {
+    expect(relative(worker.files)).toEqual(expect.arrayContaining(KIND_ONLY));
+  });
+
+  it('is written by modules that import no web framework and no provider SDK: the provider layer is the only way to a model', () => {
+    const SDKS = ['express', 'openai', '@anthropic-ai/sdk', '@google/genai', '@aws-sdk/client-bedrock-runtime', 'node-fetch', 'axios', 'undici'];
+    const modules = [...relative(worker.files), ...relative(server.files)].filter((f) => f.startsWith('extract-system/') || f === 'worker/extract-system.ts' || f === 'v1/extraction.ts');
+    expect(modules.length).toBeGreaterThan(8);
+    for (const file of new Set(modules)) {
+      const packages = [...reach(file).packages].filter((p) => file !== 'v1/extraction.ts' || p !== 'express');
+      expect(packages.filter((p) => SDKS.includes(p)), file).toEqual([]);
+    }
+  });
+
+  it('is not the place where the model’s answer can start a process, read a file or reach the network: no child process, filesystem write or HTTP client', () => {
+    const FORBIDDEN = ['node:child_process', 'node:http', 'node:https', 'node:net', 'node:dgram', 'node:worker_threads'];
+    const modules = new Set([...relative(worker.files), ...relative(server.files)].filter((f) => f.startsWith('extract-system/') || f === 'worker/extract-system.ts' || f === 'v1/extraction.ts'));
+    for (const file of modules) {
+      // Only the files of this milestone: what they import directly, not what the database driver imports.
+      const text = readFileSync(path.join(SRC, file), 'utf8');
+      const direct = [...text.matchAll(IMPORT)].map((m) => m[2] as string);
+      expect(direct.filter((specifier) => FORBIDDEN.includes(specifier)), file).toEqual([]);
+    }
+  });
+});
+
 describe('the walk itself', () => {
   it('sees an import and a re-export, a type import and a renamed name', () => {
     const text = [

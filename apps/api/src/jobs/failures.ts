@@ -45,11 +45,15 @@ const fileSchema = z.strictObject({
     unreadable_memory: entry,
     storage_unavailable: entry,
     document_space_full: entry,
+    no_ready_source: entry,
+    embeddings_out_of_date: entry,
+    sources_changed: entry,
   }),
   // A hint for one of Milestone 1's categories that is different for this kind of job.
   kinds: z.strictObject({
     ingest_source: z.strictObject({ input_too_large: text }),
     refresh_embeddings: z.strictObject({ input_too_large: text }),
+    extract_system: z.strictObject({ input_too_large: text, output_limit_reached: text, invalid_output: text }),
   }),
   // What a source shows when its ingestion was cancelled: its category is not a job's (FR-044).
   source: z.strictObject({ cancelled: entry }),
@@ -98,7 +102,8 @@ const isProviderCategory = (category: JobFailureCategory): category is FailureCa
 /**
  * The message and hint a job shows for its failure. `detail` chooses the text that names a bound: the cap that was lower than
  * one request (FR-044), the limit a document passed (FR-011). A detail that is not the category's own is ignored. `kind`
- * chooses a hint that is different for ingestion and refresh, for a model that refuses the chunk size.
+ * chooses a hint that is different for ingestion and refresh, for a model that refuses the chunk size, and for an extraction,
+ * for a model that refuses the input, cuts the draft off or will not answer in the required shape.
  */
 export function describeFailure(
   category: JobFailureCategory,
@@ -124,6 +129,9 @@ export function describeFailure(
     case 'too_large_unpacked':
     case 'storage_unavailable':
     case 'document_space_full':
+    case 'no_ready_source':
+    case 'embeddings_out_of_date':
+    case 'sources_changed':
       return job[category];
     default:
       break;
@@ -131,6 +139,9 @@ export function describeFailure(
   if (!isProviderCategory(category)) return job.job_error;
   if (category === 'input_too_large' && (kind === 'ingest_source' || kind === 'refresh_embeddings')) {
     return { message: FAILURE_MESSAGES.input_too_large, hint: kinds[kind].input_too_large };
+  }
+  if (kind === 'extract_system' && (category === 'input_too_large' || category === 'output_limit_reached' || category === 'invalid_output')) {
+    return { message: FAILURE_MESSAGES[category], hint: kinds.extract_system[category] };
   }
   return { message: FAILURE_MESSAGES[category], hint: providerHint(category, prefix) };
 }

@@ -3,26 +3,26 @@
 - **Project:** Scrylux
 - **Methodology:** STRIDE
 - **Threat model status:** Approved
-- **Exported:** 2026-11-01 12:40 UTC
-- **Contents:** 59 elements, 373 threats, 324 mitigations
+- **Exported:** 2026-11-08 14:41 UTC
+- **Contents:** 63 elements, 399 threats, 361 mitigations
 
 ## Risk summary
 
 | Status | Threats |
 |---|---:|
-| Open | 50 |
-| Mitigated | 89 |
-| Accepted | 139 |
-| Not applicable | 95 |
-| **Total** | **373** |
+| Open | 56 |
+| Mitigated | 96 |
+| Accepted | 149 |
+| Not applicable | 98 |
+| **Total** | **399** |
 
 | Risk (open threats) | Threats |
 |---|---:|
 | Critical | 6 |
-| High | 12 |
-| Medium | 29 |
+| High | 13 |
+| Medium | 34 |
 | Low | 3 |
-| **Total** | **50** |
+| **Total** | **56** |
 
 ## Diagram
 
@@ -31,66 +31,70 @@ flowchart LR
   subgraph b1["Deployment network"]
     n2(["Reverse proxy"])
     n3[("Document storage")]
-    subgraph b23["Application container"]
-      n24(["Accounts API"])
-      n25(["Document reader"])
-      n26(["Import and export"])
-      n27(["Report builder"])
-      n28(["Rule engine"])
-      n29(["Sign#45;in and sessions"])
-      n30(["Startup and configuration"])
-      n31(["Threat model API"])
-      n32(["Web app server"])
-      n33(["Worker"])
+    subgraph b25["Application container"]
+      n26(["Accounts API"])
+      n27(["Document reader"])
+      n28(["Import and export"])
+      n29(["Report builder"])
+      n30(["Rule engine"])
+      n31(["Sign#45;in and sessions"])
+      n32(["Startup and configuration"])
+      n33(["Threat model API"])
+      n34(["Web app server"])
+      n35(["Worker"])
     end
-    subgraph b38["Database server"]
-      n39[("Account and session records")]
-      n40[("Document records")]
-      n41[("Job records")]
-      n42[("Threat model records")]
+    subgraph b40["Database server"]
+      n41[("Account and session records")]
+      n42[("Document records")]
+      n43[("Drafts")]
+      n44[("Job records")]
+      n45[("Threat model records")]
     end
   end
-  subgraph b43["User device"]
-    n44(["Web app"])
+  subgraph b46["User device"]
+    n47(["Web app"])
   end
-  n45["API client"]
-  n46["LLM provider #40;hosted#41;"]
-  n47["Operator"]
-  n48["Secrets manager"]
-  n49["Signed#45;in user"]
-  n29 -->|"Account and session queries"| n39
-  n24 -->|"Account queries"| n39
-  n2 -->|"Account requests"| n24
-  n33 -->|"Chunks and embeddings"| n40
-  n31 -->|"Document queries"| n40
-  n31 -->|"Document storage writes"| n3
-  n28 -->|"Generated threats"| n42
-  n26 -->|"Import and export queries"| n42
-  n33 -->|"Job claims and results"| n41
-  n31 -->|"Job queries"| n41
-  n30 -->|"Migrations and seeding"| n39
-  n3 -->|"Original for reading"| n33
-  n2 -->|"Page requests"| n32
-  n27 -->|"Report reads"| n42
-  n31 -->|"Session check"| n39
-  n2 -->|"Sign#45;in and session requests"| n29
-  n31 -->|"Threat model queries"| n42
-  n2 -->|"Threat model requests"| n31
-  n2 -->|"Uploaded documents"| n31
-  n31 -->|"Generation requests"| n28
-  n31 -->|"Import and export requests"| n26
-  n33 -->|"Reader input and answer"| n25
-  n31 -->|"Report requests"| n27
-  n45 -->|"API client requests"| n2
-  n44 -->|"Browser requests"| n2
-  n33 -->|"Document text for embeddings"| n46
-  n47 -->|"Environment settings"| n30
-  n30 -->|"Model requests"| n46
-  n48 -->|"Secrets"| n30
-  n49 -->|"Use the web app"| n44
-  n32 -->|"Web app code"| n44
-  n33 -->|"Worker model requests"| n46
-  n47 -->|"Worker settings"| n33
+  n48["API client"]
+  n49["LLM provider #40;hosted#41;"]
+  n50["Operator"]
+  n51["Secrets manager"]
+  n52["Signed#45;in user"]
+  n31 -->|"Account and session queries"| n41
+  n26 -->|"Account queries"| n41
+  n2 -->|"Account requests"| n26
+  n35 -->|"Chunks and embeddings"| n42
+  n33 -->|"Document queries"| n42
+  n33 -->|"Document storage writes"| n3
+  n33 -->|"Draft queries"| n43
+  n35 -->|"Draft writes"| n43
+  n30 -->|"Generated threats"| n45
+  n28 -->|"Import and export queries"| n45
+  n35 -->|"Job claims and results"| n44
+  n33 -->|"Job queries"| n44
+  n32 -->|"Migrations and seeding"| n41
+  n3 -->|"Original for reading"| n35
+  n2 -->|"Page requests"| n34
+  n29 -->|"Report reads"| n45
+  n33 -->|"Session check"| n41
+  n2 -->|"Sign#45;in and session requests"| n31
+  n33 -->|"Threat model queries"| n45
+  n2 -->|"Threat model requests"| n33
+  n2 -->|"Uploaded documents"| n33
+  n33 -->|"Generation requests"| n30
+  n33 -->|"Import and export requests"| n28
+  n35 -->|"Reader input and answer"| n27
+  n33 -->|"Report requests"| n29
+  n48 -->|"API client requests"| n2
+  n47 -->|"Browser requests"| n2
+  n35 -->|"Document text for embeddings"| n49
+  n35 -->|"Document text for generation"| n49
+  n50 -->|"Environment settings"| n32
+  n32 -->|"Model requests"| n49
+  n51 -->|"Secrets"| n32
+  n52 -->|"Use the web app"| n47
+  n34 -->|"Web app code"| n47
+  n35 -->|"Worker model requests"| n49
+  n50 -->|"Worker settings"| n35
 ```
 
 ## Elements
@@ -421,8 +425,8 @@ No mitigations.
 
 #### E4 · Data flow · Account and session queries
 
-- **From:** E29 Sign\-in and sessions
-- **To:** E39 Account and session records
+- **From:** E31 Sign\-in and sessions
+- **To:** E41 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -505,8 +509,8 @@ No mitigations.
 
 #### E5 · Data flow · Account queries
 
-- **From:** E24 Accounts API
-- **To:** E39 Account and session records
+- **From:** E26 Accounts API
+- **To:** E41 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -590,7 +594,7 @@ No mitigations.
 #### E6 · Data flow · Account requests
 
 - **From:** E2 Reverse proxy
-- **To:** E24 Accounts API
+- **To:** E26 Accounts API
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP, Bearer token
 - **Encrypted in transit:** No
@@ -659,8 +663,8 @@ No mitigations.
 
 #### E7 · Data flow · Chunks and embeddings
 
-- **From:** E33 Worker
-- **To:** E40 Document records
+- **From:** E35 Worker
+- **To:** E42 Document records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, One transaction
 - **Encrypted in transit:** Not assessed
@@ -744,8 +748,8 @@ No mitigations.
 
 #### E8 · Data flow · Document queries
 
-- **From:** E31 Threat model API
-- **To:** E40 Document records
+- **From:** E33 Threat model API
+- **To:** E42 Document records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -829,7 +833,7 @@ No mitigations.
 
 #### E9 · Data flow · Document storage writes
 
-- **From:** E31 Threat model API
+- **From:** E33 Threat model API
 - **To:** E3 Document storage
 - **Crosses a trust boundary:** Yes (from Application container to Deployment network)
 - **Tags:** File write, S3 PutObject
@@ -880,10 +884,180 @@ No mitigations.
 
 1. **Verified** — The sweep removes every original older than an hour that no source still needs \(apps\/api\/src\/storage\/sweep\.ts\; tests\: apps\/api\/test\/storage\/sweep\.test\.ts\)
 
-#### E10 · Data flow · Generated threats
+#### E10 · Data flow · Draft queries
 
-- **From:** E28 Rule engine
-- **To:** E42 Threat model records
+- **From:** E33 Threat model API
+- **To:** E43 Drafts
+- **Crosses a trust boundary:** Yes (from Application container to Database server)
+- **Tags:** PostgreSQL protocol
+- **Encrypted in transit:** Not assessed
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### Data from Threat model API to Drafts can be changed in transit across a trust boundary — Critical
+
+- **Category:** Tampering
+- **Risk:** Critical (likelihood High × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Draft queries carries data from Threat model API to Drafts without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Threat model API to Drafts readable in transit across a trust boundary — Critical
+
+- **Category:** Information Disclosure
+- **Risk:** Critical (likelihood High × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Draft queries carries data from Threat model API to Drafts without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data crossing a trust boundary into Drafts may carry content that corrupts it — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Draft queries brings data from outside a trust boundary straight toward Drafts\, a data store\. Content that is malformed or crafted to be misread\, such as injected query fragments\, oversized values or unexpected structure\, can corrupt what is stored\.
+
+**Mitigations**
+
+1. **Implemented** — Every statement is parameterized or built with Kysely\; no value is concatenated into SQL \(constitution Principle I\; apps\/api\/src\/extract\-system\/draft\.ts\, start\.ts\)
+2. **Verified** — The database enforces the integrity of a draft for every writer\: an item\'s kind decides which of its fields are set\, a flow\'s ends and an item\'s boundary are items of the same draft\, a citation points at a chunk or at a deleted one and never at text\, and a draft is deleted with its threat model \(packages\/db\/migrations\/018\_drafts\.sql\; tests\: packages\/db\/test\/drafts\-schema\.test\.ts\)
+3. **Verified** — The routes that touch a draft take no body\: starting an extraction and discarding a draft carry only the threat model\'s id\, checked as a UUID\, so nothing a client sends reaches a draft\'s text \(apps\/api\/src\/v1\/extraction\.ts\; tests\: apps\/api\/test\/contract\/v1\/extraction\.test\.ts\, draft\.test\.ts\)
+
+##### A captured message from Threat model API to Drafts can be sent again — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A database connection is its own authenticated session\; there is no standalone message to capture and send again outside it
+- **Origin:** Rule-generated
+
+> Draft queries is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Drafts will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Threat model API can flood Drafts with messages across a trust boundary — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The application is a client of the database with the worker\, and it opens at most the connection pool\'s size \(the pg default of 10 connections\, apps\/api\/src\/db\.ts\)\; a flood would need an unbounded stream of authenticated requests\, which is the open rate\-limiting threat of Threat model API
+- **Origin:** Rule-generated
+
+> Draft queries crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Drafts can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E11 · Data flow · Draft writes
+
+- **From:** E35 Worker
+- **To:** E43 Drafts
+- **Crosses a trust boundary:** Yes (from Application container to Database server)
+- **Tags:** PostgreSQL protocol, One transaction
+- **Encrypted in transit:** Not assessed
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### Data from Worker to Drafts can be changed in transit across a trust boundary — Critical
+
+- **Category:** Tampering
+- **Risk:** Critical (likelihood High × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Draft writes carries data from Worker to Drafts without encryption\, and the connection leaves one trust zone for another\. Anyone on the path between the zones can modify the data before it arrives\, and neither end can tell\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data from Worker to Drafts readable in transit across a trust boundary — Critical
+
+- **Category:** Information Disclosure
+- **Risk:** Critical (likelihood High × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > TLS to PostgreSQL is not Scrylux\'s setting but the operator\'s\, through the PG\* variables\. The AWS guide\'s RDS forces TLS\, but the app runs with PGSSLMODE\=no\-verify\, which encrypts without checking the server\'s certificate \(\'verify with the RDS CA bundle later\'\, deployment\.md\, step6\-ec2\-guide\.md\)\; the compose defaults use plain TCP inside Docker\'s network
+- **Origin:** Rule-generated
+
+> Draft writes carries data from Worker to Drafts without encryption\, and the connection leaves one trust zone for another\. Anyone on the network path between the zones can read it\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Data crossing a trust boundary into Drafts may carry content that corrupts it — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Draft writes brings data from outside a trust boundary straight toward Drafts\, a data store\. Content that is malformed or crafted to be misread\, such as injected query fragments\, oversized values or unexpected structure\, can corrupt what is stored\.
+
+**Mitigations**
+
+1. **Verified** — A draft is written only after the model\'s answer has matched a fixed strict schema and passed the request\'s checks\, every quote against the chunk it cites\; it is written in one transaction\, fenced by the job\'s claim\, so a worker that lost its job writes nothing and a draft is never partial \(apps\/api\/src\/extract\-system\/checks\.ts\, draft\.ts\; tests\: apps\/api\/test\/extract\-system\/checks\.test\.ts\, kind\.test\.ts\, injection\.test\.ts\)
+2. **Implemented** — Every statement is parameterized or built with Kysely\; no value is concatenated into SQL \(constitution Principle I\; apps\/api\/src\/extract\-system\/draft\.ts\, start\.ts\)
+3. **Verified** — The database enforces the integrity of a draft for every writer\: an item\'s kind decides which of its fields are set\, a flow\'s ends and an item\'s boundary are items of the same draft\, a citation points at a chunk or at a deleted one and never at text\, and a draft is deleted with its threat model \(packages\/db\/migrations\/018\_drafts\.sql\; tests\: packages\/db\/test\/drafts\-schema\.test\.ts\)
+
+##### A captured message from Worker to Drafts can be sent again — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A database connection is its own authenticated session\; there is no standalone message to capture and send again outside it\. A draft is written once\, in the transaction that finishes the job\, and a second attempt for the same job writes nothing \(the claim fence\)
+- **Origin:** Rule-generated
+
+> Draft writes is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and Drafts will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Worker can flood Drafts with messages across a trust boundary — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The worker writes one transaction for an extraction and runs at most WORKER\_CONCURRENCY of them at once\, and the connection pool is bounded \(apps\/api\/src\/db\.ts\)\; a flood would need an unbounded stream of extractions\, which is the open spend threats of the model as a whole\, and only one extraction of a threat model is queued or running
+- **Origin:** Rule-generated
+
+> Draft writes crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than Drafts can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+No mitigations.
+
+#### E12 · Data flow · Generated threats
+
+- **From:** E30 Rule engine
+- **To:** E45 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, One transaction
 - **Encrypted in transit:** Not assessed
@@ -964,10 +1138,10 @@ No mitigations.
 
 No mitigations.
 
-#### E11 · Data flow · Import and export queries
+#### E13 · Data flow · Import and export queries
 
-- **From:** E26 Import and export
-- **To:** E42 Threat model records
+- **From:** E28 Import and export
+- **To:** E45 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, One transaction
 - **Encrypted in transit:** Not assessed
@@ -1048,10 +1222,10 @@ No mitigations.
 
 No mitigations.
 
-#### E12 · Data flow · Job claims and results
+#### E14 · Data flow · Job claims and results
 
-- **From:** E33 Worker
-- **To:** E41 Job records
+- **From:** E35 Worker
+- **To:** E44 Job records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, Row locks
 - **Encrypted in transit:** Not assessed
@@ -1133,10 +1307,10 @@ No mitigations.
 
 No mitigations.
 
-#### E13 · Data flow · Job queries
+#### E15 · Data flow · Job queries
 
-- **From:** E31 Threat model API
-- **To:** E41 Job records
+- **From:** E33 Threat model API
+- **To:** E44 Job records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -1218,10 +1392,10 @@ No mitigations.
 
 No mitigations.
 
-#### E14 · Data flow · Migrations and seeding
+#### E16 · Data flow · Migrations and seeding
 
-- **From:** E30 Startup and configuration
-- **To:** E39 Account and session records
+- **From:** E32 Startup and configuration
+- **To:** E41 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, SQL migrations
 - **Encrypted in transit:** Not assessed
@@ -1301,10 +1475,10 @@ No mitigations.
 
 No mitigations.
 
-#### E15 · Data flow · Original for reading
+#### E17 · Data flow · Original for reading
 
 - **From:** E3 Document storage
-- **To:** E33 Worker
+- **To:** E35 Worker
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** File read, S3 GetObject
 - **Encrypted in transit:** Yes
@@ -1341,10 +1515,10 @@ No mitigations.
 
 No mitigations.
 
-#### E16 · Data flow · Page requests
+#### E18 · Data flow · Page requests
 
 - **From:** E2 Reverse proxy
-- **To:** E32 Web app server
+- **To:** E34 Web app server
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP
 - **Encrypted in transit:** No
@@ -1411,10 +1585,10 @@ No mitigations.
 
 No mitigations.
 
-#### E17 · Data flow · Report reads
+#### E19 · Data flow · Report reads
 
-- **From:** E27 Report builder
-- **To:** E42 Threat model records
+- **From:** E29 Report builder
+- **To:** E45 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol, Read\-only snapshot
 - **Encrypted in transit:** Not assessed
@@ -1496,10 +1670,10 @@ No mitigations.
 
 No mitigations.
 
-#### E18 · Data flow · Session check
+#### E20 · Data flow · Session check
 
-- **From:** E31 Threat model API
-- **To:** E39 Account and session records
+- **From:** E33 Threat model API
+- **To:** E41 Account and session records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -1581,10 +1755,10 @@ No mitigations.
 
 No mitigations.
 
-#### E19 · Data flow · Sign\-in and session requests
+#### E21 · Data flow · Sign\-in and session requests
 
 - **From:** E2 Reverse proxy
-- **To:** E29 Sign\-in and sessions
+- **To:** E31 Sign\-in and sessions
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP
 - **Encrypted in transit:** No
@@ -1649,10 +1823,10 @@ No mitigations.
 
 No mitigations.
 
-#### E20 · Data flow · Threat model queries
+#### E22 · Data flow · Threat model queries
 
-- **From:** E31 Threat model API
-- **To:** E42 Threat model records
+- **From:** E33 Threat model API
+- **To:** E45 Threat model records
 - **Crosses a trust boundary:** Yes (from Application container to Database server)
 - **Tags:** PostgreSQL protocol
 - **Encrypted in transit:** Not assessed
@@ -1734,10 +1908,10 @@ No mitigations.
 
 No mitigations.
 
-#### E21 · Data flow · Threat model requests
+#### E23 · Data flow · Threat model requests
 
 - **From:** E2 Reverse proxy
-- **To:** E31 Threat model API
+- **To:** E33 Threat model API
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP, Bearer token
 - **Encrypted in transit:** No
@@ -1804,10 +1978,10 @@ No mitigations.
 
 No mitigations.
 
-#### E22 · Data flow · Uploaded documents
+#### E24 · Data flow · Uploaded documents
 
 - **From:** E2 Reverse proxy
-- **To:** E31 Threat model API
+- **To:** E33 Threat model API
 - **Crosses a trust boundary:** Yes (from Deployment network to Application container)
 - **Tags:** HTTP, Bearer token, Multipart upload
 - **Encrypted in transit:** No
@@ -1873,9 +2047,9 @@ No mitigations.
 1. **Verified** — A file is at most SOURCE\_MAX\_MB and read in a bounded way\, only a few uploads are read at once\, a request is refused without a valid token before its body is read\, and an account may have only INGESTION\_JOBS\_PER\_ACCOUNT documents waiting or processing \(apps\/api\/src\/sources\/upload\.ts\, store\.ts\; tests\: apps\/api\/test\/contract\/v1\/sources\.test\.ts\, apps\/api\/test\/sources\/store\.test\.ts\)
 2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
 
-### E23 · Trust boundary · Deployment network › Application container
+### E25 · Trust boundary · Deployment network › Application container
 
-#### E24 · Process · Accounts API
+#### E26 · Process · Accounts API
 
 - **Tags:** Express, bcrypt, \/api\/users
 - **Internet facing:** Yes
@@ -2081,7 +2255,7 @@ No mitigations.
 
 1. **Implemented** — Server errors answer a fixed \'Internal server error\' and the detail goes only to the server log\, an oversized or malformed body answers a fixed 413 or 400\, and X\-Powered\-By is off \(apps\/api\/src\/app\.ts\, errorHandler\)\. The tests that prove it \(apps\/api\/test\/contract\/v1\/validation\.test\.ts\, storage\-errors\.test\.ts\) cover \/api\/v1\, not this route
 
-#### E25 · Process · Document reader
+#### E27 · Process · Document reader
 
 - **Tags:** Node\.js, Child process, PDF, Word
 - **Internet facing:** No
@@ -2251,7 +2425,7 @@ No mitigations.
 
 No mitigations.
 
-#### E26 · Process · Import and export
+#### E28 · Process · Import and export
 
 - **Tags:** Scrylux file, OTM, Threat Dragon
 - **Internet facing:** No
@@ -2461,7 +2635,7 @@ No mitigations.
 1. **Verified** — An import is bounded first \(64 levels\, 2\,000\,000 values\, by a walk with no recursion\)\, parsed by shared schemas\, checked across records\, and written all or nothing in one transaction \(packages\/core\/src\/exchange\/bounds\.ts\, apps\/api\/src\/exchange\/import\/\; tests\: packages\/core\/test\/exchange\/bounds\.test\.ts\, \'walks a 1\,000\,000\-deep nesting without recursing\, and quickly\'\, apps\/api\/test\/exchange\/\, apps\/api\/test\/contract\/v1\/exchange\.test\.ts\)
 2. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E27 · Process · Report builder
+#### E29 · Process · Report builder
 
 - **Tags:** Markdown, HTML, Mermaid
 - **Internet facing:** No
@@ -2654,7 +2828,7 @@ No mitigations.
 
 No mitigations.
 
-#### E28 · Process · Rule engine
+#### E30 · Process · Rule engine
 
 - **Tags:** YAML rules, STRIDE
 - **Internet facing:** No
@@ -2834,7 +3008,7 @@ No mitigations.
 2. **Proposed** — Move generation to the worker \(plan\.md\, Phase 3\) or limit it \(Phase 6\)
 3. **Verified** — One run is bounded by the element limit times the library\'s per\-element maximum \(about 15\,000 threats and 49\,000 mitigations\)\, written in chunked statements in one transaction under the model\'s lock\; measured under 5 s for 50 elements and under 30 s for the largest model \(apps\/api\/src\/rule\-engine\/run\.ts\; tests\: apps\/api\/test\/contract\/v1\/generate\-performance\.test\.ts\, generate\-concurrency\.test\.ts\)
 
-#### E29 · Process · Sign\-in and sessions
+#### E31 · Process · Sign\-in and sessions
 
 - **Tags:** Express, bcrypt, JWT, \/api\/login, \/api\/session
 - **Internet facing:** Yes
@@ -3054,7 +3228,7 @@ No mitigations.
 
 1. **Implemented** — Server errors answer a fixed \'Internal server error\' and the detail goes only to the server log\, an oversized or malformed body answers a fixed 413 or 400\, and X\-Powered\-By is off \(apps\/api\/src\/app\.ts\, errorHandler\)\. The tests that prove it \(apps\/api\/test\/contract\/v1\/validation\.test\.ts\, storage\-errors\.test\.ts\) cover \/api\/v1\, not this route
 
-#### E30 · Process · Startup and configuration
+#### E32 · Process · Startup and configuration
 
 - **Tags:** Node\.js, SQL migrations
 - **Internet facing:** No
@@ -3254,9 +3428,9 @@ No mitigations.
 
 No mitigations.
 
-#### E31 · Process · Threat model API
+#### E33 · Process · Threat model API
 
-- **Tags:** Express, Kysely, zod, \/api\/v1, Job routes, Source routes
+- **Tags:** Express, Kysely, zod, \/api\/v1, Job routes, Source routes, Extraction routes
 - **Internet facing:** Yes
 - **Requires authentication:** Yes
 - **Handles sensitive data:** Yes
@@ -3505,7 +3679,7 @@ No mitigations.
 
 No mitigations.
 
-#### E32 · Process · Web app server
+#### E34 · Process · Web app server
 
 - **Tags:** Express, Content\-Security\-Policy
 - **Internet facing:** Yes
@@ -3642,9 +3816,9 @@ No mitigations.
 
 No mitigations.
 
-#### E33 · Process · Worker
+#### E35 · Process · Worker
 
-- **Tags:** Node\.js, Jobs, Provider check, Document ingestion
+- **Tags:** Node\.js, Jobs, Provider check, Document ingestion, System extraction
 - **Internet facing:** No
 - **Requires authentication:** Not assessed
 - **Handles sensitive data:** Yes
@@ -3813,10 +3987,10 @@ No mitigations.
 
 No mitigations.
 
-#### E34 · Data flow · Generation requests
+#### E36 · Data flow · Generation requests
 
-- **From:** E31 Threat model API
-- **To:** E28 Rule engine
+- **From:** E33 Threat model API
+- **To:** E30 Rule engine
 - **Crosses a trust boundary:** No
 - **Tags:** In process
 - **Encrypted in transit:** Not assessed
@@ -3883,10 +4057,10 @@ No mitigations.
 
 No mitigations.
 
-#### E35 · Data flow · Import and export requests
+#### E37 · Data flow · Import and export requests
 
-- **From:** E31 Threat model API
-- **To:** E26 Import and export
+- **From:** E33 Threat model API
+- **To:** E28 Import and export
 - **Crosses a trust boundary:** No
 - **Tags:** In process
 - **Encrypted in transit:** Not assessed
@@ -3953,10 +4127,10 @@ No mitigations.
 
 No mitigations.
 
-#### E36 · Data flow · Reader input and answer
+#### E38 · Data flow · Reader input and answer
 
-- **From:** E33 Worker
-- **To:** E25 Document reader
+- **From:** E35 Worker
+- **To:** E27 Document reader
 - **Crosses a trust boundary:** No
 - **Tags:** Node IPC, No environment
 - **Encrypted in transit:** Not assessed
@@ -4023,10 +4197,10 @@ No mitigations.
 
 No mitigations.
 
-#### E37 · Data flow · Report requests
+#### E39 · Data flow · Report requests
 
-- **From:** E31 Threat model API
-- **To:** E27 Report builder
+- **From:** E33 Threat model API
+- **To:** E29 Report builder
 - **Crosses a trust boundary:** No
 - **Tags:** In process
 - **Encrypted in transit:** Not assessed
@@ -4093,9 +4267,9 @@ No mitigations.
 
 No mitigations.
 
-### E38 · Trust boundary · Deployment network › Database server
+### E40 · Trust boundary · Deployment network › Database server
 
-#### E39 · Data store · Account and session records
+#### E41 · Data store · Account and session records
 
 - **Tags:** PostgreSQL
 - **Stores sensitive data:** Yes
@@ -4232,7 +4406,7 @@ No mitigations.
 
 No mitigations.
 
-#### E40 · Data store · Document records
+#### E42 · Data store · Document records
 
 - **Tags:** PostgreSQL, pgvector
 - **Stores sensitive data:** Yes
@@ -4370,7 +4544,145 @@ No mitigations.
 2. **Implemented** — The documentation tells the operator how much text a space holds at each embedding size\, and to watch the database\'s storage \(docs\/install\.md\, Documents and storage\)
 3. **Verified** — What every document takes is bounded by DOCUMENT\_SPACE \(2 GB by default\)\, which counts the text and the embeddings\: the app refuses an upload that would pass it\, the worker checks again before making a source ready\, and deleting frees the space at once\. A document\, a threat model and an account are bounded too \(SOURCE\_MAX\_MB\, SOURCES\_PER\_THREAT\_MODEL\, INGESTION\_JOBS\_PER\_ACCOUNT\) \(apps\/api\/src\/sources\/store\.ts\, commit\.ts\; tests\: apps\/api\/test\/sources\/store\.test\.ts\, ingest\.test\.ts\, ingest\-failures\.test\.ts\)
 
-#### E41 · Data store · Job records
+#### E43 · Data store · Drafts
+
+- **Tags:** PostgreSQL, AI text
+- **Stores sensitive data:** Yes
+- **Encrypted at rest:** Not assessed
+- **Internet facing:** No
+
+##### A user or service on the network could change data in Drafts without permission — High
+
+- **Category:** Tampering
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > The database is reached by the application and the worker only in the reference deployment\: the AWS guide puts RDS in private subnets reachable from the app\'s security group alone \(deployment\.md\, step3\, step5\)\. The compose defaults are for local use\: they publish the database port on the host and use the documented default password \(docker\-compose\.yml\)\. What a writer can write is bounded by the database\'s own rules
+- **Origin:** Rule-generated
+
+> Drafts is not exposed to the internet\, but every account and service that can reach it is a way to change what it holds\. Shared administrative credentials and wide write permissions turn any single mistake or compromise into corrupted data\.
+
+**Mitigations**
+
+1. **Verified** — The database enforces the integrity of a draft for every writer\: an item\'s kind decides which of its fields are set\, a flow\'s ends and an item\'s boundary are items of the same draft\, a citation points at a chunk or at a deleted one and never at text\, and a draft is deleted with its threat model \(packages\/db\/migrations\/018\_drafts\.sql\; tests\: packages\/db\/test\/drafts\-schema\.test\.ts\)
+
+##### Reads of sensitive data in Drafts leave no record — High
+
+- **Category:** Repudiation
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Drafts stores sensitive data\. If reads are not logged\, a leak cannot be traced to an account or a time\, and anyone with access can look without being accountable\.
+
+**Mitigations**
+
+1. **Proposed** — A persisted\, tamper\-evident audit log of who changed what \(plan\.md\, Phase 6\)
+2. **Implemented** — Reads are not logged at all\: no line is written when a draft or an extraction\'s status is read\, and the same holds for every other read \(apps\/api\/src\/v1\/extraction\.ts\; tests\: apps\/api\/test\/contract\/v1\/extraction\.test\.ts\)
+
+##### Copies of Drafts\, such as backups and exports\, may be less protected than the original — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux makes no backups\: a copy is the operator\'s database backup or snapshot\, which holds the draft\, AI text derived from the documents\, and has the protection the operator gives it \(the AWS guide\'s RDS storage is encrypted by default\, step5\-rds\-guide\.md\)\. The copies Scrylux does make\, a report and an export\, never read a draft \(docs\/formats\; tests\: apps\/api\/test\/contract\/v1\/draft\.test\.ts\, apps\/api\/test\/exchange\/\)
+- **Origin:** Rule-generated
+
+> Sensitive data in Drafts does not stay in one place\: it is copied into backups\, exports\, replicas and test environments\. Each copy is often guarded less well than the store itself\, and any one of them can leak the lot\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Sensitive data in Drafts can be read from disks\, snapshots or stolen media — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux does not encrypt at rest\: that is the storage\'s job\. The AWS guide\'s RDS has encryption on by default \(step5\-rds\-guide\.md\)\; the compose volume has none\, and the compose defaults are for local use\. The names and rationales of a draft are stored as the model wrote them\, so whoever can read the database can read them
+- **Origin:** Rule-generated
+
+> Drafts stores sensitive data without encryption at rest\. Anyone who gets hold of the underlying disk\, a snapshot\, a backup file or a decommissioned drive can read it directly\, bypassing every access control in the application\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Backups of Drafts can be altered\, so a restore brings back bad data — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Accepted
+- **Reason:**
+  > Scrylux makes no backups\; the integrity of the operator\'s backups is the operator\'s\, and a restore goes through the same database rules as any write
+- **Origin:** Rule-generated
+
+> A backup is only useful if it holds what was really there\. If someone can change or replace the copies of Drafts\, a restore after an incident reinstates the attacker\'s version\, or fails when it is needed most\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Changes to Drafts cannot be traced to whoever made them — Medium
+
+- **Category:** Repudiation
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> If Drafts keeps only its current contents\, nobody can tell afterwards who changed a record\, when\, or what it said before\. A wrong or malicious change cannot be attributed and cannot easily be undone\.
+
+**Mitigations**
+
+1. **Proposed** — A persisted\, tamper\-evident audit log of who changed what \(plan\.md\, Phase 6\)
+2. **Verified** — Starting an extraction and discarding a draft each write one stdout line with the account id\, the action\, the threat model and the job ids\, never a name\, a quote or any text of a draft\; the draft names who started it and when \(apps\/api\/src\/extract\-system\/log\.ts\; tests\: apps\/api\/test\/contract\/v1\/extraction\.test\.ts\, apps\/api\/test\/contract\/v1\/draft\.test\.ts\)
+
+##### Too many people or services can read sensitive data in Drafts — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Over time\, more accounts and services are granted access to Drafts than need it\. Each extra reader widens the chance of a leak by mistake\, by compromise or by someone looking at what they should not\.
+
+**Mitigations**
+
+1. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\) and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+2. **Implemented** — The database is reached only by the application and the worker in the reference deployment\; the AWS guide lets only their security group reach it \(deployment\.md\, step3\)\. Any signed\-in account can read and discard every draft\, as it can every threat model\, until Phase 6 \(the milestone\'s FR\-068\)
+
+##### Data in Drafts can be deleted or corrupted\, taking the system down with it — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> A mistaken command\, a bad release or an attacker with write access can delete or overwrite the data in Drafts\. The system is then unusable until the data is back\, if it can be\.
+
+**Mitigations**
+
+1. **Verified** — Discarding a draft removes it and everything under it\, an extraction replaces it only when a new one succeeds\, deleting a threat model or a project removes its draft\, and a person is asked before the web app discards one \(apps\/api\/src\/extract\-system\/draft\.ts\; tests\: apps\/api\/test\/contract\/v1\/draft\.test\.ts\, apps\/web\/src\/pages\/DraftTab\.test\.tsx\)
+2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
+##### Drafts can run out of space or capacity — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> If nothing limits how much can be written to Drafts\, one runaway job\, one noisy customer or one attacker can fill it\. When it is full\, writes fail and everything that depends on it stops\.
+
+**Mitigations**
+
+1. **Verified** — A threat model holds at most one draft\, and a draft is bounded\: at most 40 elements\, 15 assets and 15 assumptions\, names of at most 200 characters and texts of at most 300\, by the answer\'s schema\, and a model that writes more is refused \(packages\/core\/src\/schemas\/draft\.ts\; tests\: packages\/core\/test\/draft\.test\.ts\, apps\/api\/test\/extract\-system\/checks\.test\.ts\)
+2. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+3. **Implemented** — The documentation tells the operator to watch the database\'s storage \(docs\/install\.md\, Documents and storage\)
+
+#### E44 · Data store · Job records
 
 - **Tags:** PostgreSQL
 - **Stores sensitive data:** No
@@ -4451,7 +4763,7 @@ No mitigations.
 
 No mitigations.
 
-#### E42 · Data store · Threat model records
+#### E45 · Data store · Threat model records
 
 - **Tags:** PostgreSQL
 - **Stores sensitive data:** Yes
@@ -4589,9 +4901,9 @@ No mitigations.
 
 No mitigations.
 
-### E43 · Trust boundary · User device
+### E46 · Trust boundary · User device
 
-#### E44 · Process · Web app
+#### E47 · Process · Web app
 
 - **Tags:** React, Vite, TanStack Query
 - **Internet facing:** No
@@ -4777,7 +5089,7 @@ No mitigations.
 
 ### Outside any trust boundary
 
-#### E45 · External entity · API client
+#### E48 · External entity · API client
 
 - **Tags:** Script or integration
 - **Authenticated:** Yes
@@ -4827,7 +5139,7 @@ No mitigations.
 
 1. **Verified** — Every successful \/api\/v1 create\, update and delete writes one stdout line with the account id\, action\, record type and id\, never a value \(apps\/api\/src\/v1\/write\-log\.ts\; tests\: apps\/api\/test\/contract\/v1\/write\-log\.test\.ts\)
 
-#### E46 · External entity · LLM provider \(hosted\)
+#### E49 · External entity · LLM provider \(hosted\)
 
 - **Tags:** HTTPS, Anthropic, OpenAI\-compatible, Amazon Bedrock, Google Gemini, Optional
 - **Authenticated:** Yes
@@ -4863,7 +5175,7 @@ No mitigations.
 
 No mitigations.
 
-#### E47 · External entity · Operator
+#### E50 · External entity · Operator
 
 - **Authenticated:** Not assessed
 - **Internet facing:** No
@@ -4914,7 +5226,7 @@ No mitigations.
 
 No mitigations.
 
-#### E48 · External entity · Secrets manager
+#### E51 · External entity · Secrets manager
 
 - **Tags:** AWS Secrets Manager, Optional
 - **Authenticated:** Yes
@@ -4950,7 +5262,7 @@ No mitigations.
 
 No mitigations.
 
-#### E49 · External entity · Signed\-in user
+#### E52 · External entity · Signed\-in user
 
 - **Authenticated:** Yes
 - **Internet facing:** Yes
@@ -4998,9 +5310,9 @@ No mitigations.
 
 1. **Verified** — Every successful \/api\/v1 create\, update and delete writes one stdout line with the account id\, action\, record type and id\, never a value \(apps\/api\/src\/v1\/write\-log\.ts\; tests\: apps\/api\/test\/contract\/v1\/write\-log\.test\.ts\)
 
-#### E50 · Data flow · API client requests
+#### E53 · Data flow · API client requests
 
-- **From:** E45 API client
+- **From:** E48 API client
 - **To:** E2 Reverse proxy
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Deployment network)
 - **Tags:** HTTP, Bearer token
@@ -5066,9 +5378,9 @@ No mitigations.
 2. **Proposed** — General rate limiting for every route \(plan\.md\, Phase 6\)
 3. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E51 · Data flow · Browser requests
+#### E54 · Data flow · Browser requests
 
-- **From:** E44 Web app
+- **From:** E47 Web app
 - **To:** E2 Reverse proxy
 - **Crosses a trust boundary:** Yes (from User device to Deployment network)
 - **Tags:** HTTP
@@ -5133,10 +5445,10 @@ No mitigations.
 2. **Proposed** — General rate limiting for every route \(plan\.md\, Phase 6\)
 3. **Verified** — Request bodies are capped at 100 KiB\, and at 64 MiB only for the two import operations\, which are read only after authentication \(apps\/api\/src\/app\.ts\, v1\/router\.ts\; tests\: apps\/api\/test\/contract\/v1\/validation\.test\.ts\)
 
-#### E52 · Data flow · Document text for embeddings
+#### E55 · Data flow · Document text for embeddings
 
-- **From:** E33 Worker
-- **To:** E46 LLM provider \(hosted\)
+- **From:** E35 Worker
+- **To:** E49 LLM provider \(hosted\)
 - **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
 - **Tags:** HTTPS, Embeddings
 - **Encrypted in transit:** Yes
@@ -5201,10 +5513,79 @@ No mitigations.
 
 No mitigations.
 
-#### E53 · Data flow · Environment settings
+#### E56 · Data flow · Document text for generation
 
-- **From:** E47 Operator
-- **To:** E30 Startup and configuration
+- **From:** E35 Worker
+- **To:** E49 LLM provider \(hosted\)
+- **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
+- **Tags:** HTTPS, Extraction
+- **Encrypted in transit:** Yes
+- **Authenticated:** Yes
+- **Carries sensitive data:** Yes
+
+##### Sensitive data goes from Worker to an outside party\, LLM provider \(hosted\) — High
+
+- **Category:** Information Disclosure
+- **Risk:** High (likelihood Medium × impact High)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Document text for generation carries sensitive data to LLM provider \(hosted\)\, which is outside the system\. Once the data has left\, you cannot control what the recipient does with it\, who else can see it there\, or how long it is kept\.
+
+**Mitigations**
+
+1. **Verified** — A hosted provider must be reached over https\, and a fully local provider remains a supported path\; only the worker sends the text\, to the provider the operator configured and to nothing else\, and the API holds no provider key \(tests\: apps\/api\/test\/worker\/imports\.test\.ts\, packages\/llm\/test\/\)
+2. **Verified** — Before an extraction can be started the Draft tab says where the text goes\: it names the generation provider and says the text of the threat model\'s sources leaves the install when that provider is hosted\, on every visit and before the control that starts it\, and says it stays in the install when the provider is local \(apps\/web\/src\/components\/ExtractionNotice\.tsx\; tests\: apps\/web\/src\/components\/ExtractionNotice\.test\.tsx\, apps\/web\/src\/pages\/DraftTab\.test\.tsx\)
+3. **Verified** — Only the ready sources of the threat model asked about are read\, and never another\'s \(apps\/api\/src\/extract\-system\/load\.ts\; tests\: apps\/api\/test\/extract\-system\/injection\.test\.ts\, select\.test\.ts\)
+
+##### A captured message from Worker to LLM provider \(hosted\) can be sent again — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Not applicable
+- **Reason:**
+  > A hosted provider must be reached over https\, so a request cannot be captured in transit\, and Bedrock requests are signed with a timestamp by the AWS SDK\; a generation request changes nothing at the provider\, so a repeat would only produce another answer and its cost\, which the job counts against its caps
+- **Origin:** Rule-generated
+
+> Document text for generation is authenticated\, but authentication proves who sent a message\, not that it is fresh\. Someone who captures a valid message\, for example a payment or a command\, can send it again and LLM provider \(hosted\) will accept it a second time\.
+
+**Mitigations**
+
+No mitigations.
+
+##### Worker can flood LLM provider \(hosted\) with messages across a trust boundary — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Open
+- **Origin:** Rule-generated
+
+> Document text for generation crosses a trust boundary\. The sending side is less trusted than the receiving side\, so it can send more than LLM provider \(hosted\) can handle\, by mistake or on purpose\, and crowd out other work\.
+
+**Mitigations**
+
+1. **Verified** — Every generation request is gated by the job\'s token cap and cost cap against the most it could use\, counting every earlier run\, and by an output limit\; only one extraction of a threat model is queued or running\, and it counts in the account\'s job limit \(apps\/api\/src\/worker\/extract\-system\.ts\, budget\.ts\; tests\: apps\/api\/test\/extract\-system\/caps\.test\.ts\, apps\/api\/test\/contract\/v1\/extraction\.test\.ts\)
+2. **Verified** — Every request is tried at most three times\, its output is bounded\, and it reports its tokens and cost \(packages\/llm\/src\/attempts\.ts\, usage\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, usage\.test\.ts\)
+3. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
+##### Worker stops working when the outside party LLM provider \(hosted\) is slow or down — Medium
+
+- **Category:** Denial of Service
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Mitigated
+- **Origin:** Rule-generated
+
+> Document text for generation sends work to LLM provider \(hosted\)\, which is outside the system\. You do not run it and cannot make it available\, so when it is slow or down Worker can be left waiting\, and the failure spreads to whoever depends on Worker\.
+
+**Mitigations**
+
+1. **Verified** — A failing provider is retried at most twice\, with backoff and a bounded wait for retry\-after\, then the request fails with a category \(packages\/llm\/src\/attempts\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\)
+2. **Verified** — A run that fails because the provider is down\, or because a source changed while the job waited\, is tried again after a wait\, up to JOB\_MAX\_RUNS\, then the extraction fails with a reason and a message that says what to do\; the earlier draft stays\, and nothing else in Scrylux waits on an extraction \(apps\/api\/src\/worker\/run\.ts\, apps\/api\/src\/jobs\/store\.ts\; tests\: apps\/api\/test\/extract\-system\/kind\.test\.ts\, apps\/api\/test\/contract\/v1\/extraction\-retry\.test\.ts\)
+
+#### E57 · Data flow · Environment settings
+
+- **From:** E50 Operator
+- **To:** E32 Startup and configuration
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** Environment variables
 - **Encrypted in transit:** Not assessed
@@ -5271,10 +5652,10 @@ No mitigations.
 
 No mitigations.
 
-#### E54 · Data flow · Model requests
+#### E58 · Data flow · Model requests
 
-- **From:** E30 Startup and configuration
-- **To:** E46 LLM provider \(hosted\)
+- **From:** E32 Startup and configuration
+- **To:** E49 LLM provider \(hosted\)
 - **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
 - **Tags:** HTTPS, Operator check
 - **Encrypted in transit:** Yes
@@ -5342,10 +5723,10 @@ No mitigations.
 1. **Verified** — Every request is tried at most three times\, with at most two retries for a failing provider\, and its output size is bounded \(packages\/llm\/src\/attempts\.ts\, client\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\, client\.test\.ts\)\.
 2. **Verified** — Every request reports its tokens and cost in one log line \(packages\/llm\/src\/log\.ts\, usage\.ts\; tests\: packages\/llm\/test\/usage\.test\.ts\)\.
 
-#### E55 · Data flow · Secrets
+#### E59 · Data flow · Secrets
 
-- **From:** E48 Secrets manager
-- **To:** E30 Startup and configuration
+- **From:** E51 Secrets manager
+- **To:** E32 Startup and configuration
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** HTTPS, AWS SDK
 - **Encrypted in transit:** Yes
@@ -5382,10 +5763,10 @@ No mitigations.
 
 No mitigations.
 
-#### E56 · Data flow · Use the web app
+#### E60 · Data flow · Use the web app
 
-- **From:** E49 Signed\-in user
-- **To:** E44 Web app
+- **From:** E52 Signed\-in user
+- **To:** E47 Web app
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to User device)
 - **Encrypted in transit:** Not assessed
 - **Authenticated:** Yes
@@ -5451,10 +5832,10 @@ No mitigations.
 
 No mitigations.
 
-#### E57 · Data flow · Web app code
+#### E61 · Data flow · Web app code
 
-- **From:** E32 Web app server
-- **To:** E44 Web app
+- **From:** E34 Web app server
+- **To:** E47 Web app
 - **Crosses a trust boundary:** Yes (from Application container to User device)
 - **Encrypted in transit:** Not assessed
 - **Authenticated:** No
@@ -5517,10 +5898,10 @@ No mitigations.
 
 No mitigations.
 
-#### E58 · Data flow · Worker model requests
+#### E62 · Data flow · Worker model requests
 
-- **From:** E33 Worker
-- **To:** E46 LLM provider \(hosted\)
+- **From:** E35 Worker
+- **To:** E49 LLM provider \(hosted\)
 - **Crosses a trust boundary:** Yes (from Application container to outside any trust boundary)
 - **Tags:** HTTPS
 - **Encrypted in transit:** Yes
@@ -5588,10 +5969,10 @@ No mitigations.
 
 No mitigations.
 
-#### E59 · Data flow · Worker settings
+#### E63 · Data flow · Worker settings
 
-- **From:** E47 Operator
-- **To:** E33 Worker
+- **From:** E50 Operator
+- **To:** E35 Worker
 - **Crosses a trust boundary:** Yes (from outside any trust boundary to Application container)
 - **Tags:** Environment variables
 - **Encrypted in transit:** Not assessed
@@ -5694,16 +6075,18 @@ No mitigations.
 
 - **Category:** Tampering
 - **Risk:** High (likelihood Medium × impact High)
-- **Status:** Accepted
-- **Reason:**
-  > Nothing in this milestone sends a source to generation\: its text goes only to the embedding provider\, which follows no instruction in it\, and it is stored and shown as text\. Delimiting it in prompts\, never executing it\, and never letting it trigger an action are Phase 3 Milestone 4\'s\, under Principle VI \(plan\.md\)\; this threat is accepted until that milestone verifies them
+- **Status:** Mitigated
 - **Origin:** Manual
 
-> A document may hold text written to make a model ignore its instructions or reveal something\. It is stored\, and later milestones will put chunks of it in prompts\.
+> A document may hold text written to make a model ignore its instructions or reveal something\. Its chunks are put in the prompts of an extraction\. A document can still change what is proposed\, including a component its design does not have\, when it can quote its own text in support\; the proposal is a draft that a person reviews\, with the quotation beside it\.
 
 **Mitigations**
 
-1. **Verified** — A document\'s text\, name and chunks are rendered as text\, never as markup\, in the web app \(tests\: apps\/web\/src\/pages\/SourcePage\.test\.tsx\, apps\/web\/src\/pages\/SourcesTab\.test\.tsx\)
+1. **Verified** — A document is placed only in a section of the request delimited by a random value drawn for that request\, which the document cannot close\, with the instructions outside it\; chunks are named by labels and never by id\, and the model is offered no tool \(apps\/api\/src\/extract\-system\/content\.ts\, prompt\.ts\; tests\: apps\/api\/test\/extract\-system\/injection\.test\.ts\, content\.test\.ts\)
+2. **Verified** — A document\'s text\, name and chunks are rendered as text\, never as markup\, in the web app \(tests\: apps\/web\/src\/pages\/SourcePage\.test\.tsx\, apps\/web\/src\/pages\/SourcesTab\.test\.tsx\)
+3. **Verified** — A draft\'s text is rendered as text\, never as markup\, with each citation\'s quotation read from the chunk \(apps\/web\/src\/draft\/\; tests\: apps\/web\/src\/pages\/DraftTab\.test\.tsx\)
+4. **Verified** — An answer is stored only if it matches a fixed strict schema and the request\'s checks\, every quote a passage of the chunk it cites\; the only effect of an answer is a draft\, which is not part of the threat model and which nothing reads to change a diagram\, a threat or a mitigation \(packages\/core\/src\/schemas\/draft\.ts\, apps\/api\/src\/extract\-system\/checks\.ts\; tests\: apps\/api\/test\/extract\-system\/checks\.test\.ts\, injection\.test\.ts\, kind\.test\.ts\)
+5. **Verified** — The retry note that asks the model to try again names the problems of an answer by their place and repeats nothing the model wrote\, so nothing it wrote reaches the next request outside the marked section \(packages\/llm\/src\/attempts\.ts\; tests\: packages\/llm\/test\/attempts\.test\.ts\)
 
 ##### A hostile or misconfigured model endpoint answers with crafted output — High
 
@@ -5777,6 +6160,20 @@ No mitigations.
 1. **Implemented** — BuildKit is pinned by digest and refreshed by hand \(docs\/ci\.md\, docs\/releasing\.md\)\; Dependabot waits three days before it proposes an action update \(\.github\/dependabot\.yml\)\.
 2. **Verified** — Every third\-party action of every workflow is pinned to a commit SHA\, and the release workflow uses only first\-party actions \(scripts\/workflows\.test\.ts\)\.
 
+##### A fabricated or misdirected citation makes a proposal look supported — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> A model can attach a quotation that its source does not hold\, or cite a chunk it was not sent\, so that an invented component looks supported by the documents and a reviewer trusts it\.
+
+**Mitigations**
+
+1. **Verified** — A citation names a chunk the request sent\, by its label\, and quotes it exactly\, whitespace aside\; an answer with a citation that does not hold is retried and then refused\, and nothing of it is stored \(apps\/api\/src\/extract\-system\/checks\.ts\; tests\: apps\/api\/test\/extract\-system\/checks\.test\.ts\, injection\.test\.ts\)
+2. **Verified** — A stored citation is the span of the chunk and never the quoted text\, so the page shows the passage the document holds and the quotation cannot differ from it\; a citation whose source was deleted is shown as such and never dropped \(apps\/api\/src\/extract\-system\/draft\.ts\; tests\: apps\/api\/test\/contract\/v1\/draft\.test\.ts\, packages\/db\/test\/drafts\-schema\.test\.ts\)
+
 ##### A job is run twice\, by a worker that was only slow and the one that took it over — Medium
 
 - **Category:** Tampering
@@ -5849,6 +6246,21 @@ No mitigations.
 1. **Verified** — A storage key has one exact shape that only Scrylux makes\, a random identifier under its own prefix\; the sweep and every deletion touch nothing else\, and an object of another shape is never listed \(apps\/api\/src\/storage\/types\.ts\, sweep\.ts\; tests\: apps\/api\/test\/storage\/storage\.test\.ts\, sweep\.test\.ts\)
 2. **Implemented** — The documentation says to give Scrylux a bucket or a prefix of its own\, and gives one IAM policy per process\, limited to its prefix \(docs\/install\.md\, Storage\)
 
+##### A draft\'s text reaches a log\, a job record\, an export or a report — Medium
+
+- **Category:** Information Disclosure
+- **Risk:** Medium (likelihood Low × impact High)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> A draft is AI text derived from confidential documents\: names\, rationales and statements\. A copy of it in a log line\, a job\'s result or error\, an export or a report would disclose what the documents say to anyone who can read those\.
+
+**Mitigations**
+
+1. **Verified** — A draft is deleted with its threat model or project and can be discarded by a person\; the page says when the sources it read have changed or been deleted \(apps\/api\/src\/extract\-system\/draft\.ts\; tests\: apps\/api\/test\/contract\/v1\/draft\.test\.ts\)
+2. **Verified** — An export\, an import and a report never read a draft \(tests\: apps\/api\/test\/contract\/v1\/draft\.test\.ts\)
+3. **Verified** — The logs\, the job and usage records and every error carry ids\, counts and fixed messages\, never a name\, a quote or a rationale of a draft\; the two routes that write log one line with the account\, the threat model and the job \(apps\/api\/src\/extract\-system\/log\.ts\; tests\: apps\/api\/test\/extract\-system\/canary\.test\.ts\, apps\/api\/test\/contract\/v1\/extraction\.test\.ts\)
+
 ##### A pipeline job leaks a repository secret\, for instance to a fork — Medium
 
 - **Category:** Information Disclosure
@@ -5906,21 +6318,22 @@ No mitigations.
 1. **Verified** — A job holds a lease its worker renews\; a job whose lease runs out comes back to the queue\, or fails as worker\_lost on its last run\, and a stopping worker hands its jobs back without using up a run \(apps\/api\/src\/jobs\/store\.ts\; tests\: apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/worker\/recovery\.test\.ts\)
 2. **Verified** — A job runs at most JOB\_MAX\_RUNS times and lives at most JOB\_TIME\_LIMIT\, runs and waits together\; its request in progress is abandoned at the deadline \(tests\: apps\/api\/test\/worker\/recovery\.test\.ts\)
 
-##### Many accounts can start provider checks and add documents one after another and spend on the provider — Medium
+##### Many accounts can start provider checks\, add documents and start extractions one after another and spend on the provider — Medium
 
 - **Category:** Denial of Service
 - **Risk:** Medium (likelihood Medium × impact Medium)
 - **Status:** Open
 - **Origin:** Manual
 
-> Every job is capped and every account is limited\, but any signed\-in account can create more accounts\, each with its own cooldown and its own limit on documents\, and the caps bound one job and not spend over time\. Embedding a document costs at the provider like any request\. A request that a crashed worker was making may also be uncounted\, though the provider may bill it\.
+> Every job is capped and every account is limited\, but any signed\-in account can create more accounts\, each with its own cooldown\, its own limit on documents and its own limit on active jobs\, and the caps bound one job and not spend over time\. Embedding a document and extracting a draft from a threat model\'s documents cost at the provider like any request\, and an extraction costs the most\. A request that a crashed worker was making may also be uncounted\, though the provider may bill it\.
 
 **Mitigations**
 
 1. **Verified** — An account may have only INGESTION\_JOBS\_PER\_ACCOUNT documents waiting or processing at once\, a threat model holds at most SOURCES\_PER\_THREAT\_MODEL\, and a document is at most SOURCE\_MAX\_CHARS of text\, so one document cannot embed an unbounded amount \(tests\: apps\/api\/test\/sources\/store\.test\.ts\, apps\/api\/test\/sources\/ingest\-failures\.test\.ts\)
-2. **Verified** — Every job has a token cap and a cost cap\, checked before each request against the most it could use and counting every earlier run\; an account has a limit on its active jobs and a cooldown between its provider checks \(tests\: apps\/api\/test\/worker\/budget\.test\.ts\, apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/contract\/v1\/jobs\-cooldown\.test\.ts\)
-3. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
-4. **Implemented** — The documentation tells the operator to set a spending limit on the provider account\, which is the only limit on the install as a whole \(docs\/ai\-providers\.md\, Limits\; docs\/install\.md\, Running the worker\)
+2. **Verified** — An extraction is gated by the job\'s token cap and cost cap against the most each request could use\, counting every earlier run\, and by an output limit\; only one extraction of a threat model is queued or running\, and it counts in the account\'s limit on active jobs \(apps\/api\/src\/worker\/extract\-system\.ts\, budget\.ts\; tests\: apps\/api\/test\/extract\-system\/caps\.test\.ts\, apps\/api\/test\/contract\/v1\/extraction\.test\.ts\)
+3. **Verified** — Every job has a token cap and a cost cap\, checked before each request against the most it could use and counting every earlier run\; an account has a limit on its active jobs and a cooldown between its provider checks \(tests\: apps\/api\/test\/worker\/budget\.test\.ts\, apps\/api\/test\/jobs\/store\.test\.ts\, apps\/api\/test\/contract\/v1\/jobs\-cooldown\.test\.ts\)
+4. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\)\, general rate limiting and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+5. **Implemented** — The documentation tells the operator to set a spending limit on the provider account\, which is the only limit on the install as a whole \(docs\/ai\-providers\.md\, Limits\; docs\/install\.md\, Running the worker\)
 
 ##### One account fills the document space for everybody — Medium
 
@@ -5975,6 +6388,21 @@ No mitigations.
 - **Origin:** Manual
 
 > There are no roles\, so a document is not private to the account that added it\, and documents are confidential by nature\. Any signed\-in account can add one to any threat model and delete any\.
+
+**Mitigations**
+
+1. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\) and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
+##### Any signed\-in account can start an extraction and read or discard every draft — Medium
+
+- **Category:** Elevation of Privilege
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > There are no roles before Phase 6 \(the open risk of the model as a whole\)\, and any signed\-in account can already read\, change and delete every threat model and every document\, so a draft is no more private than the documents it comes from\. What an account can do is bounded by the caps\, the limit on its active jobs and the single extraction of a threat model\, and a draft names who started it and when\. The widening was called out in Milestone 4\'s spec \(FR\-068\) and is a justified widening in the constitution\'s Threat Model section
+- **Origin:** Manual
+
+> There are no roles\, so a draft is not private to the account that started it\, and it is AI text derived from confidential documents\. Any signed\-in account can start an extraction on any threat model\, which spends at the provider and replaces the draft\, and can read or discard any draft\.
 
 **Mitigations**
 
@@ -6048,7 +6476,7 @@ No mitigations.
   > There are no roles before Phase 6 \(the open risk of the model as a whole\)\. A provider check sends fixed text and spends little\, and it is bounded by the caps\, the limit on an account\'s active jobs and the cooldown\. The widening was called out in Milestone 2\'s spec \(FR\-065\) and is a justified widening in the constitution\'s Threat Model section
 - **Origin:** Manual
 
-> There are no roles\, so a job is not private to the account that started it\, and any signed\-in account can make the provider spend by starting a check\, where until Phase 3 Milestone 2 only an operator with a shell could\. The jobs that process documents are the same\: any account can see and cancel them\.
+> There are no roles\, so a job is not private to the account that started it\, and any signed\-in account can make the provider spend by starting a check\, where until Phase 3 Milestone 2 only an operator with a shell could\. The jobs that process documents and the extractions are the same\: any account can see and cancel them\.
 
 **Mitigations**
 

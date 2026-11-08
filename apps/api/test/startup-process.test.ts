@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-// The two processes, started for real with a bad source or storage setting (Phase 3 Milestone 3, US7, FR-052): each stops before it
+// The two processes, started for real with a bad source, storage or extraction setting (Phase 3 Milestone 3, US7, FR-052; Milestone 4, FR-010): each stops before it
 // touches the database, saying which variable is wrong and never what it was set to. The checks themselves are unit-tested in
 // sources/config.test.ts, storage/config.test.ts and worker/startup.test.ts; this proves each entry point calls them.
 
@@ -27,12 +27,15 @@ describe.each([['src/server.ts' as const], ['src/worker.ts' as const]])('%s', (e
     ['SOURCE_MAX_MB', '1000'],
     ['DOCUMENT_SPACE', SECRET],
     ['STORAGE_BACKEND', SECRET],
+    // Phase 3 Milestone 4, FR-010: both processes read both extraction settings.
+    ['EXTRACTION_CONTEXT_CHARS', SECRET],
+    ['EXTRACTION_MAX_OUTPUT_TOKENS', '999999'],
   ])('stops with the name of a bad %s and not its value', (name, value) => {
     const { status, output } = start(entry, { [name]: value });
     expect(status).toBe(1);
     expect(output).toContain(`Startup failed: ${name}`);
     expect(output).not.toContain(SECRET);
-    expect(output).not.toContain(value === '1000' ? 'must be 1000' : value);
+    expect(output).not.toContain(value === '1000' ? 'must be 1000' : value === '999999' ? 'must be 999999' : value);
   }, 70_000);
 
   it('stops on an S3 backend with no bucket, naming it', () => {

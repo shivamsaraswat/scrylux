@@ -102,12 +102,13 @@ describe('sanitizer for Gemini', () => {
   it('keeps only the documented subset and describes what it removes', () => {
     const { schema } = sanitizeFor('gemini', toJsonSchema(rich));
     const used = keys(schema);
-    for (const gone of ['multipleOf', 'minLength', 'maxLength', 'const', '$schema']) expect(used.has(gone), gone).toBe(false);
+    for (const gone of ['multipleOf', 'minLength', 'maxLength', 'maxItems', 'const', '$schema']) expect(used.has(gone), gone).toBe(false);
     const props = (schema as { properties: Record<string, Record<string, unknown>> }).properties;
     expect(props.score?.maximum).toBe(5);
     expect(props.score?.description).toContain('a multiple of 0.5');
     expect(props.name?.description).toContain('at most 200 characters');
-    expect(props.tags?.maxItems).toBe(10);
+    // Gemini refuses a schema with a long array limit, so the limit is told to the model in words and zod stays the judge.
+    expect(props.tags?.description).toContain('at most 10 items');
     expect(props.lit?.enum).toEqual(['x']);
   });
 

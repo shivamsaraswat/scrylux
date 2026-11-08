@@ -7,6 +7,10 @@ import { startWorker, type Worker } from '../../src/worker/loop.js';
 import { FAST, clientFor, generationRequests, localConfig, resetJobTables, waitForState } from '../worker/helpers.js';
 import { seedAccount, seedReadySource, seedThreatModel } from '../fixtures/extract-system/seed.js';
 
+// Each test here runs an extraction through a real worker against a stand-in provider, which takes more than vitest's 5 s on a busy CI runner
+// (kind.test.ts timed out there at 5000 ms on a test that passes in about a second on a developer machine).
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
+
 // A document cannot steer an extraction (Phase 3 Milestone 4, US6; FR-032, FR-035 to FR-037, SC-008): this resolves the constitution's two items that
 // named this milestone, the Spoofing item ("the handling of untrusted input MUST be verified before that milestone ships") and the accepted item on
 // stored prompt injection. The documents here are hostile; the provider is a stub that records what it is sent and answers as a model that follows

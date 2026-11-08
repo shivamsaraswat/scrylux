@@ -10,6 +10,10 @@ import { client } from '../contract/v1/helpers.js';
 import { FAST, clientFor, localConfig, resetJobTables, sleep, waitFor, waitForState } from '../worker/helpers.js';
 import { seedAccount, seedReadySource, seedThreatModel } from '../fixtures/extract-system/seed.js';
 
+// Each test here runs an extraction through a real worker against a stand-in provider, which takes more than vitest's 5 s on a busy CI runner
+// (kind.test.ts timed out there at 5000 ms on a test that passes in about a second on a developer machine).
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
+
 // Guard test (Phase 3 Milestone 4, SC-009, FR-065): a recognizable fake document text, source name, provider key and model-written draft text, put
 // where a provider could echo them (an answer, an error body), run through every way an extraction can end. They appear where they belong, in the
 // document's own records and in the draft and the answers that show them, and in no log line, no job row, no usage row, no failure message and

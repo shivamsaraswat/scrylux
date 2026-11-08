@@ -8,6 +8,10 @@ import { FAST, clientFor, generationRequests, embeddingRequests, localConfig, re
 import { CHUNK_TEXTS, validAnswer } from '../fixtures/extract-system/answers.js';
 import { seedAccount, seedReadySource, seedThreatModel, seedUnreadySource } from '../fixtures/extract-system/seed.js';
 
+// Each test here runs an extraction through a real worker against a stand-in provider, which takes more than vitest's 5 s on a busy CI runner
+// (kind.test.ts timed out there at 5000 ms on a test that passes in about a second on a developer machine).
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
+
 // An extraction end to end (Phase 3 Milestone 4, US1, US3, US7; FR-040 to FR-052, SC-003 to SC-005): the real worker, in-process, against a
 // stub generation and embedding provider and the real database. A job goes from the API's start to the stored draft, and the tests look at what
 // a person and the next milestone depend on: the steps, the request, what is stored, what is not, and what a failure leaves.

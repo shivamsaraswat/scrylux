@@ -9,6 +9,10 @@ import { FAST, clientFor, embeddingRequests, generationRequests, localConfig, re
 import { readDraft } from '../../src/extract-system/draft.js';
 import { seedAccount, seedReadySource, seedThreatModel } from '../fixtures/extract-system/seed.js';
 
+// Each test here runs an extraction through a real worker against a stand-in provider, which takes more than vitest's 5 s on a busy CI runner
+// (kind.test.ts timed out there at 5000 ms on a test that passes in about a second on a developer machine).
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
+
 // The retrieval path (Phase 3 Milestone 4, US4; FR-012 to FR-015, SC-007, research #6, #7): sources larger than the budget are read in part, by the
 // chunks nearest to the retrieval queries, within the budget, in the order of the documents, and the draft says so. The vectors are chosen so that
 // the right ranking is known: a chunk's vector points where the test says it does.

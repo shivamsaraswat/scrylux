@@ -9,6 +9,10 @@ import { FAST, clientFor, localConfig, resetJobTables, waitForState } from '../w
 import { CHUNK_TEXTS, validAnswer } from '../fixtures/extract-system/answers.js';
 import { seedAccount, seedReadySource, seedThreatModel } from '../fixtures/extract-system/seed.js';
 
+// Each test here runs an extraction through a real worker against a stand-in provider, which takes more than vitest's 5 s on a busy CI runner
+// (kind.test.ts timed out there at 5000 ms on a test that passes in about a second on a developer machine).
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
+
 // Every element of a stored draft is acceptable as it stands (Phase 3 Milestone 4, FR-033, SC-003): Milestone 5 accepts items into the threat model, so
 // a draft item that the threat model's diagram would refuse must never be stored. Here the draft of the richest valid answer is made by a real
 // extraction, and each of its elements is then created in a threat model of its own, with the database's own rules (migration 006 and 013) and the shared

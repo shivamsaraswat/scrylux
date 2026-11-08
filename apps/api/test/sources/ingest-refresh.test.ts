@@ -224,7 +224,10 @@ describe('a refresh that does not finish', () => {
     const refused = await retrySource(kdb, context(NEW_MODEL), { sourceId: id, accountId: alice }).catch((error: unknown) => error);
     expect(refused).toMatchObject({ status: 409 });
     expect((await db.query(`SELECT 1 FROM jobs WHERE kind = 'refresh_embeddings'`)).rowCount).toBe(1);
-    // Another model is worth trying, and the retry is a refresh.
+    // Another model is worth trying, and the retry is a refresh. The worker is stopped first: a live one claims the new job at once, so on
+    // a slow runner the job was already running when it was read back (the check below is of the queue, not of the worker).
+    await worker?.stop();
+    worker = undefined;
     const retried = await retrySource(kdb, context('a-third-embedding-model'), { sourceId: id, accountId: alice });
     expect(retried?.refresh).toMatchObject({ state: 'queued' });
     expect((await db.query(`SELECT 1 FROM jobs WHERE kind = 'refresh_embeddings'`)).rowCount).toBe(2);

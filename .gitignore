@@ -18,3 +18,6 @@ coverage/
 # A development run stores the originals of added documents here. They can be confidential (Phase 3 Milestone 3).
 /apps/api/storage/
 .claude/settings.local.json
+
+# Personal Claude Code instructions (semble setup)
+CLAUDE.local.md

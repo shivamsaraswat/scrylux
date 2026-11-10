@@ -1,0 +1,10 @@
+# Generated files: GitHub collapses their diffs in pull requests and leaves them out of language stats.
+# Local `git diff` is unchanged.
+
+# Written by `pnpm --filter @scrylux/api openapi` (apps/api/src/v1/openapi.ts).
+apps/api/openapi.json linguist-generated=true
+
+# Scrylux files exported from the app; every id changes on each export, so the diff is the whole file.
+# Review docs/threat-model/report.md instead (docs/threat-model/README.md).
+docs/threat-model/threat-model.scrylux.json linguist-generated=true
+docs/demo/notes-app.scrylux.json linguist-generated=true

@@ -1,57 +1,32 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.16.0 → 1.17.0
-Rationale: Phase 3 Milestone 4 (system extraction, specs/phase-3/milestone-4-system-extraction/) lets a person ask the generation model for
-  a draft system (processes, data stores, external entities, flows, trust boundaries, assets and assumptions) from the ready sources of a
-  threat model. It adds four routes under `/api/v1` (read the extraction's status, start or retry it, read the draft, discard it), a worker
-  job kind (`extract_system`), six tables for the draft (apart from the threat model; nothing is written to `elements`, `threats` or
-  `mitigations`), and the first document text sent to a generation model. Principle V requires the Threat Model section, and the
-  committed model, to say so in the same change. This is a MINOR: materially expanded guidance (a current asset, entry points, a boundary
-  that was planned, and the risks below). It adds no principle and removes none.
+Version change: 1.17.0 → 1.18.0
+Rationale: agent-written changes had grown past what a reviewer can read line by line. Phase 3 Milestone 4 (`83e2193`) added about
+  3,150 lines of production code and 5,900 of tests across 136 files, and 21 of the 53 exports of `apps/api/src/extract-system/` are
+  used by no other source file. Principle III said "stay YAGNI" but gave no rule a reviewer could check inside a phase. This is a
+  MINOR: materially expanded guidance. It adds no principle and removes none.
 Modified principles:
-  - II (clarified, not removed): the sentence that a change to a prompt, provider adapter or extraction pipeline MUST pass the eval harness
-    now says when it starts to apply: from Phase 3 Milestone 7, when the harness ships. Until then such a change passes the tests with
-    simulated answers, and the milestone records a manual run against a hosted model and, where the maintainer has hardware for one, a local model, before release (the local run is conditional on hardware by the maintainer's decision of 2026-11-09, made when no
-    hardware for a model large enough was available). Development Workflow
-    already said the same ("until then, such a PR states that the gate does not yet apply"); the two now agree.
-  - VI (applied, not reworded): documents are delimited in prompts, never executed and never allowed to trigger a tool call; the
-    notice that text leaves the install is now shown on the Draft tab, before the control that starts an extraction, on every visit
-    (`apps/web/src/pages/DraftTab.test.tsx`, `apps/web/e2e/draft.spec.ts`). Every proposed item and flag carries a rationale and a
-    citation whose quote is checked against the chunk it names.
-  - V (applied, not reworded): the section and `docs/threat-model/` are updated in the same change.
+  - III (expanded): its first sentence no longer reads as "many small modules" (route files stay one per resource; each function keeps
+    to one concern). Added: a change MUST add the least code that fully meets its spec, with three checkable rules: no new file unless
+    its code is used from more than one place or the file it would join would pass about 300 lines; no export only for a test; no
+    option, wrapper, abstraction or configuration the spec, plan or tasks do not require, and removing code is preferred to adding it.
+    The rules apply from 1.18.0; existing code is brought in line when a change next touches it, not by a separate refactor.
+  - II (clarified, not removed): test-first stays. A behavior gets one failing test at its module's public boundary, not one per
+    internal helper, and a helper is not exported only to be tested.
 Added sections: none (existing section set retained: Core Principles, Threat Model (STRIDE),
   Development Workflow & Quality Gates, Governance)
 Removed sections: none
-Threat Model changes: an asset (the draft: AI text derived from confidential documents, held until it is discarded or replaced, with
-  citations that store a span and never the quoted text), entry points (the four extraction and draft routes, open to every signed-in
-  account), the inbound boundary for untrusted document content into generation prompts (moved from planned to current), and the outbound
-  provider boundary, which now carries document text to the generation provider, with these risks:
-  - Tampering / Spoofing: indirect prompt injection. Mitigated: a document is placed only in a section delimited by a random value drawn
-    for each request, with the instructions kept outside it; chunks are named by labels and never by id; no tool is offered; the
-    answer must match a fixed strict schema and a set of request checks; every quote is checked against the chunk it cites; the only effect
-    of an answer is a stored draft; the UI renders it as text; and a person reviews it in Milestone 5
-    (`apps/api/test/extract-system/injection.test.ts`, `checks.test.ts`, `acceptable.test.ts`). The retry note that asks the model to try
-    again no longer repeats any part of the answer (`packages/llm/test/attempts.test.ts`), so nothing the model wrote reaches the prompt
-    outside the marked section. Accepted: a document can still change what is proposed, including a component the design does not have,
-    if it can quote its own text in support; the reviewer sees the quote.
-  - Tampering: a fabricated or misdirected citation. Mitigated: a citation names a chunk the request sent and quotes it exactly; the
-    draft stores the span, not the text (`apps/api/test/extract-system/checks.test.ts`, `map.test.ts`).
-  - Information Disclosure: the draft's text in a log, a job record or an error. Mitigated: it appears only in the draft's own tables
-    (`apps/api/test/extract-system/canary.test.ts`); exports, imports and reports never read a draft; a draft that outlives a deleted source
-    says so and shows "Source deleted". Accepted: the text sent to a hosted provider leaves the install, which the notice says.
-  - Denial of Service / spend: runaway generation cost. Mitigated: the job's token and cost caps are checked against the worst case before
-    each request (`apps/api/test/extract-system/caps.test.ts`), one extraction runs per threat model at a time, and an account's job limit
-    counts extractions. Open until Phase 6: any account can create more accounts.
-  - Elevation of Privilege: any signed-in account can start, read and discard any draft (a justified widening until Phase 6).
-  Resolved: the Spoofing item that said the handling of untrusted input MUST be verified before this milestone ships, and the accepted
-  item of Milestone 3 on stored prompt injection, each by `apps/api/test/extract-system/injection.test.ts`.
-Development Workflow: unchanged. The eval gate does not apply: the harness arrives in Milestone 7; the milestone records a manual run
-  instead (`evals/manual-runs/m4.md`).
-Development Workflow (kept): a pull request that updates the Threat Model section also updates `docs/threat-model/`.
+Threat Model changes: none
+Development Workflow: reviewers MUST also ask for a smaller change when a PR adds a file, an export, an option, or a test that
+  Principle III rules out.
 Deferred / TODO items: none
 Templates requiring follow-up: none checked in this run (scope of this change is the constitution file only; dependent
   templates read it at runtime per the scope guard).
+Previous change (1.16.0 → 1.17.0): Phase 3 Milestone 4 (system extraction) added four extraction and draft routes, the `extract_system`
+  job kind, six draft tables apart from the threat model, and the first document text sent to a generation model. Principle II's eval
+  sentence now says it applies from Milestone 7, Principle VI's notice moved to the Draft tab, and the Threat Model gained the draft
+  asset, its entry points, the inbound document boundary and five risks. A MINOR.
 Previous change (1.15.0 → 1.16.0): Phase 3 Milestone 3 (document ingestion) added eight source routes, a place where the originals wait
   (a local volume or an S3-compatible bucket), the extraction child that reads untrusted files with no secret, and the first user content
   sent to a provider (chunks, for embeddings); the notice of Principle VI shipped with it. A MINOR.
@@ -130,14 +105,15 @@ against its committed thresholds (starting point per plan.md: ≥70% threat reca
 schema-valid output after retries, 100% valid citations) before merge. Until then such a change passes the tests with simulated
 answers, and the milestone that makes it records a manual run against a hosted model and, where the maintainer has hardware for one, a local model, before release. Tests assert observable
 behavior (status codes, response shape, persisted rows, eval metrics) — not implementation
-details.
+details. A behavior gets one failing test at its module's public boundary, not one per internal
+helper, and a helper is not exported only to be tested on its own (Principle III).
 **Rationale**: The project's own test suite is currently thin (one file); growing it test-first
 keeps coverage honest as the app grows from a single Express service into a monorepo with an
 AI pipeline, where regressions are far more expensive to find by hand.
 
 ### III. Code Quality & Simplicity
-Modules stay small and single-purpose (one route file per resource, one concern per function),
-matching `apps/api/src/v1/` and `apps/api/src/routes/` (one file per resource) and the target layout in
+Route files stay one per resource (`apps/api/src/v1/`, `apps/api/src/routes/`), each function keeps
+to one concern, and code follows the target layout in
 plan.md (`apps/api`, `apps/web`, `packages/core`, `packages/db`,
 `packages/threat-library`, `packages/llm`; the worker is a second entry point of `apps/api`, `src/worker.ts`). From Phase 1 onward all code MUST be strict-mode
 TypeScript; a bare `any` requires an inline justification. Do not introduce an abstraction,
@@ -147,9 +123,23 @@ phases after it (e.g. no RBAC scaffolding while Phase 1–5 are in flight; no ag
 while Phase 3 explicitly excludes it). Error responses MUST use a consistent `{ error: string }`
 JSON shape and appropriate HTTP status codes. No dead code, no commented-out blocks, no unused
 dependencies — delete rather than comment out.
+A change MUST add the least code that fully meets its spec. These rules make that checkable in review:
+- **No new file without a reason.** Extend an existing module before creating one. A new source file
+  is justified only when its code is used from more than one place, or when the file it would
+  otherwise join would grow past about 300 lines.
+- **No export for a test's sake.** A symbol is exported only if other source code uses it; tests
+  reach behavior through the module's public functions (Principle II).
+- **Nothing the spec does not ask for.** No option, wrapper, abstraction, or configuration that the
+  spec, plan, or tasks do not require. Where removing code meets the need, remove it rather than add.
+These rules apply to every change from version 1.18.0. Existing code is brought in line when a change
+next touches it, not by a separate refactor.
 **Rationale**: Simplicity is an explicit product goal (plan.md guiding principle: "small,
 shippable phases... keep it YAGNI inside each phase"); building ahead of the current phase is
-exactly the complexity creep plan.md is structured to prevent.
+exactly the complexity creep plan.md is structured to prevent. The same creep happens inside a
+phase: Phase 3 Milestone 4 (`83e2193`) added about 3,150 lines of production code and 5,900 of tests
+across 136 files, and 21 of the 53 exports of `apps/api/src/extract-system/` are used by no other
+source file. A change that size cannot be reviewed line by line, and code written by a coding agent
+grows unless a rule makes the smaller change the required one.
 
 ### IV. Maintainability & Observability
 Configuration MUST come only from environment variables or a secrets-manager path (`apps/api/src/config.ts`
@@ -722,7 +712,8 @@ yet apply and how the change was tested instead. Reviewers MUST reject PRs that 
 Threat Model (e.g. reverting to string-built SQL, removing the dummy-hash timing defense,
 persisting unvalidated LLM output) without an equally strong replacement, and MUST reject PRs
 that implement a later phase's scope while an earlier phase is still in progress, per Principle
-III.
+III. Reviewers MUST also ask for a smaller change when a PR adds a file, an export, an option, or a
+test that Principle III rules out.
 
 ## Governance
 
@@ -741,4 +732,4 @@ rather than silently merged. This file is the source of truth for "why" a rule e
 implementation-level how-to guidance belongs in `README.md`, `API.md`, `CONTRIBUTING.md`, `SECURITY.md`, `plan.md`, and code
 comments, not here.
 
-**Version**: 1.17.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-11-08
+**Version**: 1.18.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-11-10

@@ -3,6 +3,7 @@ import {
   ReactFlow,
   useEdgesState,
   useNodesState,
+  useUpdateNodeInternals,
   type Edge,
   type Node,
   type OnConnect,
@@ -55,10 +56,22 @@ export function Canvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<DiagramNodeData>>(flowNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<FlowEdgeData>>(flowEdges);
   const wanted = useRef<ReadonlySet<string>>(new Set(selectedIds));
+  const updateNodeInternals = useUpdateNodeInternals();
+  const toMeasure = useRef(new Set<string>());
   const nodesRef = useRef(nodes);
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
+
+  // A node rebuilt with no measurement to carry over loses its handles in React Flow, and React Flow does not measure it again by
+  // itself: a flow could then be neither started from it nor dropped on it. That happens to a node that changes (a rename, a confirmed
+  // save) before its first measurement arrived, so it is measured again here.
+  useEffect(() => {
+    if (toMeasure.current.size === 0) return;
+    const ids = [...toMeasure.current];
+    toMeasure.current.clear();
+    updateNodeInternals(ids);
+  }, [nodes, updateNodeInternals]);
 
   // When the elements change, the nodes are rebuilt from them. A node whose element has not changed is the
   // very same node as before: replacing it would make React Flow measure it again, and until it has, it is
@@ -75,6 +88,7 @@ export function Canvas() {
         if (current.dragging) return { ...node, selected: current.selected === true, position: current.position, dragging: true };
         if (sameNode(current, node)) return current;
         const sameSize = current.style?.width === node.style?.width && current.style?.height === node.style?.height;
+        if (!(sameSize && current.measured)) toMeasure.current.add(node.id);
         return { ...node, selected: current.selected === true, ...(sameSize && current.measured ? { measured: current.measured } : {}) };
       });
     });

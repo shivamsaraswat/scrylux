@@ -1,18 +1,22 @@
 import type { OnConnect, OnConnectEnd, OnNodeDrag, OnSelectionChangeFunc, ReactFlowProps } from '@xyflow/react';
-import { act, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, render, screen } from '@testing-library/react';
+import { ReactFlowProvider } from '@xyflow/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { INVALID_FLOW_MESSAGE } from './connect.js';
 import { Canvas } from './Canvas.js';
+import { DiagramEditorContext, type DiagramEditor } from './DiagramEditorProvider.js';
 import { eid, el, fakeEditor, renderWithEditor } from './test-helpers.js';
 
 // React Flow cannot lay out or drag in jsdom, so its component is replaced by one that hands the test
 // the props the canvas gave it. What is tested is what the canvas does when React Flow reports a
 // connection, a drag or a selection.
-const captured = vi.hoisted(() => ({ props: null as ReactFlowProps | null }));
+const captured = vi.hoisted(() => ({ props: null as ReactFlowProps | null, remeasure: vi.fn() }));
 vi.mock('@xyflow/react', async (importOriginal) => {
   const original = await importOriginal<typeof import('@xyflow/react')>();
   return {
     ...original,
+    useUpdateNodeInternals: () => captured.remeasure,
     ReactFlow: (props: ReactFlowProps) => {
       captured.props = props;
       return <div data-testid="flow" />;
@@ -32,6 +36,7 @@ const connection = (source: string | null, target: string | null) =>
 
 beforeEach(() => {
   captured.props = null;
+  captured.remeasure.mockClear();
 });
 
 describe('the canvas (US1)', () => {
@@ -125,5 +130,41 @@ describe('the canvas (US1)', () => {
     renderWithEditor(<Canvas />, fakeEditor({ elements, selectedIds: [eid(2)] }));
     const selected = props().nodes?.filter((n) => n.selected).map((n) => n.id);
     expect(selected).toEqual([eid(2)]);
+  });
+});
+
+// A node that changes (a rename, a confirmed save) is rebuilt, and React Flow forgets the handles of a rebuilt node that carries no
+// measurement: a flow can then be neither started from it nor dropped on it, until it is measured again, which React Flow does
+// not do by itself. A node added and changed before its first measurement arrived is such a node (seen as a flaky browser test).
+describe('a node rebuilt before it was measured', () => {
+  const mount = (editor: DiagramEditor) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const tree = (current: DiagramEditor) => (
+      <QueryClientProvider client={client}>
+        <DiagramEditorContext.Provider value={current}>
+          <ReactFlowProvider>
+            <Canvas />
+          </ReactFlowProvider>
+        </DiagramEditorContext.Provider>
+      </QueryClientProvider>
+    );
+    const view = render(tree(editor));
+    return (next: DiagramEditor) => view.rerender(tree(next));
+  };
+  const renamed = [elements[0] as (typeof elements)[number], { ...(elements[1] as (typeof elements)[number]), name: 'Renamed' }, elements[2] as (typeof elements)[number]];
+
+  it('is measured again, and only that node', () => {
+    const show = mount(fakeEditor({ elements }));
+    expect(captured.remeasure).not.toHaveBeenCalled();
+    show(fakeEditor({ elements: renamed }));
+    expect(captured.remeasure).toHaveBeenCalledTimes(1);
+    expect(captured.remeasure).toHaveBeenCalledWith([eid(2)]);
+  });
+
+  it('is not measured again once it has a measurement to carry over', () => {
+    const show = mount(fakeEditor({ elements }));
+    act(() => (props().onNodesChange as (changes: unknown[]) => void)([{ type: 'dimensions', id: eid(2), dimensions: { width: 140, height: 60 } }]));
+    show(fakeEditor({ elements: renamed }));
+    expect(captured.remeasure).not.toHaveBeenCalled();
   });
 });

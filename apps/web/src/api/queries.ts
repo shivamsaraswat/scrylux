@@ -1,5 +1,8 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
+  AssetRecord,
+  AssumptionRecord,
+  DecisionResult,
   DraftRecord,
   ElementBatchResult,
   ElementRecord,
@@ -11,12 +14,16 @@ import {
   JobsStatus,
   MitigationRecord,
   ProjectRecord,
+  ProvenanceRecord,
   ChunkPage,
   SourceList,
   SourceRecord,
   ThreatGenerationResult,
   ThreatModelRecord,
   ThreatRecord,
+  type AssetUpdate,
+  type AssumptionUpdate,
+  type DraftDecision,
   type ElementBatchOperationInput,
   type ImportInput,
   type MitigationCreateInput,
@@ -55,6 +62,9 @@ export const keys = {
   chunks: (id: string) => ['chunks', id] as const,
   extraction: (threatModelId: string) => ['extraction', threatModelId] as const,
   draft: (threatModelId: string) => ['draft', threatModelId] as const,
+  assets: (threatModelId: string) => ['assets', threatModelId] as const,
+  assumptions: (threatModelId: string) => ['assumptions', threatModelId] as const,
+  provenance: (threatModelId: string) => ['provenance', threatModelId] as const,
 };
 
 // Changes a list the page holds, with what the server answered. A list that was never loaded is left alone. A read
@@ -517,6 +527,84 @@ export function useStartExtraction(threatModelId: string) {
   return useMutation({
     mutationFn: () => apiPost(`/api/v1/threat-models/${threatModelId}/extraction`, JobRecord, undefined),
     onSettled: () => Promise.all([client.invalidateQueries({ queryKey: keys.extraction(threatModelId) }), client.invalidateQueries({ queryKey: keys.sources(threatModelId) })]),
+  });
+}
+
+/**
+ * Decides items of the draft (Phase 3 Milestone 5, FR-007). Whatever the answer, the draft and the records a decision may have changed are read
+ * again: a refusal usually means the page was out of date.
+ */
+export function useDecideDraft(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: DraftDecision) => apiPost(`/api/v1/threat-models/${threatModelId}/draft/decisions`, DecisionResult, body),
+    onSettled: () =>
+      Promise.all(
+        [keys.draft, keys.extraction, keys.elements, keys.assets, keys.assumptions, keys.provenance].map((key) => client.invalidateQueries({ queryKey: key(threatModelId) })),
+      ),
+  });
+}
+
+// ---- assets and assumptions (Phase 3 Milestone 5) ----
+
+/** Where the accepted records of a threat model, and the flags an accept set, came from (FR-017). */
+export function useProvenance(threatModelId: string) {
+  return useQuery({ queryKey: keys.provenance(threatModelId), queryFn: () => apiGet(`/api/v1/threat-models/${threatModelId}/provenance`, ProvenanceRecord.array()) });
+}
+
+export function useAssets(threatModelId: string) {
+  return useQuery({ queryKey: keys.assets(threatModelId), queryFn: () => apiGet(`/api/v1/threat-models/${threatModelId}/assets`, AssetRecord.array()) });
+}
+
+export function useCreateAsset(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; description: string; holder_ids: string[] }) => apiPost(`/api/v1/threat-models/${threatModelId}/assets`, AssetRecord, input),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.assets(threatModelId) }),
+  });
+}
+
+export function useUpdateAsset(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, changes }: { id: string; changes: AssetUpdate }) => apiPatch(`/api/v1/assets/${id}`, AssetRecord, changes),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.assets(threatModelId) }),
+  });
+}
+
+export function useDeleteAsset(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiDelete(`/api/v1/assets/${id}`),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.assets(threatModelId) }),
+  });
+}
+
+export function useAssumptions(threatModelId: string) {
+  return useQuery({ queryKey: keys.assumptions(threatModelId), queryFn: () => apiGet(`/api/v1/threat-models/${threatModelId}/assumptions`, AssumptionRecord.array()) });
+}
+
+export function useCreateAssumption(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { statement: string }) => apiPost(`/api/v1/threat-models/${threatModelId}/assumptions`, AssumptionRecord, input),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.assumptions(threatModelId) }),
+  });
+}
+
+export function useUpdateAssumption(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, changes }: { id: string; changes: AssumptionUpdate }) => apiPatch(`/api/v1/assumptions/${id}`, AssumptionRecord, changes),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.assumptions(threatModelId) }),
+  });
+}
+
+export function useDeleteAssumption(threatModelId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiDelete(`/api/v1/assumptions/${id}`),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.assumptions(threatModelId) }),
   });
 }
 

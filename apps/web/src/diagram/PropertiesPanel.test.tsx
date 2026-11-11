@@ -1,8 +1,10 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { PropertiesPanel } from './PropertiesPanel.js';
-import { eid, el, fakeEditor, renderWithEditor } from './test-helpers.js';
+import { eid, el, fakeEditor, MODEL, renderWithEditor } from './test-helpers.js';
+import { citation, installFakeApi, json } from '../test-utils.js';
 
 // FR-013, FR-014, FR-006, contracts/ui.md "Properties panel" (the parts US1 needs).
 
@@ -191,5 +193,52 @@ describe('deleting the selected element', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Delete element' }));
     expect(editor.requestDelete).toHaveBeenCalledWith(eid(1));
     expect(editor.apply).not.toHaveBeenCalled();
+  });
+});
+
+// Where an accepted element came from (Phase 3 Milestone 5, US6, FR-017): the panel shows it for the selected element, and for the flags an accept set, and nothing for
+// an element a person drew.
+describe('provenance', () => {
+  const marks = (flag: string | null, target = eid(1)) => ({
+    id: `92929292-9292-4292-8292-92929292929${flag === null ? '1' : '2'}`,
+    target: { kind: 'element', id: target },
+    flag,
+    rationale: 'The API serves the web application.',
+    accepted_by: { id: 7, username: 'ada' },
+    accepted_at: '2026-11-10T09:00:00.000Z',
+    citations: [citation()],
+  });
+
+  function openWith(records: unknown[]) {
+    installFakeApi({ 'GET /api/v1/threat-models/:id/provenance': () => json(200, records) });
+    // A citation links to its source, so the panel needs a router here.
+    renderWithEditor(
+      <MemoryRouter>
+        <PropertiesPanel />
+      </MemoryRouter>,
+      fakeEditor({ elements: [...nodes, flowElement], selectedIds: [eid(1)] }),
+    );
+  }
+
+  it('shows that the selected element was proposed by AI and accepted, why, and what it cited', async () => {
+    openWith([marks(null)]);
+    const notice = await screen.findByRole('region', { name: 'Where this came from' });
+    expect(notice.textContent).toMatch(/Proposed by AI, accepted by ada on /);
+    expect(within(notice).getByText('design.md')).toBeTruthy();
+    void MODEL;
+  });
+
+  it('marks, for an element drawn by hand and partly filled in by an accept, only the flags the accept set', async () => {
+    openWith([marks('internet_facing')]);
+    const notice = await screen.findByRole('region', { name: 'Where this came from' });
+    expect(within(notice).getByRole('heading', { name: 'Flags set from the documents' })).toBeTruthy();
+    expect(notice.textContent).not.toContain('Proposed by AI, accepted by ada on 11/10');
+  });
+
+  it('shows nothing for another element’s mark, or for an element a person drew', async () => {
+    openWith([marks(null, eid(2))]);
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeTruthy());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('region', { name: 'Where this came from' })).toBeNull();
   });
 });

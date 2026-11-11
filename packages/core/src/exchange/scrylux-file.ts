@@ -13,7 +13,7 @@ import {
 import { DESCRIPTION_MAX_LENGTH, NAME_MAX_LENGTH, httpUrl, optionalText, requiredText } from '../fields.js';
 import { normalizeElementShape } from '../schemas/element.js';
 import { StaleReason } from '../schemas/stale.js';
-import { SCRYLUX_FORMAT_VERSION, formatVersionMessage } from './formats.js';
+import { SCRYLUX_FILE_VERSION, SCRYLUX_FILE_VERSIONS, SCRYLUX_FORMAT_VERSION, formatVersionMessage } from './formats.js';
 
 // The Scrylux file, format version 1 (contracts/scrylux-file.md): one threat model, lossless. It is built from the same
 // field schemas as the create inputs, so a file the schema accepts passes the field rules of FR-008 and one it rejects
@@ -95,3 +95,24 @@ export const ScryluxFileV1 = z.strictObject({
   mitigations: z.array(FileMitigation),
 });
 export type ScryluxFileV1 = z.infer<typeof ScryluxFileV1>;
+
+// Format version 2 (Phase 3 Milestone 5, contracts/file-format.md): version 1 and two lists, always present so that a diff shows every change on its own line. A
+// holder is named by the file's own id of an element, as every reference in a file is. Nothing of provenance, a rationale, a citation, a draft or a decision is in a
+// file: the schema is strict, so no key can be added (FR-023). The rules across records (a holder is an element of the file and a node, names and statements are
+// unique, the limits) are the import plan's, as for every other reference.
+const FileAsset = z.strictObject({
+  id: fileId,
+  name: requiredText(NAME_MAX_LENGTH),
+  description: requiredText(DESCRIPTION_MAX_LENGTH),
+  holder_ids: z.array(fileId),
+});
+
+const FileAssumption = z.strictObject({ id: fileId, statement: requiredText(DESCRIPTION_MAX_LENGTH) });
+
+export const ScryluxFileV2 = ScryluxFileV1.extend({
+  format_version: z.literal(SCRYLUX_FILE_VERSION, { error: (issue) => formatVersionMessage(issue.input, SCRYLUX_FILE_VERSIONS) }),
+  assets: z.array(FileAsset),
+  assumptions: z.array(FileAssumption),
+});
+export type ScryluxFileV2 = z.infer<typeof ScryluxFileV2>;
+

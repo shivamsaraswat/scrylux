@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { IMPORT_MAX_BYTES, ScryluxFileV1 } from '@scrylux/core';
+import { IMPORT_MAX_BYTES, ScryluxFileV2 } from '@scrylux/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
 import { buildScryluxFile } from '../../../src/exchange/scrylux-export.js';
@@ -14,7 +14,7 @@ import { captureWriteLog, client, uniqueName, type ApiRecord, type V1Client } fr
 // contracts/exchange-api.md: the export, check and import operations, for the Scrylux file (US1).
 
 interface Summary {
-  models: { name: string; name_issue: string | null; status: string; elements: number; threats: number; mitigations: number }[];
+  models: { name: string; name_issue: string | null; status: string; elements: number; threats: number; mitigations: number; assets: number; assumptions: number }[];
   notes: unknown[];
 }
 interface ImportResultBody {
@@ -57,7 +57,7 @@ describe('exporting and importing a threat model (Scrylux file)', () => {
       expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="[a-z0-9-]+-\d{4}-\d{2}-\d{2}\.scrylux\.json"$/);
       const text = await res.text();
       expect(text.endsWith('}\n')).toBe(true);
-      expect(ScryluxFileV1.safeParse(JSON.parse(text)).success).toBe(true);
+      expect(ScryluxFileV2.safeParse(JSON.parse(text)).success).toBe(true);
     });
 
     it('holds no account name, account id or credential', async () => {
@@ -147,6 +147,8 @@ describe('exporting and importing a threat model (Scrylux file)', () => {
             elements: original.elements.length,
             threats: original.threats.length,
             mitigations: original.mitigations.length,
+            assets: 0,
+            assumptions: 0,
           },
         ],
         notes: [],
@@ -236,8 +238,9 @@ describe('exporting and importing a threat model (Scrylux file)', () => {
       const wrong = await check(target, { format: 'scrylux', file: { hello: 1 } });
       expect(wrong.status).toBe(400);
       const original = await exportFile(seeded.modelId);
-      const version = await check(target, scryluxBody({ ...original, format_version: 2 } as unknown as ExchangeFile));
-      expect((version.body as unknown as { error: string }).error).toBe('file.format_version: must be 1; this file is version 2');
+      // Versions 1 and 2 are read (Phase 3 Milestone 5); the message names both, and the file's own version when it is a whole number.
+      const version = await check(target, scryluxBody({ ...original, format_version: 3 } as unknown as ExchangeFile));
+      expect((version.body as unknown as { error: string }).error).toBe('file.format_version: must be 1 or 2; this file is version 3');
     });
   });
 
@@ -319,7 +322,7 @@ describe('exporting and importing a threat model (Scrylux file)', () => {
 
     it('comes back whole: every name, tag, description, reason, ticket and the model name as written (FR-018, SC-001)', async () => {
       // What the API stores is the file with its text trimmed, as every create trims it, so that is what must come back.
-      const expected = ScryluxFileV1.parse(buildScryluxFile(snapshotOf(hostile()), new Date('2026-10-10T00:00:00.000Z')));
+      const expected = ScryluxFileV2.parse(buildScryluxFile(snapshotOf(hostile()), new Date('2026-10-10T00:00:00.000Z')));
       const imported = await importInto(await newProject(), scryluxBody(hostile()));
       expect(imported.status).toBe(201);
       const again = await exportFile(imported.body.threat_models[0]?.id as string);
@@ -337,13 +340,14 @@ describe('exporting and importing a threat model (Scrylux file)', () => {
       const checked = await check(target, scryluxBody(empty));
       expect(checked).toEqual({
         status: 200,
-        body: { models: [{ name: empty.threat_model.name, name_issue: null, status: 'in_review', elements: 0, threats: 0, mitigations: 0 }], notes: [] },
+        body: { models: [{ name: empty.threat_model.name, name_issue: null, status: 'in_review', elements: 0, threats: 0, mitigations: 0, assets: 0, assumptions: 0 }], notes: [] },
       });
       const imported = await importInto(target, scryluxBody(empty));
       expect(imported.status).toBe(201);
       const again = await exportFile(imported.body.threat_models[0]?.id as string);
       expect([again.elements, again.threats, again.mitigations]).toEqual([[], [], []]);
-      expect(canonical(again)).toEqual(canonical(empty));
+      // A version 1 file is read, and what is written is version 2 (Phase 3 Milestone 5): the same model, and the two lists, empty.
+      expect(canonical(again)).toEqual({ ...(canonical(empty) as object), format_version: 2, assets: [], assumptions: [] });
     });
 
     it('imports two elements of the same name as two elements, each with its own threat (edge case "Names that repeat")', async () => {
@@ -425,7 +429,7 @@ describe('exporting and importing a threat model (Scrylux file)', () => {
       const target = await newProject();
       const checked = await check(target, otmBody(fixture('EXAMPLE.json')));
       expect(checked.status).toBe(200);
-      expect(checked.body.models).toEqual([{ name: 'Test project', name_issue: null, status: 'draft', elements: 8, threats: 2, mitigations: 2 }]);
+      expect(checked.body.models).toEqual([{ name: 'Test project', name_issue: null, status: 'draft', elements: 8, threats: 2, mitigations: 2, assets: 0, assumptions: 0 }]);
       expect(checked.body.notes.length).toBeGreaterThan(0);
       const imported = await importInto(target, otmBody(fixture('EXAMPLE.json')));
       expect(imported.status).toBe(201);
@@ -475,7 +479,7 @@ describe('exporting and importing a threat model (Scrylux file)', () => {
     it('checks a demo file: one model, with the notes for what is left out', async () => {
       const checked = await check(await newProject(), tdBody(demo('v2-threat-model.json')));
       expect(checked.status).toBe(200);
-      expect(checked.body.models).toEqual([{ name: 'Demo Threat Model', name_issue: null, status: 'draft', elements: 16, threats: 14, mitigations: 14 }]);
+      expect(checked.body.models).toEqual([{ name: 'Demo Threat Model', name_issue: null, status: 'draft', elements: 16, threats: 14, mitigations: 14, assets: 0, assumptions: 0 }]);
       expect(checked.body.notes.length).toBeGreaterThan(0);
     });
 

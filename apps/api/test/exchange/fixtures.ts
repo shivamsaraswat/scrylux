@@ -54,6 +54,18 @@ export interface FileMitigation {
   external_ref: string | null;
 }
 
+export interface FileAsset {
+  id: string;
+  name: string;
+  description: string;
+  holder_ids: string[];
+}
+
+export interface FileAssumption {
+  id: string;
+  statement: string;
+}
+
 export interface ExchangeFile {
   format: 'scrylux';
   format_version: 1;
@@ -63,6 +75,14 @@ export interface ExchangeFile {
   elements: FileElement[];
   threats: FileThreat[];
   mitigations: FileMitigation[];
+}
+
+// Format version 2 (Phase 3 Milestone 5): version 1 and the two lists. An export writes it, in content order: assets by name and assumptions by statement, by
+// code point, so a model built in that order round-trips to itself.
+export interface ExchangeFileV2 extends Omit<ExchangeFile, 'format_version'> {
+  format_version: 2;
+  assets: FileAsset[];
+  assumptions: FileAssumption[];
 }
 
 const node = (id: string, type: ElementType, name: string, extra: Partial<FileElement> = {}): FileElement => ({
@@ -212,6 +232,22 @@ export function hostile(): ExchangeFile {
   return file;
 }
 
+// The same model with two assets and two assumptions, in the order an export writes them.
+export function us1ModelV2(): ExchangeFileV2 {
+  return {
+    ...us1Model(),
+    format_version: 2,
+    assets: [
+      { id: 'a-customers', name: 'Customer data', description: 'Names and addresses of customers.', holder_ids: ['p-api', 'd-orders'] },
+      { id: 'a-tokens', name: 'Session tokens', description: 'Bearer tokens.', holder_ids: ['p-api'] },
+    ],
+    assumptions: [
+      { id: 's-staff', statement: 'Staff are trusted.' },
+      { id: 's-db', statement: 'The database is not exposed.' },
+    ],
+  };
+}
+
 // The request body of the check and import operations for a Scrylux file.
 export function scryluxBody(file: ExchangeFile, names?: string[]): { format: 'scrylux'; names?: string[]; file: ExchangeFile } {
   return names === undefined ? { format: 'scrylux', file } : { format: 'scrylux', names, file };
@@ -237,13 +273,21 @@ export function withIds(file: ExchangeFile, map: (id: string) => string): Exchan
 // What FR-004 compares: the file without its export time, and with every id replaced by its record's place in the
 // file (e0, t0, m0...), so two files are equal exactly when they are equal once ids are mapped. Files in content order
 // (an export) have corresponding records in corresponding places.
-export function canonical(file: ExchangeFile): unknown {
+export function canonical(file: ExchangeFile | ExchangeFileV2): unknown {
   const labels = new Map<string, string>();
+  if ('assets' in file) file.assets.forEach((item, index) => labels.set(item.id, `a${index}`));
+  if ('assumptions' in file) file.assumptions.forEach((item, index) => labels.set(item.id, `s${index}`));
   file.elements.forEach((item, index) => labels.set(item.id, `e${index}`));
   file.threats.forEach((item, index) => labels.set(item.id, `t${index}`));
   file.mitigations.forEach((item, index) => labels.set(item.id, `m${index}`));
-  const mapped = withIds(file, (id) => labels.get(id) ?? id);
-  return { format: mapped.format, format_version: mapped.format_version, threat_model: mapped.threat_model, elements: mapped.elements, threats: mapped.threats, mitigations: mapped.mitigations };
+  const mapped = withIds(file as ExchangeFile, (id) => labels.get(id) ?? id);
+  const base = { format: mapped.format, format_version: mapped.format_version, threat_model: mapped.threat_model, elements: mapped.elements, threats: mapped.threats, mitigations: mapped.mitigations };
+  if (!('assets' in file)) return base;
+  return {
+    ...base,
+    assets: file.assets.map((item) => ({ ...item, id: labels.get(item.id), holder_ids: item.holder_ids.map((id) => labels.get(id) ?? id) })),
+    assumptions: file.assumptions.map((item) => ({ ...item, id: labels.get(item.id) })),
+  };
 }
 
 const MODEL_ID = '33333333-3333-4333-8333-333333333333';
@@ -252,7 +296,7 @@ const STORED_AT = '2026-10-07T10:00:00.000Z';
 
 // A file as the snapshot an export reads: records with their storage-only columns. Ids stay as the file has them, and
 // every row has the same created_at, as the rows of one import do.
-export function snapshotOf(file: ExchangeFile): Snapshot {
+export function snapshotOf(file: ExchangeFile | ExchangeFileV2): Snapshot {
   const timestamps = { created_at: STORED_AT, updated_at: STORED_AT };
   const elements: ElementRecord[] = file.elements.map((item) => ({ ...item, ...timestamps, threat_model_id: MODEL_ID }));
   const threats: ThreatRecord[] = file.threats.map((item) => ({
@@ -262,11 +306,15 @@ export function snapshotOf(file: ExchangeFile): Snapshot {
     risk: deriveRisk(item.likelihood, item.impact),
   }));
   const mitigations: MitigationRecord[] = file.mitigations.map((item) => ({ ...item, ...timestamps }));
+  const assets = 'assets' in file ? file.assets.map((item) => ({ ...item, ...timestamps, threat_model_id: MODEL_ID })) : [];
+  const assumptions = 'assumptions' in file ? file.assumptions.map((item) => ({ ...item, ...timestamps, threat_model_id: MODEL_ID })) : [];
   return {
     model: { id: MODEL_ID, project_id: PROJECT_ID, ...file.threat_model, ...timestamps },
     project: { name: file.project.name },
     elements,
     threats,
     mitigations,
+    assets,
+    assumptions,
   };
 }

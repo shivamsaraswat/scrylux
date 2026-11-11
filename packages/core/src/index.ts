@@ -31,6 +31,8 @@ export * from './schemas/report.js';
 export * from './schemas/job.js';
 export * from './schemas/source.js';
 export * from './schemas/draft.js';
+export * from './schemas/asset.js';
+export * from './schemas/review.js';
 export * from './exchange/formats.js';
 export * from './exchange/import-io.js';
 export * from './exchange/names.js';

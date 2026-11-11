@@ -1,28 +1,28 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.17.0 → 1.18.0
-Rationale: agent-written changes had grown past what a reviewer can read line by line. Phase 3 Milestone 4 (`83e2193`) added about
-  3,150 lines of production code and 5,900 of tests across 136 files, and 21 of the 53 exports of `apps/api/src/extract-system/` are
-  used by no other source file. Principle III said "stay YAGNI" but gave no rule a reviewer could check inside a phase. This is a
-  MINOR: materially expanded guidance. It adds no principle and removes none.
-Modified principles:
-  - III (expanded): its first sentence no longer reads as "many small modules" (route files stay one per resource; each function keeps
-    to one concern). Added: a change MUST add the least code that fully meets its spec, with three checkable rules: no new file unless
-    its code is used from more than one place or the file it would join would pass about 300 lines; no export only for a test; no
-    option, wrapper, abstraction or configuration the spec, plan or tasks do not require, and removing code is preferred to adding it.
-    The rules apply from 1.18.0; existing code is brought in line when a change next touches it, not by a separate refactor.
-  - II (clarified, not removed): test-first stays. A behavior gets one failing test at its module's public boundary, not one per
-    internal helper, and a helper is not exported only to be tested.
+Version change: 1.18.0 → 1.19.0
+Rationale: Phase 3 Milestone 5 (the review UI) adds the human accept that Principle VI requires. A person accepts, edits or rejects the items of a
+  draft, and only an accept puts anything into the threat model, through one route that builds every record from the stored draft. The milestone
+  also adds two new kinds of threat-model record, assets and assumptions, with provenance that outlives the draft. This is a MINOR: it adds
+  assets, entry points and risks to the Threat Model section and resolves items that waited for this milestone; it adds no principle and removes none.
+Modified principles: none. Principle VI's sentence about the Draft tab stays true: the review is on the same tab.
 Added sections: none (existing section set retained: Core Principles, Threat Model (STRIDE),
   Development Workflow & Quality Gates, Governance)
 Removed sections: none
-Threat Model changes: none
-Development Workflow: reviewers MUST also ask for a smaller change when a PR adds a file, an export, an option, or a test that
-  Principle III rules out.
+Threat Model changes: assets (current) gain the accepted parts of a draft, the asset and assumption records, and their provenance, and the planned
+  asset of Milestone 5 is removed; the trust boundaries gain the ten routes of the milestone; the Spoofing acceptance that named Milestone 5 is
+  now in place; the Tampering "AI-proposed edits" item is mitigated; Repudiation, Information Disclosure, Denial of Service and Elevation of
+  Privilege gain one item each (who decided and when, files and reports carrying AI-derived text, the limits and a decision's cost, the justified
+  widening). `docs/threat-model/` is rebuilt in step for the maintainer to approve.
+Development Workflow: none.
 Deferred / TODO items: none
 Templates requiring follow-up: none checked in this run (scope of this change is the constitution file only; dependent
   templates read it at runtime per the scope guard).
+Previous change (1.17.0 → 1.18.0): agent-written changes had grown past what a reviewer can read line by line (Phase 3 Milestone 4 added about
+  3,150 lines of production code and 5,900 of tests across 136 files). Principle III now says a change MUST add the least code that fully meets its
+  spec, with three checkable rules (no new file without a reason, no export only for a test, nothing the spec does not ask for), and Principle II
+  says a behavior gets one failing test at its module's public boundary. A MINOR.
 Previous change (1.16.0 → 1.17.0): Phase 3 Milestone 4 (system extraction) added four extraction and draft routes, the `extract_system`
   job kind, six draft tables apart from the threat model, and the first document text sent to a generation model. Principle II's eval
   sentence now says it applies from Milestone 7, Principle VI's notice moved to the Draft tab, and the Threat Model gained the draft
@@ -248,8 +248,16 @@ stores uploads, and the worker, that reads and removes them, hold. Since Phase 3
 documents: each item's name and rationale, each flag's rationale and each assumption's statement (`drafts`, `draft_items`,
 `draft_asset_holders`, `draft_citations`, `draft_sources` and `draft_read_chunks`), held until a person discards it or the next extraction
 replaces it, and after a source it read is deleted; its citations store a span of a chunk and never the quoted text. It is apart from the
-threat model: nothing is written to `elements`, `threats` or `mitigations`.
-**Assets (planned, not yet implemented)**: from Phase 3 Milestone 5 on — the accepted parts of a draft, which are threat-model records; from
+threat model: nothing is written to `elements`, `threats` or `mitigations` except by an accept (Phase 3 Milestone 5), and nothing there
+points at a draft. Since Phase 3 Milestone 5 (`specs/phase-3/milestone-5-review-ui/`): **the accepted parts of a draft, and two new kinds of
+threat-model record**. An accept turns an item of the draft into an element, an asset or an assumption, which is then an ordinary record of the
+threat model. **Assets** and **assumptions** (`assets`, `asset_holders`, `assumptions`) are records that a person can also create, edit and
+delete by hand; each is confidential by nature, as the documents they came from. **Provenance** (`provenance`, `provenance_citations`) is the
+mark that a record, or one flag of an element, came from a draft, with the rationale the model gave and its citations as spans of chunks and
+never as text: AI text derived from confidential documents, kept until the record is deleted, after the draft is gone, and never exported. The
+draft's items now point at the record an accept created (`draft_items.element_id`, `asset_id`, `assumption_id`), so that a deleted record makes
+its item undecided again, and carry who decided each item and when.
+**Assets (planned, not yet implemented)**: from
 Phase 4 — read-only repository/IaC access tokens and cloned source code; from Phase 5 —
 third-party OAuth tokens (Jira, Confluence, Google Docs, Linear, Azure DevOps) and outbound
 webhook targets.
@@ -301,6 +309,15 @@ to embeddings alone; the Draft tab says so before an extraction can be started, 
 four authenticated routes under `/api/v1`, open to every signed-in account: `GET` and `POST /threat-models/{id}/extraction` and `GET` and
 `DELETE /threat-models/{id}/draft`. The OpenAPI document describes them. What the model answers is validated against a fixed schema and a
 set of checks before it is stored, and the only effect of an answer is a draft.
+Since Phase 3 Milestone 5 the only way anything of a draft enters the threat model is a human decision. **The decision route** is current:
+`POST /threat-models/{id}/draft/decisions` accepts, rejects or returns items to undecided, and is the one writer of AI-proposed records and of their
+provenance (`apps/api/src/review/decide.ts`; research #4 of the milestone). A request names the draft the reviewer saw and the items, with the
+comparison the page showed and optional edits of a name, flags, a boundary, a flow's ends, an asset's description and holders or an assumption's
+statement; it carries no content, and the server builds every record from the draft it stores, in one transaction under the threat model's lock.
+The entry points it adds are ten authenticated routes under `/api/v1`, open to every signed-in account: that route; `GET
+/threat-models/{id}/provenance`; and the eight operations on assets and assumptions (`GET` and `POST /threat-models/{id}/assets` and `…/assumptions`,
+`PATCH` and `DELETE /assets/{id}` and `/assumptions/{id}`). The OpenAPI document describes them. The Scrylux file moved to version 2 to carry assets and
+assumptions (version 1 files are still read); neither it, nor the OTM export, nor a report carries a draft, a decision or provenance.
 **Trust boundaries (planned)**: Phase 4 adds a boundary into external source-control/IaC systems (read-only,
 code never executed). Phase 5 adds boundaries into external SaaS integrations and inbound
 webhooks.
@@ -329,8 +346,9 @@ webhooks.
   effect of an answer is a draft that is not part of the threat model (`apps/api/test/extract-system/injection.test.ts`). The retry note names the problems of an
   answer by their place and never repeats what the model wrote, so a model's text cannot reach the instructions of the next request
   (`packages/llm/test/attempts.test.ts`). *Accepted*: a document can still change what is proposed, including a component its design does not
-  have, if it can quote its own text in support; a person reviews the draft and sees the quote, in Milestone 5. The earlier acceptance
-  that a document is only stored and embedded (Phase 3 Milestone 3) is superseded by this item.
+  have, if it can quote its own text in support; a person reviews the draft, sees the quote and decides item by item (Phase 3 Milestone 5), and
+  nothing of a draft enters the threat model without that decision. The earlier acceptance that a document is only stored and embedded (Phase 3
+  Milestone 3) is superseded by this item.
   *Accepted risk (Phase 2 Milestone 6)*: provenance can be claimed by a file. A Scrylux file, or an OTM file carrying Scrylux's
   mark, may say a threat is rule-generated, with any rule reference, and Scrylux cannot check it: generation then treats
   that threat as its own, so it may flag it stale or match it instead of creating one. Nothing else follows from it. The
@@ -354,9 +372,15 @@ webhooks.
   (`scrylux_session`) reaches only `/api/session`, is `SameSite=Strict`, and those endpoints also
   require an Origin matching the request's host (Express's `req.host`, which honours
   `X-Forwarded-Host` only from a trusted proxy) and a JSON content type, which forces a CORS
-  preflight the app never answers. *Planned*: from Phase 3, AI-proposed edits are a new
-  tampering-like surface if they could reach the model without review; mitigated by Principle
-  VI's mandatory human-accept step. *Mitigated (Phase 2 Milestone 1)*: an element's `properties` and
+  preflight the app never answers. *Mitigated (Phase 3 Milestone 5)*: AI-proposed edits cannot reach the threat model without a human decision, and
+  no client can fake AI provenance or forge a record. The decision route is the only writer of AI-proposed elements, assets and assumptions and of
+  their provenance, and a request carries item ids, the comparison the page showed and edits, never content: the server reads every value from the stored
+  draft, in one transaction under the threat model's lock, so a second request for the same item is refused and none creates twice; a draft that
+  was replaced or discarded since the page loaded refuses the request, and so does a comparison that changed, a dependency that is not in the model and
+  a limit that would be passed; an edit is checked by the schema and the database rules of the record it changes and cannot change an item's kind, its
+  rationale or its citations; a client cannot send provenance to any other route, because every body is strict
+  (`apps/api/test/review/decide.test.ts`, `refusals.test.ts`, `edits.test.ts`, `concurrency.test.ts`, `provenance.test.ts`, `apps/api/test/contract/v1/review.test.ts`).
+  A person's later edit of a flag removes that flag's provenance and nothing else's (`apps/api/test/review/provenance-read.test.ts`). *Mitigated (Phase 2 Milestone 1)*: an element's `properties` and
   `layout` are validated against a fixed vocabulary on every write (tags up to 20, 50 characters each;
   flags that belong to the element's type; positions in a fixed range; no other keys), by one schema in
   `packages/core` that the single-record endpoints and the batch endpoint share, and a batch is
@@ -483,7 +507,11 @@ webhooks.
   out, never a name or any content of the file. The records it creates get no line of their own. *Partially mitigated (Phase 3
   Milestone 3)*: adding, retrying, refreshing and deleting a source each write one stdout line with the account id, the action, the source
   and threat model ids, the source's type and its size, and never its name or any of its text. As for other records, nothing is
-  persisted, and who deleted a source is lost with it until Phase 6's audit log.
+  persisted, and who deleted a source is lost with it until Phase 6's audit log. *Partially mitigated (Phase 3 Milestone 5)*: who accepted a
+  record, and when, is kept with its provenance until the record is deleted, and who rejected an item, and when, is kept with the draft; each accept,
+  reject and return to undecided writes one stdout line with the account, the action, the threat model and counts, never a name or any text. Creating,
+  editing and deleting an asset or an assumption by hand write the router's line for any record (account, action, type, id). Nothing else is persisted
+  and who deleted a record is lost with it, until Phase 6's audit log.
   *Open risk (Phase 2 Milestone 8)*: a user cannot tell who built an image, or from which commit, beyond its labels. The image carries
   its source repository and commit as labels (`scripts/release/versions.ts`), which the smoke run checks on both platforms before
   publishing and again after (`scripts/release/smoke.ts`). *Planned*: `plan.md` Phase 6, "Verifiable release images" (a signature, a build attestation and an SBOM).
@@ -559,7 +587,13 @@ webhooks.
   import and a report never read a draft; a citation stores a span and not the text, and one whose source was deleted shows "Source
   deleted". The retry note of the layer repeats nothing of an answer (`packages/llm/test/attempts.test.ts`). *Accepted (Phase 3 Milestone
   4)*: the text of the sources is sent to the generation provider, which the Draft tab says before an extraction can be started, and a
-  draft stays after the sources it read are changed or deleted until a person discards it; the page says the sources changed.
+  draft stays after the sources it read are changed or deleted until a person discards it; the page says the sources changed. *Accepted (Phase 3
+  Milestone 5)*: **accepted AI text is part of the threat model and leaves with it.** An element's name, an asset's name and description and an
+  assumption's statement that an accept created are ordinary records, so the Scrylux file (version 2) and the reports carry them as they carry
+  everything a person typed, and the text may paraphrase a confidential document. That is the purpose of an export, and it holds no rationale, citation,
+  draft, decision or provenance (`apps/api/test/exchange/scrylux-export.test.ts`, `apps/api/test/report/`). **Provenance stays out of every log, error and
+  file**: it holds a rationale (AI text) and spans, and is read only by `GET /threat-models/{id}/provenance`, which shows the quote read from the chunk and
+  says "Source deleted" once the source is gone (`apps/api/test/review/canary.test.ts`). The web app draws every text of a record and of its provenance as text.
 - **Denial of Service**: JSON payloads are capped at 100kb (64 MiB for the two import operations); the `/api/v1` lists are not
   paginated, so a list returns every matching record (low risk at current expected scale, and
   specs/phase-1/milestone-5-rest-api-v1 SC-007 measures a threat model of 1,000 threats and 2,000 mitigations). *Partially mitigated (Phase 1 Milestone 6)*: failed sign-ins are throttled per address, never per
@@ -627,7 +661,10 @@ webhooks.
   the account's job limit (`apps/api/test/extract-system/caps.test.ts`, `apps/api/test/contract/v1/extraction.test.ts`). A failure that a
   retry would repeat is refused with the setting to change. *Open risk (Phase 3 Milestone 4)*: the same as for jobs, until Phase 6: any
   signed-in account can create more accounts, and an extraction costs what its caps allow; the operator's answers are a spending limit at the
-  provider and caps they can afford.
+  provider and caps they can afford. *Mitigated (Phase 3 Milestone 5)*: a threat model holds at most 200 assets and 200 assumptions (database
+  triggers, `MAX_ASSETS` and `MAX_ASSUMPTIONS` in `packages/core`), and a decision is bounded by the draft: at most 70 items, written in a handful of
+  statements under one lock, measured under two seconds for a whole draft and a threat model at its limit (`apps/api/test/review/scale.test.ts`). It
+  holds the threat model's lock for its duration, so element writes to that model queue behind it, as they do behind a generation run.
 - **Elevation of Privilege**: *Open risk, by design, currently unmitigated*: there is no role
   model. Any authenticated user can create additional users (`POST /api/users`) and, since Phase 1
   Milestone 5, can read, change and delete every project, threat model, element, threat and
@@ -689,6 +726,13 @@ webhooks.
   more private than the documents it comes from; what an account can do is bounded by the limits above, and a draft names who started it and
   when. The widening was called out in the milestone's spec (FR-068, FR-080) and is accepted until Phase 6. *No widening*: the draft is
   apart from the threat model, so no account can change a diagram, a threat or a mitigation through it, and the worker gains no credential.
+  *Justified widening (Phase 3 Milestone 5, Principle V)*: any signed-in account can now accept the items of any threat model's draft into it, reject
+  them and return them to undecided, whoever started the extraction, and can create, edit and delete its assets and assumptions. There are no roles
+  before Phase 6, any signed-in account can already create, change and delete every element, threat and mitigation, and an accepted item is an
+  ordinary record that account could have typed, so no new power over the threat model is granted. What is new is that the content comes from a
+  model, which is why every created record carries provenance that no client can set, and why a decision names who made it and when. The widening was
+  called out in the milestone's spec (FR-026, FR-027) and is accepted until Phase 6. *No widening*: the worker gains nothing, the API still sends no
+  request to a provider, and the ten routes are behind the same sign-in as every other.
 
 Any change that adds an endpoint, a new external integration, or a new credential type MUST add
 or update a bullet above in the same PR, whether or not the surrounding phase has been reached.
@@ -732,4 +776,4 @@ rather than silently merged. This file is the source of truth for "why" a rule e
 implementation-level how-to guidance belongs in `README.md`, `API.md`, `CONTRIBUTING.md`, `SECURITY.md`, `plan.md`, and code
 comments, not here.
 
-**Version**: 1.18.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-11-10
+**Version**: 1.19.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-11-11

@@ -3,13 +3,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { writeErrorMessage } from '../api/errors.js';
-import { isActiveJob, keys, useDiscardDraft, useDraft, useExtraction, useJobsStatus, useSources, useStartExtraction } from '../api/queries.js';
+import { isActiveJob, keys, useDecideDraft, useDiscardDraft, useDraft, useElements, useExtraction, useJobsStatus, useSources, useStartExtraction } from '../api/queries.js';
 import { ConfirmDialog } from '../components/ConfirmDialog.js';
 import { ExtractionNotice } from '../components/ExtractionNotice.js';
 import { progressLabel, readSummary, time } from '../components/job-format.js';
 import { LoadError } from '../components/LoadError.js';
 import { DraftDiagram } from '../draft/DraftDiagram.js';
 import { DraftList } from '../draft/DraftList.js';
+import { AcceptEditor } from '../draft/AcceptEditor.js';
+import { ReviewControls } from '../draft/ReviewControls.js';
 import { ItemPanel } from '../draft/ItemPanel.js';
 import { draftItems } from '../draft/draft-items.js';
 import '../draft/draft.css';
@@ -26,12 +28,15 @@ function StartControl({
   threatModelId,
   extraction,
   hasDraft,
+  hasDecisions,
   unfinished,
   noWorker,
 }: {
   threatModelId: string;
   extraction: ExtractionStatus;
   hasDraft: boolean;
+  /** A decision has been made on the draft: a new extraction would lose it (Phase 3 Milestone 5, FR-016). */
+  hasDecisions: boolean;
   unfinished: string[];
   noWorker: boolean;
 }) {
@@ -73,7 +78,13 @@ function StartControl({
           These sources are larger than the extraction budget. Scrylux will read part of them, choosing the chunks most relevant to a system model.
         </p>
       )}
-      {(offer.replaces_draft || hasDraft) && <p className="muted">When it succeeds, the new draft replaces the draft below.</p>}
+      {(offer.replaces_draft || hasDraft) && (
+        <p className="muted">
+          {hasDecisions
+            ? 'A new extraction replaces this draft and the decisions on it. Records you accepted stay in the threat model.'
+            : 'When it succeeds, the new draft replaces the draft below.'}
+        </p>
+      )}
       <button type="button" disabled={start.isPending} onClick={() => start.mutate()}>
         Start extraction
       </button>
@@ -110,7 +121,14 @@ function WhatItRead({ draft }: { draft: DraftRecord }) {
 function Draft({ draft, threatModelId }: { draft: DraftRecord; threatModelId: string }) {
   const discard = useDiscardDraft(threatModelId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The items chosen for a decision (Phase 3 Milestone 5), apart from the one the panel shows.
+  const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
+  const toggle = (id: string) => setChosen((now) => (now.has(id) ? new Set([...now].filter((other) => other !== id)) : new Set([...now, id])));
   const [confirming, setConfirming] = useState(false);
+  // One decision for the page: the toolbar and the form that accepts with changes show its answer in the same place (Phase 3 Milestone 5).
+  const decide = useDecideDraft(threatModelId);
+  const elements = useElements(threatModelId);
+  const [editing, setEditing] = useState<string | null>(null);
   const items = useMemo(() => draftItems(draft), [draft]);
   const selected = items.find((item) => item.id === selectedId) ?? null;
 
@@ -125,10 +143,30 @@ function Draft({ draft, threatModelId }: { draft: DraftRecord; threatModelId: st
       ) : (
         <div className="draft-view">
           <div>
-            <DraftDiagram elements={draft.elements} selectedId={selectedId} onSelect={setSelectedId} />
-            <DraftList items={items} selectedId={selectedId} onSelect={setSelectedId} />
+            <DraftDiagram elements={draft.elements} review={draft.review} selectedId={selectedId} onSelect={setSelectedId} onToggle={toggle} />
+            <ReviewControls decide={decide} draft={draft} items={items} chosen={chosen} onDecided={() => setChosen(new Set())} />
+            <DraftList items={items} selectedId={selectedId} checked={chosen} onSelect={setSelectedId} onToggle={toggle} />
           </div>
-          <ItemPanel item={selected} threatModelId={threatModelId} />
+          <div>
+            <ItemPanel item={selected} threatModelId={threatModelId} onAcceptWithChanges={selected === null ? undefined : () => setEditing(selected.id)} />
+            {selected !== null && editing === selected.id && (
+              <AcceptEditor
+                key={selected.id}
+                draft={draft}
+                item={selected}
+                elements={elements.data ?? []}
+                pending={decide.isPending}
+                error={decide.isError ? writeErrorMessage(decide.error) : null}
+                onCancel={() => setEditing(null)}
+                onAccept={(edits) =>
+                  decide.mutate(
+                    { action: 'accept', draft_id: draft.id, items: [{ id: selected.id, seen: selected.review.comparison ?? 'new', ...(edits === undefined ? {} : { edits }) }] },
+                    { onSuccess: () => setEditing(null) },
+                  )
+                }
+              />
+            )}
+          </div>
         </div>
       )}
       <p>
@@ -187,6 +225,7 @@ export function DraftTab() {
           threatModelId={threatModelId}
           extraction={extraction.data}
           hasDraft={draft.data !== null && draft.data !== undefined}
+          hasDecisions={Object.values(draft.data?.review ?? {}).some((review) => review.state !== 'undecided')}
           unfinished={unfinished}
           noWorker={!status.data.worker_alive && latest?.state === 'queued'}
         />

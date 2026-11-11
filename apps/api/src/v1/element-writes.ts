@@ -62,7 +62,14 @@ export async function updateElementIn(trx: Trx, threatModelId: string, id: strin
     ...(changes.properties === undefined ? {} : { properties: result.data.properties }),
     ...(changes.layout === undefined ? {} : { layout: result.data.layout }),
   };
-  return trx.updateTable('elements').set(set).where('id', '=', id).returningAll().executeTakeFirstOrThrow();
+  const updated = await trx.updateTable('elements').set(set).where('id', '=', id).returningAll().executeTakeFirstOrThrow();
+  // A flag that a person changed or removed is theirs from now on: its provenance goes, and nothing else's (Phase 3 Milestone 5, FR-017).
+  const flagsOf = (properties: unknown): Record<string, unknown> => ((properties as { flags?: Record<string, unknown> } | null)?.flags ?? {});
+  const before = flagsOf(row.properties);
+  const after = flagsOf(updated.properties);
+  const changed = Object.keys(before).filter((flag) => before[flag] !== after[flag]);
+  if (changed.length > 0) await trx.deleteFrom('provenance').where('element_id', '=', id).where('flag', 'in', changed).execute();
+  return updated;
 }
 
 export interface DeleteResult {

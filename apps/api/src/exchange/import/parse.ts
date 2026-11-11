@@ -1,4 +1,4 @@
-import { OtmFile, ScryluxFileV1, ThreatDragonFile, checkBounds, detectFormat, type ImportFormat } from '@scrylux/core';
+import { OtmFile, ScryluxFileV1, ScryluxFileV2, ThreatDragonFile, checkBounds, detectFormat, type ImportFormat } from '@scrylux/core';
 import { HttpError } from '../../v1/errors.js';
 import { planOtm } from './otm.js';
 import { parseWith } from './parse-with.js';
@@ -11,7 +11,7 @@ import { planThreatDragon } from './threat-dragon.js';
 // place under `file`.
 
 interface Parsed {
-  scrylux: ScryluxFileV1;
+  scrylux: ScryluxFileV1 | ScryluxFileV2;
   otm: OtmFile;
   'threat-dragon': ThreatDragonFile;
 }
@@ -22,6 +22,12 @@ function parseOtm(raw: unknown): OtmFile {
   const version = typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as { otmVersion?: unknown }).otmVersion : undefined;
   if (version !== '0.2.0') throw new HttpError(400, 'file: not an OTM 0.2.0 file');
   return parseWith(OtmFile, raw);
+}
+
+// A Scrylux file is read by its own version: 1 as Phase 2 wrote it, and everything else as version 2, whose version message names the two this install reads.
+function parseScrylux(raw: unknown): ScryluxFileV1 | ScryluxFileV2 {
+  const version = typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as { format_version?: unknown }).format_version : undefined;
+  return version === 1 ? parseWith(ScryluxFileV1, raw) : parseWith(ScryluxFileV2, raw);
 }
 
 // One parser per import format, typed by the list, so a format without one is a type error.
@@ -41,7 +47,7 @@ function parseThreatDragon(raw: unknown): ThreatDragonFile {
 }
 
 const PARSERS: { [F in ImportFormat]: (raw: unknown) => Parsed[F] } = {
-  scrylux: (raw) => parseWith(ScryluxFileV1, raw),
+  scrylux: parseScrylux,
   otm: parseOtm,
   'threat-dragon': parseThreatDragon,
 };

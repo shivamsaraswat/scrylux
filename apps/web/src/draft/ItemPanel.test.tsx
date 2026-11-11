@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { ItemPanel } from './ItemPanel.js';
 import type { DraftItem } from './draft-items.js';
-import { MODEL_ID, SOURCE_ID, citation, citedChunk } from '../test-utils.js';
+import { MODEL_ID, SOURCE_ID, citation, citedChunk, itemReview } from '../test-utils.js';
 
 // The panel of the selected item (Phase 3 Milestone 4, US2, FR-054, FR-062): why it was proposed, the flags it proposed with the
 // passages behind each, and the passages it came from, each naming its source and place, showing the quote, and linking to the
@@ -18,6 +18,11 @@ const item = (over: Partial<DraftItem> = {}): DraftItem => ({
   citations: [citation()],
   flags: [],
   facts: [],
+  status: 'Undecided',
+  comparison: 'New',
+  differences: [],
+  needs: [],
+  review: itemReview() as DraftItem['review'],
   ...over,
 });
 
@@ -125,5 +130,56 @@ describe('what is shown is text (FR-066)', () => {
     expect(document.querySelector('script')).toBeNull();
     expect(document.querySelector('i')).toBeNull();
     expect(screen.getByText('<script>alert(1)</script>')).toBeTruthy();
+  });
+});
+
+describe('the review of an item (Phase 3 Milestone 5, FR-001 to FR-003)', () => {
+  it('says where the item stands and how it compares with the threat model', () => {
+    show(item({ status: 'Rejected by ada on 11/10/2026', comparison: 'Already in the model' }));
+    const panel = screen.getByRole('region', { name: 'Selected item' });
+    expect(within(panel).getByText('Rejected by ada on 11/10/2026')).toBeTruthy();
+    expect(within(panel).getByText('Already in the model')).toBeTruthy();
+  });
+
+  it('lists what differs from the record it matched, and what the item needs first', () => {
+    show(item({ comparison: 'Already in the model', differences: ['Internet facing: proposed Yes, not assessed', 'Boundary differs'], needs: ['Needs Database in the model first'] }));
+    const panel = screen.getByRole('region', { name: 'Selected item' });
+    expect(within(panel).getByRole('list', { name: 'Differences' }).textContent).toContain('Internet facing: proposed Yes, not assessed');
+    expect(within(panel).getByText('Boundary differs')).toBeTruthy();
+    expect(within(panel).getByText('Needs Database in the model first')).toBeTruthy();
+  });
+
+  it('shows no comparison for an item that was accepted, and every text as text', () => {
+    show(item({ status: 'Accepted by <b>ada</b>', comparison: null }));
+    const panel = screen.getByRole('region', { name: 'Selected item' });
+    expect(within(panel).getByText('Accepted by <b>ada</b>')).toBeTruthy();
+    expect(panel.querySelector('b')).toBeNull();
+    expect(within(panel).queryByText('New')).toBeNull();
+  });
+});
+
+// An item that matched a record links to it (Phase 3 Milestone 5, contracts/ui.md item 2, T077); one that matched none, or several, links to nothing.
+describe('a match', () => {
+  const matched = (group: DraftItem['group'], matchedId: string) => item({ group, comparison: 'Already in the model', review: itemReview({ comparison: 'matched', matched_id: matchedId }) as DraftItem['review'] });
+
+  it('links an element to it on the diagram', () => {
+    show(matched('process', 'element-9'));
+    expect(within(screen.getByRole('region', { name: 'Selected item' })).getByRole('link', { name: 'Open the matching record' }).getAttribute('href')).toBe(`/threat-models/${MODEL_ID}/diagram?element=element-9`);
+  });
+
+  it('links an asset and an assumption to the Assets and assumptions tab', () => {
+    for (const group of ['asset', 'assumption'] as const) {
+      const { unmount } = show(matched(group, 'record-1'));
+      expect(within(screen.getByRole('region', { name: 'Selected item' })).getByRole('link', { name: 'Open the matching record' }).getAttribute('href')).toBe(`/threat-models/${MODEL_ID}/assets`);
+      unmount();
+    }
+  });
+
+  it('gives no link for a new item, for several matches, or for an accepted one', () => {
+    for (const value of [item(), item({ comparison: 'Several in the model; treated as new', review: itemReview({ comparison: 'several' }) as DraftItem['review'] }), item({ comparison: null, review: itemReview({ state: 'accepted', comparison: null }) as DraftItem['review'] })]) {
+      const { unmount } = show(value);
+      expect(screen.queryByRole('link', { name: 'Open the matching record' })).toBeNull();
+      unmount();
+    }
   });
 });

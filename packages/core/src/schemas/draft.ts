@@ -173,6 +173,45 @@ export type DraftAssumptionRecord = z.infer<typeof DraftAssumptionRecord>;
 export const DraftSourceRecord = z.strictObject({ id: uuid, name: z.string(), read: z.boolean() });
 export type DraftSourceRecord = z.infer<typeof DraftSourceRecord>;
 
+/** Where an item stands in the review (Phase 3 Milestone 5, FR-001). */
+export const ITEM_STATES = ['undecided', 'accepted', 'rejected'] as const;
+export const ItemState = z.enum(ITEM_STATES);
+export type ItemState = z.infer<typeof ItemState>;
+
+/** How an item compares with the threat model's records of its kind now (FR-002). Only an element can be `several`. */
+export const ITEM_COMPARISONS = ['new', 'matched', 'several'] as const;
+export const ItemComparison = z.enum(ITEM_COMPARISONS);
+export type ItemComparison = z.infer<typeof ItemComparison>;
+
+/** A reference of an element that does not resolve to an element of the threat model: the item it names is neither in the model nor matched (research #5). */
+export const ITEM_NEEDS = ['boundary', 'source', 'target'] as const;
+
+/** What differs between a matched item and the record it matched (data-model.md, "What a difference is"). */
+export const ItemDifferences = z.strictObject({
+  flags: z.strictObject({ flag: z.string(), proposed: z.boolean(), current: z.boolean().nullable() }).array(),
+  boundary: z.boolean(),
+  endpoints: z.boolean(),
+  holders_missing: count,
+});
+export type ItemDifferences = z.infer<typeof ItemDifferences>;
+
+/**
+ * One item's review. An item that is accepted has been decided, and what it was compared with is no longer the question: its comparison,
+ * matched id, differences and needs are null. `differences` is given only for a match; `needs` only for an element.
+ */
+export const ItemReview = z.strictObject({
+  state: ItemState,
+  decided_by: JobUser.nullable(),
+  decided_at: timestamp.nullable(),
+  /** For an accepted item: whether the accept created a record or matched one that was there. */
+  outcome: z.enum(['created', 'matched']).nullable(),
+  comparison: ItemComparison.nullable(),
+  matched_id: uuid.nullable(),
+  differences: ItemDifferences.nullable(),
+  needs: z.strictObject({ need: z.enum(ITEM_NEEDS), item_id: uuid }).array().nullable(),
+});
+export type ItemReview = z.infer<typeof ItemReview>;
+
 export const DraftRecord = z.strictObject({
   id: uuid,
   threat_model_id: uuid,
@@ -197,6 +236,8 @@ export const DraftRecord = z.strictObject({
   assumptions: DraftAssumptionRecord.array(),
   /** Which chunks were sent, so a person can see what was read (FR-014). */
   read_chunks: z.strictObject({ source_id: uuid, position: count }).array(),
+  /** Each item's review, by the item's id (Phase 3 Milestone 5). */
+  review: z.record(uuid, ItemReview),
 });
 export type DraftRecord = z.infer<typeof DraftRecord>;
 

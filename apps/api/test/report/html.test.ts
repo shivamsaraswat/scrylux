@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { htmlText } from '../../src/report/escape.js';
 import { renderHtml } from '../../src/report/html.js';
 import { buildReport, type Report } from '../../src/report/model.js';
-import { EXPORTED_AT, HOSTILE, LONG_TOKEN, empty, hostile, typical, withMarkers } from './fixtures.js';
+import { EXPORTED_AT, HOSTILE, HOSTILE_MULTILINE, LONG_TOKEN, empty, hostile, typical, withMarkers, withRecords } from './fixtures.js';
 
 // contracts/report-format.md "HTML", research #10: a file that opens offline, runs nothing and loads nothing, and
 // says what the Markdown report says.
@@ -278,3 +278,41 @@ describe('hostile text (FR-014, SC-005)', () => {
     expect(document).toContain('<title>Threat model report: &lt;b&gt;bold&lt;/b&gt;</title>');
   });
 });
+
+// Assets and assumptions (Phase 3 Milestone 5, FR-023): two sections after the elements, escaped as every other text, and the contents line unchanged.
+describe('assets and assumptions', () => {
+  const documentWith = render(buildReport(withRecords(), EXPORTED_AT));
+  const sectionIds = [...documentWith.matchAll(/<section aria-labelledby="([a-z-]+)"/g)].map((match) => match[1]);
+
+  it('has neither section when the threat model has neither, and the same contents line', () => {
+    expect(html).not.toContain('id="assets"');
+    expect(html).not.toContain('id="assumptions"');
+    expect(documentWith).toContain(html.match(/<dt>Contents<\/dt><dd>[^<]*<\/dd>/)?.[0] as string);
+  });
+
+  it('has Assets and then Assumptions after the elements and before the unlinked threats', () => {
+    expect(sectionIds).toEqual(['summary', 'diagram', 'elements', 'assets', 'assumptions', 'unlinked']);
+  });
+
+  it('writes an asset with its description and the elements that hold it, and each assumption', () => {
+    const shown = text(documentWith);
+    expect(shown).toContain('Customer data');
+    expect(shown).toContain('Names and addresses.');
+    expect(shown).toMatch(/Held by E\d+ API, E\d+ Orders DB/);
+    expect(shown).toContain('The database is not exposed.');
+    expect(shown).toContain('Staff are trusted.');
+  });
+
+  it('shows hostile text as text and nothing else: no markup, no script, the same tags as without it', () => {
+    const hostileDocument = render(buildReport(hostile(), EXPORTED_AT));
+    const shown = text(hostileDocument);
+    for (const hostileText of HOSTILE.slice(0, 7)) expect(shown, hostileText).toContain(hostileText.replaceAll(/\s+/g, ' '));
+    expect(shown).toContain(HOSTILE_MULTILINE.replaceAll(/\s+/g, ' '));
+    expect(tagsOf(withoutSvg(hostileDocument)).filter((tag) => /^<(script|img|iframe|b|i)[\s>/]/i.test(tag))).toEqual([]);
+  });
+
+  it('holds no provenance, rationale or citation', () => {
+    for (const absent of ['rationale', 'citation', 'provenance', 'Proposed by AI']) expect(documentWith.toLowerCase()).not.toContain(absent.toLowerCase());
+  });
+});
+

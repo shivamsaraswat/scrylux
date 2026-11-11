@@ -1,20 +1,21 @@
-import { ScryluxFileV1 } from '@scrylux/core';
+import { ScryluxFileV2 } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { buildScryluxFile, serializeExport } from '../../src/exchange/scrylux-export.js';
-import { snapshotOf, us1Model } from './fixtures.js';
+import { snapshotOf, us1Model, us1ModelV2 } from './fixtures.js';
 
 // The Scrylux file an export writes (contracts/scrylux-file.md): every key, in a fixed order, records in content order,
 // and bytes that change only when the model does (FR-003, FR-005).
 
 const at = new Date('2026-10-10T09:30:00.000Z');
 const build = () => buildScryluxFile(snapshotOf(us1Model()), at);
+const buildV2 = () => buildScryluxFile(snapshotOf(us1ModelV2()), at);
 
 describe('buildScryluxFile', () => {
-  it('writes the header and the three arrays, in the contract’s key order', () => {
+  it('writes the header and the five arrays, in the contract’s key order', () => {
     const file = build();
-    expect(Object.keys(file)).toEqual(['format', 'format_version', 'exported_at', 'project', 'threat_model', 'elements', 'threats', 'mitigations']);
+    expect(Object.keys(file)).toEqual(['format', 'format_version', 'exported_at', 'project', 'threat_model', 'elements', 'threats', 'mitigations', 'assets', 'assumptions']);
     expect(file.format).toBe('scrylux');
-    expect(file.format_version).toBe(1);
+    expect(file.format_version).toBe(2);
     expect(file.exported_at).toBe('2026-10-10T09:30:00.000Z');
     expect(file.project).toEqual({ name: 'Payments' });
     expect(file.threat_model).toEqual({ name: 'Checkout', methodology: 'STRIDE', status: 'in_review' });
@@ -100,7 +101,7 @@ describe('buildScryluxFile', () => {
   });
 
   it('writes a file the schema accepts', () => {
-    expect(ScryluxFileV1.safeParse(build()).success).toBe(true);
+    expect(ScryluxFileV2.safeParse(build()).success).toBe(true);
   });
 });
 
@@ -122,3 +123,50 @@ describe('serializeExport', () => {
     expect(differing).toEqual(['"exported_at"']);
   });
 });
+
+// Phase 3 Milestone 5 (FR-023, contracts/file-format.md): assets and assumptions travel in the file, always present, in content order, and nothing of provenance,
+// a draft or a decision is in it.
+describe('buildScryluxFile, assets and assumptions', () => {
+  it('writes an empty list for each when the model has none, so the two keys are always there', () => {
+    const file = build();
+    expect(file.assets).toEqual([]);
+    expect(file.assumptions).toEqual([]);
+  });
+
+  it('writes every key of every asset and assumption, and no other', () => {
+    const file = buildV2();
+    for (const asset of file.assets) expect(Object.keys(asset)).toEqual(['id', 'name', 'description', 'holder_ids']);
+    for (const assumption of file.assumptions) expect(Object.keys(assumption)).toEqual(['id', 'statement']);
+  });
+
+  it('sorts assets by name and assumptions by statement, by code point, then by id', () => {
+    const snapshot = snapshotOf(us1ModelV2());
+    snapshot.assets.reverse();
+    snapshot.assumptions.reverse();
+    snapshot.assets.push({ ...(snapshot.assets[0] as (typeof snapshot.assets)[number]), id: 'a-another', name: 'Zeta' }, { ...(snapshot.assets[0] as (typeof snapshot.assets)[number]), id: 'a-alpha', name: 'Alpha' });
+    const file = buildScryluxFile(snapshot, at);
+    expect(file.assets.map((asset) => asset.name)).toEqual(['Alpha', 'Customer data', 'Session tokens', 'Zeta']);
+    expect(file.assumptions.map((assumption) => assumption.statement)).toEqual(['Staff are trusted.', 'The database is not exposed.']);
+  });
+
+  it('names holders by the file’s own element ids, in the order of the elements of the file', () => {
+    const file = buildV2();
+    const position = new Map(file.elements.map((element, index) => [element.id, index]));
+    for (const asset of file.assets) {
+      expect(asset.holder_ids.every((id) => position.has(id))).toBe(true);
+      expect(asset.holder_ids.map((id) => position.get(id))).toEqual([...asset.holder_ids.map((id) => position.get(id) as number)].sort((a, b) => a - b));
+    }
+    expect(file.assets[0]?.holder_ids).toHaveLength(2);
+  });
+
+  it('is accepted by the version 2 schema, and exporting an unchanged model twice gives the same bytes', () => {
+    expect(ScryluxFileV2.safeParse(buildV2()).success).toBe(true);
+    expect(serializeExport(buildV2())).toBe(serializeExport(buildV2()));
+  });
+
+  it('holds no provenance, rationale, citation, draft or decision, and no record id of the database', () => {
+    const text = JSON.stringify(buildV2());
+    for (const absent of ['provenance', 'rationale', 'citations', 'draft', 'decision', 'accepted_by', 'created_at', 'threat_model_id']) expect(text).not.toContain(absent);
+  });
+});
+

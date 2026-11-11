@@ -1,4 +1,4 @@
-import type { ScryluxFileV1 } from '@scrylux/core';
+import type { ScryluxFileV1, ScryluxFileV2 } from '@scrylux/core';
 import { HttpError } from '../../v1/errors.js';
 import type { ImportPlan } from './plan.js';
 
@@ -10,7 +10,7 @@ import type { ImportPlan } from './plan.js';
 //
 // The field rules were applied when the file was parsed (ScryluxFileV1), and the rules across records are applied by
 // `checkPlan`, so there is nothing else to refuse here and nothing to note: a Scrylux file imports with an empty list.
-export function planScrylux(file: ScryluxFileV1): ImportPlan {
+export function planScrylux(file: ScryluxFileV1 | ScryluxFileV2): ImportPlan {
   file.threats.forEach((threat, index) => {
     if (threat.origin === 'ai') throw new HttpError(400, `file.threats.${index}.origin: AI-drafted threats cannot be imported yet`);
   });
@@ -54,6 +54,9 @@ export function planScrylux(file: ScryluxFileV1): ImportPlan {
           status: mitigation.status,
           external_ref: mitigation.external_ref,
         })),
+        // Version 1 has none. An asset or an assumption is created as an ordinary record, with no provenance, however the file describes it (FR-023).
+        assets: 'assets' in file ? file.assets.map((asset, index) => ({ id: asset.id, path: `file.assets.${index}`, name: asset.name, description: asset.description, holder_ids: asset.holder_ids })) : [],
+        assumptions: 'assumptions' in file ? file.assumptions.map((assumption, index) => ({ id: assumption.id, path: `file.assumptions.${index}`, statement: assumption.statement })) : [],
       },
     ],
     notes: [],

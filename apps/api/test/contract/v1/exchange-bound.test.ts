@@ -1,4 +1,4 @@
-import { IMPORT_MAX_BYTES, ScryluxFileV1, checkBounds } from '@scrylux/core';
+import { IMPORT_MAX_BYTES, ScryluxFileV2, checkBounds } from '@scrylux/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../src/app.js';
 import { parseFile } from '../../../src/exchange/import/parse.js';
@@ -77,7 +77,7 @@ describe('the largest threat model and the size limit (FR-021, SC-006)', () => {
     const parsed = timed(() => JSON.parse(text) as Record<string, unknown>);
     const bounds = timed(() => checkBounds(parsed.result));
     const schema = timed(() => parseFile('scrylux', parsed.result));
-    const planned = timed(() => planScrylux(ScryluxFileV1.parse(parsed.result)));
+    const planned = timed(() => planScrylux(ScryluxFileV2.parse(parsed.result)));
     const checked = timed(() => checkPlan(planned.result, { existingNames: [] }));
     report('bound stages', { jsonParse: parsed.ms, checkBounds: bounds.ms, schema: schema.ms, plan: planned.ms, checkPlan: checked.ms });
 
@@ -94,7 +94,7 @@ describe('the largest threat model and the size limit (FR-021, SC-006)', () => {
     expect(imported.result.status).toBe(201);
     report('bound import', { ms: imported.ms, peakMb: imported.peakMb, grewMb: imported.grewMb });
     expect(imported.ms).toBeLessThan(60 * SECONDS);
-    const write = await sampled(async () => runImport(await newProject(), planScrylux(ScryluxFileV1.parse(parsed.result)), ['Write timing']));
+    const write = await sampled(async () => runImport(await newProject(), planScrylux(ScryluxFileV2.parse(parsed.result)), ['Write timing']));
     report('bound write', { ms: write.ms, peakMb: write.peakMb, grewMb: write.grewMb });
   }, 600 * SECONDS);
 

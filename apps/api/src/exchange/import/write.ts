@@ -8,6 +8,9 @@ import { checkPlan, requireUsableNames, summarize, type ImportPlan, type PlanEle
 const ELEMENT_CHUNK = 1_000;
 const THREAT_CHUNK = 1_000;
 const MITIGATION_CHUNK = 5_000;
+// At most 200 assets and 200 assumptions in a threat model, and 1,000 holders each: far below the limit, in one statement each.
+const ASSET_CHUNK = 1_000;
+const HOLDER_CHUNK = 10_000;
 
 function chunks<T>(items: readonly T[], size: number): T[][] {
   const result: T[][] = [];
@@ -104,6 +107,17 @@ export async function runImport(
             chunk.map((row) => ({ id: row.id, threat_id: row.threat_id, description: row.description, status: row.status, external_ref: row.external_ref })),
           )
           .execute();
+      }
+
+      // Assets and assumptions of a version 2 file, after the elements their holders refer to. They are ordinary records: no provenance is written, however the
+      // file describes them (FR-023).
+      for (const chunk of chunks(model.assets, ASSET_CHUNK)) {
+        await trx.insertInto('assets').values(chunk.map((row) => ({ id: row.id, threat_model_id: id, name: row.name, description: row.description }))).execute();
+      }
+      const held = model.assets.flatMap((asset) => asset.holder_ids.map((elementId) => ({ threat_model_id: id, asset_id: asset.id, element_id: elementId })));
+      for (const chunk of chunks(held, HOLDER_CHUNK)) await trx.insertInto('asset_holders').values(chunk).execute();
+      for (const chunk of chunks(model.assumptions, ASSET_CHUNK)) {
+        await trx.insertInto('assumptions').values(chunk.map((row) => ({ id: row.id, threat_model_id: id, statement: row.statement }))).execute();
       }
     }
     return { threatModels, summary: summarize(checked) };

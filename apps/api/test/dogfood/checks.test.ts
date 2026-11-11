@@ -83,7 +83,7 @@ describe('check 1, form', () => {
 
   it('fails keys in another order', () => {
     const file = exported(goodFile());
-    const reordered = { threat_model: file.threat_model, format: file.format, format_version: file.format_version, exported_at: file.exported_at, project: file.project, elements: file.elements, threats: file.threats, mitigations: file.mitigations };
+    const reordered = { threat_model: file.threat_model, format: file.format, format_version: file.format_version, exported_at: file.exported_at, project: file.project, elements: file.elements, threats: file.threats, mitigations: file.mitigations, assets: file.assets, assumptions: file.assumptions };
     const findings = checkForm(FILE, serializeExport(reordered), validate);
     expect(checks(findings)).toEqual(['form']);
     expect(findings[0]?.message).toContain('not what Scrylux writes');

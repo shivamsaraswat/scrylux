@@ -21,9 +21,10 @@ describe('authentication on every /api/v1 operation (FR-004, spec Story 1 scenar
 
   // Guards against this file passing without checking anything: the contract lists 32 resource
   // operations, Phase 3 Milestone 2 adds the 5 job operations, Milestone 3 the 8 source operations and
-  // Milestone 4 the 4 extraction and draft operations (contracts/http-api.md); the OpenAPI document is covered by openapi.test.ts.
-  it('covers all 49 resource operations', () => {
-    expect(resourceOperations).toHaveLength(49);
+  // Milestone 4 the 4 extraction and draft operations, and Milestone 5 the decision route, the provenance read and the eight asset and assumption
+  // operations (contracts/http-api.md); the OpenAPI document is covered by openapi.test.ts.
+  it('covers all 59 resource operations', () => {
+    expect(resourceOperations).toHaveLength(59);
   });
 
   const call = (method: string, path: string, token: string | null) =>

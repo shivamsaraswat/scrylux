@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
+  MAX_ASSETS,
+  MAX_ASSUMPTIONS,
   MAX_ELEMENTS,
   nameIssues,
   type BoundaryLayout,
@@ -66,6 +68,21 @@ export interface PlanMitigation {
   external_ref: string | null;
 }
 
+export interface PlanAsset {
+  id: string;
+  path: string;
+  name: string;
+  description: string;
+  // The file's ids of the elements that hold it, then new ones.
+  holder_ids: string[];
+}
+
+export interface PlanAssumption {
+  id: string;
+  path: string;
+  statement: string;
+}
+
 export interface PlanModel {
   threatModel: { id: string; name: string; methodology: Methodology; status: ThreatModelStatus };
   // What is wrong with the name, set by checkPlan. A check reports it; the import refuses it.
@@ -73,6 +90,9 @@ export interface PlanModel {
   elements: PlanElement[];
   threats: PlanThreat[];
   mitigations: PlanMitigation[];
+  // Phase 3 Milestone 5: from a Scrylux file of version 2; empty from every other source.
+  assets: PlanAsset[];
+  assumptions: PlanAssumption[];
 }
 
 export interface ImportPlan {
@@ -99,8 +119,11 @@ function checkModel(model: PlanModel, newId: () => string): PlanModel {
     throw refuse(`file: a threat model can hold at most ${MAX_ELEMENTS.toLocaleString('en-US')} elements`);
   }
 
+  if (model.assets.length > MAX_ASSETS) throw refuse(`file: a threat model can hold at most ${MAX_ASSETS.toLocaleString('en-US')} assets`);
+  if (model.assumptions.length > MAX_ASSUMPTIONS) throw refuse(`file: a threat model can hold at most ${MAX_ASSUMPTIONS.toLocaleString('en-US')} assumptions`);
+
   const seen = new Set<string>();
-  for (const row of [...model.elements, ...model.threats, ...model.mitigations]) {
+  for (const row of [...model.elements, ...model.threats, ...model.mitigations, ...model.assets, ...model.assumptions]) {
     if (seen.has(row.id)) throw refuse(`${row.path}.id: must be different from every other id in the file`);
     seen.add(row.id);
   }
@@ -115,6 +138,8 @@ function checkModel(model: PlanModel, newId: () => string): PlanModel {
   for (const mitigation of model.mitigations) {
     if (!threats.has(mitigation.threat_id)) throw refuse(`${mitigation.path}.threat_id: must refer to a threat in this file`);
   }
+
+  checkAssets(model, elements);
 
   const elementIds = new Map(model.elements.map((element) => [element.id, newId()]));
   const threatIds = new Map(model.threats.map((threat) => [threat.id, newId()]));
@@ -136,7 +161,33 @@ function checkModel(model: PlanModel, newId: () => string): PlanModel {
       id: newId(),
       threat_id: threatIds.get(mitigation.threat_id) as string,
     })),
+    assets: model.assets.map((asset) => ({ ...asset, id: newId(), holder_ids: asset.holder_ids.map((id) => elementIds.get(id) as string) })),
+    assumptions: model.assumptions.map((assumption) => ({ ...assumption, id: newId() })),
   };
+}
+
+// What the database enforces about the two kinds of record (migration 019): a holder is a node of this file and is named once, and a name or a statement
+// is unique ignoring case and surrounding whitespace. A file is refused at the second one, so the first problem a user fixes is the first in the file.
+function checkAssets(model: PlanModel, elements: ReadonlyMap<string, PlanElement>): void {
+  const names = new Set<string>();
+  for (const asset of model.assets) {
+    if (new Set(asset.holder_ids).size !== asset.holder_ids.length) throw refuse(`${asset.path}.holder_ids: must not repeat an element`);
+    asset.holder_ids.forEach((id, index) => {
+      const holder = elements.get(id);
+      if (holder === undefined || !NODE_TYPES.has(holder.type)) {
+        throw refuse(`${asset.path}.holder_ids.${index}: must refer to an external entity, process or data store in this file`);
+      }
+    });
+    const key = asset.name.trim().toLowerCase();
+    if (names.has(key)) throw refuse(`${asset.path}.name: must differ from the name of another asset, ignoring case`);
+    names.add(key);
+  }
+  const statements = new Set<string>();
+  for (const assumption of model.assumptions) {
+    const key = assumption.statement.trim().toLowerCase();
+    if (statements.has(key)) throw refuse(`${assumption.path}.statement: must differ from the statement of another assumption, ignoring case`);
+    statements.add(key);
+  }
 }
 
 function checkElement(element: PlanElement, elements: ReadonlyMap<string, PlanElement>): void {
@@ -251,6 +302,8 @@ export function summarize(plan: ImportPlan): ImportSummary {
       elements: model.elements.length,
       threats: model.threats.length,
       mitigations: model.mitigations.length,
+      assets: model.assets.length,
+      assumptions: model.assumptions.length,
     })),
     notes: plan.notes,
   };

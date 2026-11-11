@@ -23,6 +23,8 @@ const uid = (prefix: string, n: number): string => `${prefix}0000000-0000-4000-8
 export const elementId = (n: number): string => uid('e', n);
 export const threatId = (n: number): string => uid('a', n);
 export const mitigationId = (n: number): string => uid('b', n);
+export const assetId = (n: number): string => uid('c', n);
+export const assumptionId = (n: number): string => uid('d', n);
 
 export function element(n: number, overrides: Partial<ElementRecord> & { type?: ElementType } = {}): ElementRecord {
   return {
@@ -96,6 +98,8 @@ function snapshot(parts: Partial<Snapshot> = {}): Snapshot {
     elements: [],
     threats: [],
     mitigations: [],
+    assets: [],
+    assumptions: [],
     ...parts,
   };
 }
@@ -116,6 +120,23 @@ export const T = {
   worker: elementId(8),
   jobs: elementId(9),
 } as const;
+
+// Assets and assumptions (Phase 3 Milestone 5, FR-023): a record, and the two lists of a snapshot.
+export function asset(n: number, overrides: Partial<Snapshot['assets'][number]> = {}): Snapshot['assets'][number] {
+  return { id: assetId(n), threat_model_id: MODEL_ID, name: `Asset ${n}`, description: `About asset ${n}.`, holder_ids: [], created_at: at(n % 60), updated_at: at(n % 60), ...overrides };
+}
+export function assumption(n: number, overrides: Partial<Snapshot['assumptions'][number]> = {}): Snapshot['assumptions'][number] {
+  return { id: assumptionId(n), threat_model_id: MODEL_ID, statement: `Assumption ${n}.`, created_at: at(n % 60), updated_at: at(n % 60), ...overrides };
+}
+
+// `typical()` with two assets, one held by two of its elements, and two assumptions.
+export function withRecords(): Snapshot {
+  return {
+    ...typical(),
+    assets: [asset(1, { name: 'Customer data', description: 'Names and addresses.', holder_ids: [T.api, T.db] }), asset(2, { name: 'Session tokens', description: 'Bearer tokens.' })],
+    assumptions: [assumption(1, { statement: 'The database is not exposed.' }), assumption(2, { statement: 'Staff are trusted.' })],
+  };
+}
 
 // A threat model with nested boundaries, flows that do and do not cross a boundary, every threat status, a stale
 // threat, both lifecycle gaps, an AI-origin threat, a 300-character token, and model-level threats.
@@ -311,12 +332,17 @@ export function hostile(): Snapshot {
       target_element_id: elementId(3),
     }),
   );
+  // Every hostile text is also the name, the description, the holder and the statement of a record of Milestone 5.
+  const assets = HOSTILE.slice(0, 4).map((text, i) => asset(i + 1, { name: text, description: HOSTILE_MULTILINE, holder_ids: [elementId(i + 2)] }));
+  const assumptions = HOSTILE.slice(4, 7).map((text, i) => assumption(i + 1, { statement: `${text}\n${HOSTILE_MULTILINE}` }));
   return snapshot({
     model: { ...snapshot().model, name: HOSTILE[11] },
     project: { name: HOSTILE[3] },
     elements,
     threats,
     mitigations,
+    assets,
+    assumptions,
   });
 }
 

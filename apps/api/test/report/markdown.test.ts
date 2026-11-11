@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { markdownInline, markdownText } from '../../src/report/escape.js';
 import { renderMarkdown } from '../../src/report/markdown.js';
 import { buildReport, type Report } from '../../src/report/model.js';
-import { empty, EXPORTED_AT, HOSTILE, HOSTILE_MULTILINE, hostile, typical } from './fixtures.js';
+import { empty, EXPORTED_AT, HOSTILE, HOSTILE_MULTILINE, hostile, typical, withRecords } from './fixtures.js';
 
 // contracts/report-format.md "Markdown", and FR-014 / SC-005: whatever the user typed reads back as typed.
 
@@ -286,3 +286,56 @@ describe('a ticket link', () => {
     expect(render(report)).toContain('<https://evil.example/a_b*c?x=1&y=%3C2%3E>');
   });
 });
+
+// Assets and assumptions (Phase 3 Milestone 5, FR-023): two sections after the elements, only when there is something to list, with the same escapers as
+// every other text of a report, and the contents line unchanged.
+describe('assets and assumptions', () => {
+  const withMarkdown = render(buildReport(withRecords(), EXPORTED_AT));
+  const sections = withMarkdown.split('\n').filter((line) => /^## /.test(line));
+
+  it('writes none when the threat model has none: the report is as it was, and the contents line is unchanged', () => {
+    expect(headings.filter((line) => /^## (Assets|Assumptions)$/.test(line))).toEqual([]);
+    expect(typicalMarkdown).not.toContain('Held by');
+    expect(withMarkdown.split('\n').find((line) => line.startsWith('- **Contents:**'))).toBe(lines.find((line) => line.startsWith('- **Contents:**')));
+  });
+
+  it('writes Assets and then Assumptions after the elements and before the threats that belong to no element', () => {
+    expect(sections).toEqual(['## Risk summary', '## Diagram', '## Elements', '## Assets', '## Assumptions', '## Threats not linked to an element']);
+  });
+
+  it('writes an asset as a heading with its description quoted, and the elements that hold it by reference and name', () => {
+    const at = withMarkdown.indexOf('## Assets');
+    const block = withMarkdown.slice(at, withMarkdown.indexOf('## Assumptions'));
+    expect(block).toContain('### Customer data');
+    expect(block).toContain('> Names and addresses\\.');
+    expect(block).toMatch(/- \*\*Held by:\*\* E\d+ API, E\d+ Orders DB/);
+    expect(block).toContain('### Session tokens');
+    expect(block.match(/\*\*Held by:\*\*/g)).toHaveLength(1);
+  });
+
+  it('writes each assumption as a list item, in the order of the report', () => {
+    const block = withMarkdown.slice(withMarkdown.indexOf('## Assumptions'), withMarkdown.indexOf('## Threats not linked'));
+    // By code point: "Staff" comes before "The".
+    expect(block).toContain('1. Staff are trusted\\.');
+    expect(block).toContain('2. The database is not exposed\\.');
+  });
+
+  it('reads back as typed through a CommonMark parser: a hostile name, description and statement stay text', () => {
+    const report = buildReport(hostile(), EXPORTED_AT);
+    const markdown = render(report);
+    const html = toHtml(markdown).replace(/<pre><code class="language-mermaid">[\s\S]*?<\/code><\/pre>/, '');
+    const shown = squash(textOf(html));
+    expect(markdown).toContain('## Assets');
+    expect(markdown).toContain('## Assumptions');
+    expect(html).not.toMatch(/<(img|script|iframe|b|i|em|code|pre|del)[\s>/]/i);
+    for (const text of HOSTILE.slice(0, 7)) expect(shown, text).toContain(squash(text));
+    expect(shown).toContain(squash(HOSTILE_MULTILINE));
+    const rawHeadings = markdown.split('\n').filter((line) => /^#{1,6} /.test(line)).length;
+    expect(html.match(/<h[1-6]>/g)).toHaveLength(rawHeadings);
+  });
+
+  it('holds no provenance, rationale or citation', () => {
+    for (const absent of ['rationale', 'citation', 'provenance', 'Proposed by AI']) expect(withMarkdown.toLowerCase()).not.toContain(absent.toLowerCase());
+  });
+});
+

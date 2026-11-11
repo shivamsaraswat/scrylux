@@ -96,7 +96,8 @@ describe('ImportInput', () => {
 });
 
 describe('ImportSummary and ImportResult', () => {
-  const model = { name: 'M', name_issue: null, status: 'draft', elements: 1, threats: 2, mitigations: 3 };
+  // Phase 3 Milestone 5: a model's summary counts its assets and assumptions as it counts its elements.
+  const model = { name: 'M', name_issue: null, status: 'draft', elements: 1, threats: 2, mitigations: 3, assets: 4, assumptions: 5 };
 
   it('accepts models and notes of the fixed shape', () => {
     const summary = {
@@ -111,6 +112,8 @@ describe('ImportSummary and ImportResult', () => {
     expect(ImportSummary.safeParse({ models: [{ ...model, status: 'bad' }], notes: [] }).success).toBe(false);
     expect(ImportSummary.safeParse({ models: [], notes: [{ path: 'p', kind: 'unknown.kind' }] }).success).toBe(false);
     expect(ImportSummary.safeParse({ models: [{ ...model, extra: 1 }], notes: [] }).success).toBe(false);
+    expect(ImportSummary.safeParse({ models: [{ ...model, assets: -1 }], notes: [] }).success).toBe(false);
+    expect(ImportSummary.safeParse({ models: [{ ...model, assets: undefined }], notes: [] }).success).toBe(false);
   });
 
   it('wraps created threat models and the summary in a result', () => {

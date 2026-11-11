@@ -27,6 +27,8 @@ All paths below are under `/api/v1`. Ids are UUIDs.
 | Elements | `POST /elements`, `GET`/`PATCH`/`DELETE /elements/{id}`, `POST /threat-models/{id}/elements/batch` (`batchElements`) |
 | Threats | `POST /threats`, `GET`/`PATCH`/`DELETE /threats/{id}`, `GET /threats/{id}/mitigations` |
 | Mitigations | `POST /mitigations`, `GET`/`PATCH`/`DELETE /mitigations/{id}` |
+| Assets and assumptions | `GET`/`POST /threat-models/{id}/assets` (`listAssets`, `createAsset`), `PATCH`/`DELETE /assets/{id}` (`updateAsset`, `deleteAsset`), `GET`/`POST /threat-models/{id}/assumptions` (`listAssumptions`, `createAssumption`), `PATCH`/`DELETE /assumptions/{id}` (`updateAssumption`, `deleteAssumption`) |
+| Reviewing a draft | `POST /threat-models/{id}/draft/decisions` (`decideDraft`), `GET /threat-models/{id}/provenance` (`listProvenance`); the draft itself, `GET /threat-models/{id}/draft`, carries each item's `review` |
 | Sources (documents) | `GET /threat-models/{id}/sources` (`listSources`), `POST /threat-models/{id}/sources` (`uploadSource`, a multipart upload of one `.md`, `.txt`, `.pdf` or `.docx` file in the field `file`), `POST /threat-models/{id}/sources/text` (`pasteSource`, `{"title","text"}`), `GET /sources/{id}` (`getSource`), `GET /sources/{id}/chunks` (`listChunks`, `limit` 1 to 100 and `offset`), `POST /sources/{id}/retry`, `POST /sources/{id}/refresh`, `DELETE /sources/{id}`. The text is read in the background by the worker, so a new source is `waiting`; the answer to `GET /sources/{id}` says when it is `ready` or `failed`, and why. They need an embedding provider ([AI providers](docs/ai-providers.md#documents)). The original file is never returned |
 | Document | `GET /openapi.json` |
 
@@ -235,7 +237,7 @@ curl -s "${H[@]}" -OJ "localhost:3000/api/v1/threat-models/$MODEL/report?format=
 
 `GET /threat-models/{id}/export?format=scrylux` and `…?format=otm` answer with the whole threat model as a data file, to back it up, move it to another install, commit it, or open it in another tool. `format` is required and is one of `scrylux` or `otm`; anything else, a repeated `format` or any other parameter is a `400` (`format must be scrylux or otm`).
 
-- **`scrylux`** is Scrylux's own file. It is **lossless**: importing it again gives the same diagram, the same threats in the same states, and the same mitigations. Its format and its published JSON Schema are in [docs/formats/scrylux-file.md](docs/formats/scrylux-file.md).
+- **`scrylux`** is Scrylux's own file. It is **lossless**: importing it again gives the same diagram, the same threats in the same states, and the same mitigations. Its format and its published JSON Schema are in [docs/formats/scrylux-file.md](docs/formats/scrylux-file.md). It is **format version 2** since Phase 3 Milestone 5, which adds the threat model's assets and assumptions; version 1 files are still read.
 - **`otm`** is [Open Threat Model](docs/formats/otm.md) 0.2.0. Other tools read its standard fields; Scrylux's own fields travel in `attributes.scrylux`, so Scrylux reads its own file back without loss.
 - The answer is an attachment (`Content-Disposition`), named after the threat model and the day in UTC, such as `payments-2026-10-10.scrylux.json`, with `Cache-Control: no-store`. It is read in one snapshot, changes nothing and writes no log line. The same unchanged threat model gives the same bytes, apart from the export time, so a file kept in a repository shows what changed. `404` if the threat model does not exist.
 
@@ -250,11 +252,31 @@ curl -s "${H[@]}" -H 'Content-Type: application/json' --data-binary @body.json "
 ```
 
 - **The body** is `{ "format", "names"?, "file" }`. `file` is the parsed file. `names` has one name per threat model the file creates, in file order (a Threat Dragon file creates one per diagram); without it each keeps the name its file gives it.
-- **The check answers `200`** with the summary: `{ "models": [{ "name", "name_issue", "status", "elements", "threats", "mitigations" }], "notes": [{ "path", "kind", "label"?, "detail"? }] }`. A name that is empty, over 200 characters, repeated in the file, or already used in the project is reported as `name_issue` (`empty`, `too_long`, `duplicate` or `taken`), not refused, so it can be fixed. `notes` lists everything in the file that was not carried over or was changed to fit, each with its place in the file (`path`) and what was done (`kind`). A Scrylux file imports with no notes.
+- **The check answers `200`** with the summary: `{ "models": [{ "name", "name_issue", "status", "elements", "threats", "mitigations", "assets", "assumptions" }], "notes": [{ "path", "kind", "label"?, "detail"? }] }`. A name that is empty, over 200 characters, repeated in the file, or already used in the project is reported as `name_issue` (`empty`, `too_long`, `duplicate` or `taken`), not refused, so it can be fixed. `notes` lists everything in the file that was not carried over or was changed to fit, each with its place in the file (`path`) and what was done (`kind`). A Scrylux file imports with no notes.
 - **The import answers `201`** with `{ "threat_models": […], "summary": … }`, the same summary the check gave. It is all or nothing, in one transaction. A name with an issue is refused: `409` when it is already used in the project (`names.0: a threat model with this name already exists in this project`), `400` otherwise.
-- **A refusal is a `400`** that names the rule and the place in the file, never a value from it, such as `file.threats.12.status_reason: can only be set on a threat that is accepted or not_applicable` or `file.format_version: must be 1`. A file nested more than 64 levels or holding more than 2,000,000 values is refused before it is read further.
+- **A refusal is a `400`** that names the rule and the place in the file, never a value from it, such as `file.threats.12.status_reason: can only be set on a threat that is accepted or not_applicable` or `file.format_version: must be 1 or 2; this file is version 3`. A file nested more than 64 levels or holding more than 2,000,000 values is refused before it is read further.
 - **The same rules as creating the records by hand apply**, with one exception: a threat keeps the status it carries, even `mitigated` with no implemented mitigation or `accepted` without a reason, and is then shown as missing what its status needs. Generated threats keep their rule and stale mark, so *Generate threats* creates no duplicate afterwards. A threat marked AI-drafted is refused, and every threat from an OTM file from another tool or from Threat Dragon is imported as manual.
 - **Size.** A body may hold up to **64 MiB**, which holds the largest threat model Scrylux allows (1,000 elements, about 15,000 threats and 49,000 mitigations) with room to spare; a larger one is a `413`. The check and the import of that model take under two seconds.
+
+### Reviewing a draft, and assets and assumptions
+
+A threat model's **draft** is what a model proposed from its documents ([the Draft tab](docs/ai-providers.md)). Nothing in it is part of the threat model until a person decides on it. `GET /threat-models/{id}/draft` answers with the draft and, for each item, a `review`: its `state` (`undecided`, `accepted` or `rejected`), who decided it and when, how it `comparison` stands with the threat model now (`new`, `matched` for exactly one existing record of the same type and name, or `several` for an element that more than one matches), what differs from the record it matched, and what an element still `needs` (a flow's two ends, a member's boundary).
+
+`POST /threat-models/{id}/draft/decisions` decides items. A request names the draft the reviewer saw (`draft_id`) and the items, and carries no content, so a client cannot put text or provenance of its own into a record: the server builds every record from the draft it stores, in one transaction under the threat model's lock, all together or none.
+
+```json
+{ "action": "accept", "draft_id": "…", "items": [ { "id": "…", "seen": "new", "edits": { "name": "…", "flags": { "internet_facing": null } } } ] }
+{ "action": "reject",   "draft_id": "…", "items": [ { "id": "…" } ] }
+{ "action": "undecide", "draft_id": "…", "items": [ { "id": "…" } ] }
+```
+
+- **Accepting** creates an element, an asset or an assumption from each item, with no stored position (the editor places it). An element that is already in the threat model (the same type and name, ignoring case and surrounding space) is not created again: only the flags it has not assessed are filled in, and an asset only gains the holders it lacked. `seen` is the comparison the page showed; a different one now is refused. `edits` change a name, flags (`true`, `false` or `null` to clear), a boundary, a flow's ends (`{"item": "<draft item id>"}` or `{"element": "<element id>"}`), an asset's description and holders, or an assumption's statement, and are checked by the rules of the record. The answer is `{ "draft", "created", "changed", "unlinked_holders" }`.
+- **`409`** when the draft was replaced or discarded since the page loaded, an item was already decided or its comparison changed, an element needs another that is not in the threat model or the request, or a limit would be passed (1,000 elements, 200 assets, 200 assumptions: the answer says how many more fit). Every message is fixed text with a count, never a name. `400` for an edit that does not apply to the item's kind or breaks a rule of the record; `404` for an unknown threat model or item.
+- **Rejecting** writes nothing to the threat model, and `undecide` brings a rejected item back. An accepted item whose record is later deleted reads as undecided again.
+
+`GET /threat-models/{id}/provenance` lists where the accepted records came from, and which flags an accept set: one row for each record created from a draft and one for each flag it set, with the model's rationale, who accepted it and when, and its citations as the draft shows them (a quote read from its chunk, or `chunk` and `quote` null once the source is deleted). It outlives the draft. A record a person created or imported has none, no request can set one, and no file or report carries it.
+
+**Assets** (a name, a description and the elements that hold them) and **assumptions** (a statement) are records of a threat model that an accept creates and that a person can create, edit and delete too. A name, and a statement, is unique within the threat model ignoring case and surrounding space (`409`), a holder must be a process, a data store or an external entity of the same threat model (`400`), and a threat model holds at most 200 of each (`400`). `PATCH /assets/{id}` replaces the holders with `holder_ids`. The Scrylux file and the reports carry both (below).
 
 ### Order of checks
 
@@ -337,6 +359,14 @@ It names the account, the action, the record type and the record id, and never a
 ```json
 {"event":"generate","account_id":1,"threat_model_id":"…","created":12,"existing":30,"newly_stale":2,"no_longer_stale":1,"skipped":0}
 ```
+
+A decision on a draft ([above](#reviewing-a-draft-and-assets-and-assumptions)) writes one line of its own:
+
+```json
+{"event":"decision","account_id":1,"action":"accept","threat_model_id":"…","items":6,"created":6,"changed":0}
+```
+
+It names the account, the action and the threat model and counts the items and the records, never a name, a statement, a rationale or a quote. Creating, editing and deleting an asset or an assumption write the ordinary line above, with `type` `asset` or `assumption`.
 
 Only the numbers are logged, never an element name or the skipped elements' ids. An [import](#exporting-and-importing-a-threat-model) does the same, with one line for the whole import:
 

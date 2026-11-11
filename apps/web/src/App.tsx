@@ -14,6 +14,7 @@ import { ProjectsPage } from './pages/ProjectsPage.js';
 import { DiagramTab } from './pages/DiagramTab.js';
 import { ThreatModelPage } from './pages/ThreatModelPage.js';
 import { SourcePage } from './pages/SourcePage.js';
+import { AssetsTab } from './pages/AssetsTab.js';
 import { DraftTab } from './pages/DraftTab.js';
 import { SourcesTab } from './pages/SourcesTab.js';
 import { ThreatsTab } from './pages/ThreatsTab.js';
@@ -74,6 +75,7 @@ export const appRoutes: RouteObject[] = [
                     children: [
                       { index: true, element: <ThreatsTab /> },
                       { path: 'diagram', element: <DiagramTab /> },
+                      { path: 'assets', element: <AssetsTab /> },
                       { path: 'sources', element: <SourcesTab /> },
                       { path: 'draft', element: <DraftTab /> },
                     ],

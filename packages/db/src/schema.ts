@@ -1,4 +1,4 @@
-// Kysely table types for the five domain tables, the three job tables, the two source tables and the six draft tables. Types only: the tables themselves are
+// Kysely table types for the five domain tables, the three job tables, the two source tables, the six draft tables and the five tables of Milestone 5. Types only: the tables themselves are
 // defined by the SQL files in migrations/, and test/schema-types.test.ts checks these against the real columns.
 //
 // ColumnType<Select, Insert, Update>: `never` marks a column the database owns (set on insert, or
@@ -263,6 +263,15 @@ interface DraftItemsTable {
   source_item_id: Fixed<string | null>;
   target_item_id: Fixed<string | null>;
   flags: ColumnType<JsonObject, JsonObject | undefined, never>;
+  /** The decision on the item (Phase 3 Milestone 5): all null while it is undecided. Nothing else of an item changes after it is written. */
+  decision: 'accepted' | 'rejected' | null;
+  decided_by: number | null;
+  decided_at: Date | null;
+  outcome: 'created' | 'matched' | null;
+  /** The record an accept created, for the item's kind; null once that record is deleted (it then reads as undecided). */
+  element_id: string | null;
+  asset_id: string | null;
+  assumption_id: string | null;
 }
 
 interface DraftAssetHoldersTable {
@@ -275,6 +284,52 @@ interface DraftCitationsTable {
   id: Settable<string>;
   item_id: Fixed<string>;
   flag: Fixed<string | null>;
+  position: Fixed<number>;
+  chunk_id: Fixed<string | null>;
+  quote_start: Fixed<number>;
+  quote_end: Fixed<number>;
+}
+
+/** An asset of a threat model (Phase 3 Milestone 5): created by an accept or by a person. */
+interface AssetsTable {
+  id: Generated<string>;
+  threat_model_id: Fixed<string>;
+  name: string;
+  description: string;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+interface AssetHoldersTable {
+  threat_model_id: Fixed<string>;
+  asset_id: Fixed<string>;
+  element_id: Fixed<string>;
+}
+
+interface AssumptionsTable {
+  id: Generated<string>;
+  threat_model_id: Fixed<string>;
+  statement: string;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+/** Where a record, or one flag of an element, came from: written only by an accept, never changed (research #8). */
+interface ProvenanceTable {
+  id: Generated<string>;
+  threat_model_id: Fixed<string>;
+  element_id: Fixed<string | null>;
+  asset_id: Fixed<string | null>;
+  assumption_id: Fixed<string | null>;
+  flag: Fixed<string | null>;
+  rationale: Fixed<string>;
+  accepted_by: Fixed<number>;
+  accepted_at: Settable<Date>;
+}
+
+/** A citation of a provenance row: a span of a chunk, never the quote's text. */
+interface ProvenanceCitationsTable {
+  provenance_id: Fixed<string>;
   position: Fixed<number>;
   chunk_id: Fixed<string | null>;
   quote_start: Fixed<number>;
@@ -298,4 +353,9 @@ export interface Database {
   draft_items: DraftItemsTable;
   draft_asset_holders: DraftAssetHoldersTable;
   draft_citations: DraftCitationsTable;
+  assets: AssetsTable;
+  asset_holders: AssetHoldersTable;
+  assumptions: AssumptionsTable;
+  provenance: ProvenanceTable;
+  provenance_citations: ProvenanceCitationsTable;
 }

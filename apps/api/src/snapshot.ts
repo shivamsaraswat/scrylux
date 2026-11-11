@@ -1,4 +1,4 @@
-import { ElementRecord, MitigationRecord, ThreatModelRecord, ThreatRecord } from '@scrylux/core';
+import { AssetRecord, AssumptionRecord, ElementRecord, MitigationRecord, ThreatModelRecord, ThreatRecord } from '@scrylux/core';
 import type { Database } from '@scrylux/db';
 import type { Transaction } from 'kysely';
 import { kdb } from './db.js';
@@ -13,6 +13,9 @@ export interface Snapshot {
   elements: ElementRecord[];
   threats: ThreatRecord[];
   mitigations: MitigationRecord[];
+  // Phase 3 Milestone 5: the two kinds of record of a threat model that are not on the diagram.
+  assets: AssetRecord[];
+  assumptions: AssumptionRecord[];
 }
 
 export function withSnapshot<T>(read: (trx: Transaction<Database>) => Promise<T>): Promise<T> {
@@ -56,11 +59,21 @@ export async function readSnapshot(trx: Transaction<Database>, threatModelId: st
     .orderBy('mitigations.id')
     .execute();
 
+  const assets = await trx.selectFrom('assets').selectAll().where('threat_model_id', '=', threatModelId).orderBy('created_at').orderBy('id').execute();
+  const holders = await trx
+    .selectFrom('asset_holders')
+    .select(['asset_id', 'element_id'])
+    .where('threat_model_id', '=', threatModelId)
+    .execute();
+  const assumptions = await trx.selectFrom('assumptions').selectAll().where('threat_model_id', '=', threatModelId).orderBy('created_at').orderBy('id').execute();
+
   return {
     model: ThreatModelRecord.parse(model),
     project: { name: project_name },
     elements: ElementRecord.array().parse(elements),
     threats: ThreatRecord.array().parse(threats),
     mitigations: MitigationRecord.array().parse(mitigations),
+    assets: AssetRecord.array().parse(assets.map((asset) => ({ ...asset, holder_ids: holders.filter((row) => row.asset_id === asset.id).map((row) => row.element_id) }))),
+    assumptions: AssumptionRecord.array().parse(assumptions),
   };
 }

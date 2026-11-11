@@ -1,6 +1,6 @@
 {
   "format": "scrylux",
-  "format_version": 1,
+  "format_version": 2,
   "exported_at": "2026-11-08T14:41:25.806Z",
   "project": {
     "name": "Scrylux"
@@ -6487,6 +6487,20 @@
       "stale": null
     },
     {
+      "id": "d49bfe0c-92b3-4e7e-8e6a-c9bee84561ee",
+      "element_id": null,
+      "category": "Tampering",
+      "title": "A client fakes AI provenance, or puts AI-proposed content into the threat model without a person accepting it",
+      "description": "An accepted record is marked as the model's and carries its rationale and citations. A client that could set that mark, or write a record of its own through the decision route, could pass its own text off as the model's, or put AI text into the threat model with no human decision.",
+      "likelihood": "Low",
+      "impact": "Medium",
+      "status": "mitigated",
+      "status_reason": null,
+      "origin": "manual",
+      "library_ref": null,
+      "stale": null
+    },
+    {
       "id": "8fe02174-7391-4f49-b3ae-60dcaec896f2",
       "element_id": null,
       "category": "Tampering",
@@ -6566,6 +6580,20 @@
       "impact": "High",
       "status": "open",
       "status_reason": null,
+      "origin": "manual",
+      "library_ref": null,
+      "stale": null
+    },
+    {
+      "id": "8b552107-8d01-4c8b-8fb2-40c28576d62d",
+      "element_id": null,
+      "category": "Tampering",
+      "title": "A reviewer accepts an AI proposal without reading it",
+      "description": "The review is a person's decision. A reviewer who accepts a proposal without reading its rationale and its quoted passages puts an element, an asset or an assumption into the threat model that the documents may not support.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "accepted",
+      "status_reason": "The review is the control, and it relies on a person: before Accept the page shows each item's rationale, its quoted passages and how it compares with the threat model, and nothing of a draft enters the threat model without that decision (Principle VI). How often proposals are unsupported is measured by the evals of Phase 3 Milestone 7, and a reviewer role arrives with Phase 6; until then the risk is accepted",
       "origin": "manual",
       "library_ref": null,
       "stale": null
@@ -6711,6 +6739,20 @@
       "stale": null
     },
     {
+      "id": "d37fe634-2d1e-46fd-b9d8-eb1c37fa17a3",
+      "element_id": null,
+      "category": "Information Disclosure",
+      "title": "Accepted AI text leaves with the threat model in files and reports",
+      "description": "An accepted record is an ordinary record of the threat model, so the Scrylux file and the reports carry its name, description or statement as they carry what a person typed, and that text may paraphrase a confidential document.",
+      "likelihood": "Medium",
+      "impact": "Low",
+      "status": "accepted",
+      "status_reason": "Carrying what the threat model holds is the purpose of an export and of a report, and a copy that has been downloaded can neither be protected nor taken back, as the model already accepts for reports and exports (Phase 2 Milestones 5 and 6). What an export holds is bounded: no rationale, citation, draft, decision or provenance, and the file is sent no-store with a sandbox policy",
+      "origin": "manual",
+      "library_ref": null,
+      "stale": null
+    },
+    {
       "id": "4f98f909-bbca-437c-9f50-132abb09ce98",
       "element_id": null,
       "category": "Information Disclosure",
@@ -6804,6 +6846,20 @@
       "impact": "High",
       "status": "mitigated",
       "status_reason": null,
+      "origin": "manual",
+      "library_ref": null,
+      "stale": null
+    },
+    {
+      "id": "a49e5351-0ebd-432e-ab7c-749a1efa17ce",
+      "element_id": null,
+      "category": "Elevation of Privilege",
+      "title": "Any signed-in account can accept AI proposals into any threat model and manage its assets and assumptions",
+      "description": "There are no roles, so any signed-in account can accept, reject or return to undecided the items of any threat model's draft, whoever started the extraction, and can create, edit and delete its assets and assumptions. An accepted item is AI text derived from confidential documents.",
+      "likelihood": "Medium",
+      "impact": "Medium",
+      "status": "accepted",
+      "status_reason": "There are no roles before Phase 6 (the open risk of the model as a whole), and any signed-in account can already create, change and delete every element, threat and mitigation, so an accepted item is an ordinary record that account could have typed. What is new is that the content comes from a model, which is why every created record carries provenance that no client can set, and a decision names who made it and when. The widening was called out in Milestone 5's spec (FR-026, FR-027) and is a justified widening in the constitution's Threat Model section",
       "origin": "manual",
       "library_ref": null,
       "stale": null
@@ -9009,6 +9065,20 @@
       "external_ref": null
     },
     {
+      "id": "d6131429-03ed-4cd1-8c1b-eb65bb5c590b",
+      "threat_id": "d49bfe0c-92b3-4e7e-8e6a-c9bee84561ee",
+      "description": "No other route accepts provenance: every body is a strict schema, and an update of an element that changes a flag removes the provenance of that flag and of no other (apps/api/src/v1/element-writes.ts; tests: apps/api/test/review/provenance-read.test.ts, apps/api/test/contract/v1/assets.test.ts)",
+      "status": "verified",
+      "external_ref": null
+    },
+    {
+      "id": "2b8e62d9-2903-4dbf-bec4-78b27a14d7c8",
+      "threat_id": "d49bfe0c-92b3-4e7e-8e6a-c9bee84561ee",
+      "description": "The decision route is the only writer of AI-proposed records and of their provenance, and a request carries item ids, the comparison the page showed and edits, never content: the server builds each record from the stored draft, in one transaction under the threat model's lock (apps/api/src/review/decide.ts; tests: apps/api/test/review/decide.test.ts, refusals.test.ts, concurrency.test.ts, edits.test.ts)",
+      "status": "verified",
+      "external_ref": null
+    },
+    {
       "id": "e17b631f-a89a-4de6-86e4-c0e6d1e9725e",
       "threat_id": "8fe02174-7391-4f49-b3ae-60dcaec896f2",
       "description": "Container memory limits remain the last line, as the documentation says (docs/install.md, Documents and storage)",
@@ -9142,6 +9212,20 @@
       "external_ref": null
     },
     {
+      "id": "86b40a28-33a2-4368-8967-e3f21bf476b4",
+      "threat_id": "8b552107-8d01-4c8b-8fb2-40c28576d62d",
+      "description": "The Draft tab shows, before Accept, each item's rationale, its quoted passages with their sources, how it compares with the threat model and what it needs, and Accept is offered only for items that are open to it (apps/web/src/draft/, apps/web/src/pages/DraftTab.tsx; tests: apps/web/src/pages/DraftTab.test.tsx)",
+      "status": "implemented",
+      "external_ref": null
+    },
+    {
+      "id": "fefaf361-62ce-4599-ac80-eb59863e821a",
+      "threat_id": "8b552107-8d01-4c8b-8fb2-40c28576d62d",
+      "description": "The eval harness measures how often proposals are unsupported or invented (plan.md, Phase 3 Milestone 7), and roles add a reviewer (plan.md, Phase 6)",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
       "id": "3c0a6257-b033-4b6e-aa70-112eb207dc4d",
       "threat_id": "05d7cf21-d306-41f9-9123-e24606a6684d",
       "description": "Every third-party action is pinned to a full commit SHA, which scripts/workflows.test.ts holds for every workflow. The base image and the CI database image are pinned by digest, Dependabot waits 3 days for a new release (cooldown.default-days: 3), and a required step fails the build if pnpm-lock.yaml reverts to the multi-document format; those are held by review (.github/workflows/ci.yml, .github/dependabot.yml, Dockerfile, docs/ci.md).",
@@ -9261,6 +9345,13 @@
       "external_ref": null
     },
     {
+      "id": "f788c2c5-7400-4f44-b5c0-c94ece23cdc0",
+      "threat_id": "d37fe634-2d1e-46fd-b9d8-eb1c37fa17a3",
+      "description": "A Scrylux file and a report hold a record's own fields and no rationale, citation, draft, decision or provenance (apps/api/src/exchange/scrylux-export.ts, apps/api/src/report/; tests: apps/api/test/exchange/scrylux-export.test.ts, apps/api/test/report/markdown.test.ts, html.test.ts)",
+      "status": "verified",
+      "external_ref": null
+    },
+    {
       "id": "9fbdf2fc-17c8-4e1c-a746-fc25e5a9fbb8",
       "threat_id": "4f98f909-bbca-437c-9f50-132abb09ce98",
       "description": "The reader is given no environment variable and no standard stream, and the API's import graph holds none of its code (tests: apps/api/test/extract/read.test.ts, apps/api/test/worker/imports.test.ts)",
@@ -9359,6 +9450,13 @@
       "external_ref": null
     },
     {
+      "id": "377573f0-f7cc-4767-843f-eaa58e63db7f",
+      "threat_id": "a49e5351-0ebd-432e-ab7c-749a1efa17ce",
+      "description": "Roles (viewer, contributor, reviewer, admin) and OIDC or SAML single sign-on (plan.md, Phase 6)",
+      "status": "proposed",
+      "external_ref": null
+    },
+    {
       "id": "8b898533-3a1c-4125-948e-c20963394e9b",
       "threat_id": "6b757ff6-3cf8-49b8-aa7a-df16be2cc166",
       "description": "Roles (viewer, contributor, reviewer, admin) and OIDC or SAML single sign-on (plan.md, Phase 6)",
@@ -9393,5 +9491,7 @@
       "status": "implemented",
       "external_ref": null
     }
-  ]
+  ],
+  "assets": [],
+  "assumptions": []
 }

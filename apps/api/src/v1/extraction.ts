@@ -4,6 +4,7 @@ import { kdb } from '../db.js';
 import { currentExtractionConfig } from '../extract-system/config.js';
 import { discardDraft, readDraft } from '../extract-system/draft.js';
 import { logExtractionAction } from '../extract-system/log.js';
+import { readReview } from '../review/compare.js';
 import { assessStart, type StartContext } from '../extract-system/start.js';
 import { currentJobConfig } from '../jobs/config.js';
 import { ExtractionActiveError, JobLimitError, enqueueExtraction, getJob } from '../jobs/store.js';
@@ -92,7 +93,7 @@ export const extractionOperations: Operation<unknown>[] = [
     operationId: 'getDraft',
     summary: 'The draft of a threat model: what an extraction proposed, with where each item came from',
     description:
-      'Every item carries its rationale and citations. A citation whose source was deleted has no chunk and no quote. The text of every item is AI-generated ' +
+      'Every item carries its rationale and citations, and its review: its state, and how it compares with the threat model now. A citation whose source was deleted has no chunk and no quote. The text of every item is AI-generated ' +
       'or taken from a document, and is shown as text. 404: the threat model has no draft.',
     response: { name: 'DraftRecord', schema: DraftRecord },
     status: 200,
@@ -100,7 +101,7 @@ export const extractionOperations: Operation<unknown>[] = [
     handler: async ({ id }) => {
       const draft = await readDraft(kdb, id);
       if (draft === undefined) throw new HttpError(404, 'This threat model has no draft.');
-      return draft;
+      return { ...draft, review: await readReview(kdb, draft) };
     },
   }),
   defineOperation({

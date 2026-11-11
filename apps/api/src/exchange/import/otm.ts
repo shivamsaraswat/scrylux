@@ -428,6 +428,8 @@ function planAdapted(file: OtmFile): ImportPlan {
         elements,
         threats,
         mitigations,
+        assets: [],
+        assumptions: [],
       },
     ],
     notes,

@@ -9,8 +9,9 @@ demo.
   `GET /api/v1/threat-models/{id}/export?format=scrylux`.
 - **Import** it from a project's page (**Import threat model**), or with
   `POST /api/v1/projects/{id}/imports` (and `…/imports/check` to preview). See [API.md](../../API.md).
-- **Schema**: [`scrylux-file-v1.schema.json`](./scrylux-file-v1.schema.json), JSON Schema 2020-12. It is generated from
-  the same rules the import checks, and a test fails if the committed copy is out of date. Regenerate it with
+- **Schema**: [`scrylux-file-v2.schema.json`](./scrylux-file-v2.schema.json), JSON Schema 2020-12, for the version an export
+  writes. [`scrylux-file-v1.schema.json`](./scrylux-file-v1.schema.json) describes version 1, which is still read. They are generated
+  from the same rules the import checks, and a test fails if a committed copy is out of date. Regenerate them with
   `pnpm --filter @scrylux/api formats`.
 
 ## Example (abridged)
@@ -18,7 +19,7 @@ demo.
 ```json
 {
   "format": "scrylux",
-  "format_version": 1,
+  "format_version": 2,
   "exported_at": "2026-10-10T09:30:00.000Z",
   "project": { "name": "Payments" },
   "threat_model": { "name": "Checkout", "methodology": "STRIDE", "status": "in_review" },
@@ -52,6 +53,12 @@ demo.
   ],
   "mitigations": [
     { "id": "77aa…", "threat_id": "5e1d…", "description": "…", "status": "implemented", "external_ref": "https://…" }
+  ],
+  "assets": [
+    { "id": "c3f1…", "name": "Session tokens", "description": "…", "holder_ids": ["0b9c…"] }
+  ],
+  "assumptions": [
+    { "id": "d4a0…", "statement": "The database is not exposed." }
   ]
 }
 ```
@@ -60,11 +67,13 @@ demo.
 
 | Part | Fields |
 |---|---|
-| Header | `format` (`"scrylux"`), `format_version` (`1`), `exported_at`, and `project.name` (for information) |
+| Header | `format` (`"scrylux"`), `format_version` (`2`), `exported_at`, and `project.name` (for information) |
 | `threat_model` | `name`, `methodology`, `status` (`draft`, `in_review` or `approved`) |
 | `elements[]` | `id`, `type`, `name`, `properties` (`tags`, `flags`), `layout`, `parent_boundary_id`, and for a data flow `source_element_id` and `target_element_id` |
 | `threats[]` | `id`, `element_id` (or `null` for a threat on no element), `category`, `title`, `description`, `likelihood`, `impact`, `status`, `status_reason`, `origin`, `library_ref`, `stale` |
 | `mitigations[]` | `id`, `threat_id`, `description`, `status`, `external_ref` (a ticket link, or `null`) |
+| `assets[]` | `id`, `name`, `description`, `holder_ids` (the file's ids of the elements that hold it) |
+| `assumptions[]` | `id`, `statement` |
 
 - **Every key is always present**, `null` where empty, so a diff shows every change on its own line. The one exception:
   `properties` holds `tags` only when there is at least one, and `flags` only for the flags that were assessed. A flag
@@ -76,7 +85,7 @@ demo.
   so the same file can be imported more than once, and into any install.
 - **Order**: records are written in a fixed order that depends only on what they are (boundaries, external entities,
   processes, data stores, data flows, each by name; threats by element, STRIDE category and title; mitigations by
-  threat and description), never on when they were stored. Two exports of an unchanged threat model differ only in
+  threat and description; assets by name and assumptions by statement, with an asset's holders in the order of the elements), never on when they were stored. Two exports of an unchanged threat model differ only in
   `exported_at`.
 - **Format**: UTF-8 JSON with two-space indentation, `\n` line endings and one final newline.
 
@@ -92,7 +101,10 @@ demo.
   from, and an import brings none back (Phase 3 Milestone 3). Add the documents again to the imported threat model.
 - **Drafts** (what an extraction proposed from the documents): neither its elements, assets and assumptions, nor its rationales,
   citations or quoted passages. A draft is not part of the threat model until a person accepts it, and a file describes the threat
-  model, so an export holds none and an import brings none back (Phase 3 Milestone 4).
+  model, so an export holds none and an import brings none back (Phase 3 Milestone 4). What a person **accepted** is part of the
+  threat model, and is in the file as any record is.
+- **Provenance and decisions** (Phase 3 Milestone 5): where an accepted record came from, its rationale and its citations, and who
+  accepted it. An accepted element, asset or assumption is exported and imported as an ordinary record, with no such mark.
 
 ## What an import checks
 
@@ -105,7 +117,9 @@ type and limits; these rules need more than a schema can say:
   the same file, and no id appears twice;
 - flows connect external entities, processes and data stores, have no parent boundary, and do not start and end at the
   same element; trust boundaries nest without a cycle;
-- a threat model holds at most 1,000 elements;
+- a threat model holds at most 1,000 elements, 200 assets and 200 assumptions;
+- an asset's holders are processes, data stores or external entities of the same file, each named once, and an asset's name and an
+  assumption's statement are unique ignoring case and surrounding whitespace;
 - `status_reason` only on an `accepted` or `not_applicable` threat; `stale` only on a `rule` threat;
 - a `rule` threat has an element and a `library_ref`, and no two `rule` threats share an element and a rule;
 - ticket links are `http` or `https` addresses.
@@ -137,8 +151,9 @@ what the app uses at rest, so a host that will hold models like it needs at leas
 ## Versioning
 
 Any change to this format raises `format_version` and publishes the new schema next to this one. An import reads every
-version listed here and refuses any other, naming both versions (`file.format_version: must be 1; this file is version 2`; the list grows with the versions).
+version listed here and refuses any other, naming the versions it reads (`file.format_version: must be 1 or 2; this file is version 3`; the list grows with the versions).
 
-| Version | Schema |
-|---|---|
-| 1 | [`scrylux-file-v1.schema.json`](./scrylux-file-v1.schema.json) |
+| Version | Schema | What it adds |
+|---|---|---|
+| 1 | [`scrylux-file-v1.schema.json`](./scrylux-file-v1.schema.json) | The first version (Phase 2 Milestone 6) |
+| 2 | [`scrylux-file-v2.schema.json`](./scrylux-file-v2.schema.json) | `assets[]` and `assumptions[]`, always present (Phase 3 Milestone 5). An export writes this version; a version 1 file is read as a threat model with none |

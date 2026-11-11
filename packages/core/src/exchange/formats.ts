@@ -8,14 +8,19 @@ export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 export const IMPORT_FORMATS = ['scrylux', 'otm', 'threat-dragon'] as const;
 export type ImportFormat = (typeof IMPORT_FORMATS)[number];
 
-// Raised with every change to the Scrylux file's shape (contracts/scrylux-file.md, "Versioning").
+// Raised with every change to the Scrylux file's shape (contracts/scrylux-file.md, "Versioning"). Version 1 is the file of Phase 2; it is what the OTM export marks
+// its own objects with, and the OTM export did not change in Phase 3 Milestone 5.
 export const SCRYLUX_FORMAT_VERSION = 1;
+
+// The Scrylux file an export writes now: version 1 and the two lists of Phase 3 Milestone 5, assets and assumptions (FR-023). Version 1 files are still read.
+export const SCRYLUX_FILE_VERSION = 2;
+export const SCRYLUX_FILE_VERSIONS = [1, 2] as const;
 
 // What a file of another version is told: the version this install reads, and the file's own, so a file from a newer
 // Scrylux says what it is. The file's version is repeated only when it is a whole number from 1 to 999: nothing else from a
 // file is ever echoed back.
-export function formatVersionMessage(found: unknown): string {
-  const reads = `must be ${SCRYLUX_FORMAT_VERSION}`;
+export function formatVersionMessage(found: unknown, readable: readonly number[] = [SCRYLUX_FORMAT_VERSION]): string {
+  const reads = `must be ${readable.join(' or ')}`;
   return typeof found === 'number' && Number.isInteger(found) && found >= 1 && found <= 999 ? `${reads}; this file is version ${found}` : reads;
 }
 

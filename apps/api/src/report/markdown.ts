@@ -118,6 +118,30 @@ function diagramBlock(report: Report): Block {
   return ['```mermaid', drawn.text, '```'];
 }
 
+// The assets and the assumptions of the threat model, after its elements (Phase 3 Milestone 5, FR-023): each only when there is something to list. An asset's name is a
+// heading, its description is quoted, and the elements that hold it are named by their reference and name. Every text goes through the escapers, like every other.
+function assetBlocks(report: Report): Block[] {
+  if (report.assets.length === 0) return [];
+  return [
+    ['## Assets'],
+    ...report.assets.flatMap((asset): Block[] => [
+      [`### ${markdownInline(asset.name)}`],
+      quote(asset.description, ''),
+      ...(asset.holders.length === 0 ? [] : [[`- **Held by:** ${asset.holders.map((holder) => `${holder.ref} ${markdownInline(holder.name)}`).join(', ')}`]]),
+    ]),
+  ];
+}
+
+function assumptionBlocks(report: Report): Block[] {
+  if (report.assumptions.length === 0) return [];
+  const items: string[] = [];
+  report.assumptions.forEach((statement, i) => {
+    const marker = `${i + 1}. `;
+    markdownLines(statement).forEach((line, n) => items.push(`${n === 0 ? marker : ' '.repeat(marker.length)}${line}`));
+  });
+  return [['## Assumptions'], items];
+}
+
 export function renderMarkdown(report: Report): string {
   const { header } = report;
   const blocks: Block[] = [
@@ -138,6 +162,7 @@ export function renderMarkdown(report: Report): string {
   if (header.counts.elements === 0) blocks.push(['No elements.']);
   for (const group of report.groups) blocks.push(...groupBlocks(group));
   blocks.push(...groupBlocks(report.outside));
+  blocks.push(...assetBlocks(report), ...assumptionBlocks(report));
   blocks.push(['## Threats not linked to an element'], ...threatsBlocks(report.unlinked, 'None.'));
   return `${blocks.map((block) => block.join('\n')).join('\n\n')}\n`;
 }

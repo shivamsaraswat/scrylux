@@ -28,6 +28,9 @@ const DUPLICATES: Record<string, string> = {
   threat_models_name_key: 'A threat model with this name already exists in this project',
   // Only a batch create can reach this: it is the one write that may choose its own element id.
   elements_pkey: 'An element with this id already exists',
+  // Phase 3 Milestone 5: the same name or statement, ignoring case and surrounding whitespace (FR-021).
+  assets_name_key: 'An asset with this name already exists',
+  assumptions_statement_key: 'This assumption already exists',
 };
 
 // 23503 on a create or update: a reference that does not hold.
@@ -40,6 +43,7 @@ const BAD_REFERENCES: Record<string, string> = {
   elements_threat_model_id_fkey: 'threat_model_id does not match an existing threat model',
   threats_threat_model_id_fkey: 'threat_model_id does not match an existing threat model',
   mitigations_threat_id_fkey: 'threat_id does not match an existing threat',
+  asset_holders_element_fkey: 'holder_ids must refer to elements in the same threat model',
 };
 
 // 23514: a rule on the shape of a record, raised by a CHECK or by one of M3's triggers.
@@ -67,6 +71,9 @@ const BROKEN_RULES: Record<string, string> = {
   // wrong status in the same request; this catches one sent alone to a threat whose stored status takes none.
   threats_status_reason_check: 'status_reason can only be set on a threat that is accepted or not_applicable',
   elements_limit: 'A threat model can hold at most 1,000 elements',
+  assets_limit: 'A threat model can hold at most 200 assets',
+  assumptions_limit: 'A threat model can hold at most 200 assumptions',
+  asset_holders_node: 'A holder must be a process, a data store or an external entity',
 };
 
 const ELEMENT_HAS_THREATS =

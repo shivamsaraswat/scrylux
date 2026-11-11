@@ -45,7 +45,7 @@ It holds no credential, address, personal data or name of a real deployment, com
 
 They live in [`apps/api/test/demo/`](../../apps/api/test/demo/) and run in the required `test` check of every pull request.
 
-**They fail the build** when the file is not what Scrylux writes or does not match the [published schema](../formats/scrylux-file-v1.schema.json); when
+**They fail the build** when the file is not what Scrylux writes or does not match the [published schema](../formats/scrylux-file-v2.schema.json); when
 Scrylux's import refuses it, leaves something out, or it does not export back to the same content; when two records could only be ordered
 by their ids; when the demo lacks something it is meant to show (all five element types, a trust boundary with a flow across it, all six
 STRIDE categories, every status, every mitigation state, three risk levels, both generated and hand-written threats, a reason on every

@@ -60,7 +60,8 @@ describe('flags that an accept set', () => {
     expect(within(notice).getByText('Internet facing: Yes')).toBeTruthy();
     expect(within(notice).getByText('quote for internet_facing')).toBeTruthy();
     expect(within(notice).queryByText(/Requires authentication/)).toBeNull();
-    expect(notice.textContent).not.toContain('Proposed by AI, accepted by ada on 11/10');
+    // The element's own line is a <strong> straight under the notice; a flag's is a muted line inside its list item. The date's format depends on the locale, so no text is compared.
+    expect(notice.querySelector(':scope > p > strong')).toBeNull();
   });
 
   it('shows the record’s own mark and its flags together when both exist', () => {

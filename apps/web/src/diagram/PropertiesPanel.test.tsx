@@ -232,7 +232,8 @@ describe('provenance', () => {
     openWith([marks('internet_facing')]);
     const notice = await screen.findByRole('region', { name: 'Where this came from' });
     expect(within(notice).getByRole('heading', { name: 'Flags set from the documents' })).toBeTruthy();
-    expect(notice.textContent).not.toContain('Proposed by AI, accepted by ada on 11/10');
+    // The element's own line is a <strong> straight under the notice; a flag's is a muted line inside its list item. The date's format depends on the locale, so no text is compared.
+    expect(notice.querySelector(':scope > p > strong')).toBeNull();
   });
 
   it('shows nothing for another element’s mark, or for an element a person drew', async () => {

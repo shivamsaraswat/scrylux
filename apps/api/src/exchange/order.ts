@@ -45,6 +45,11 @@ export function sortThreats<T extends { id: string; element_id: string | null; c
   return { sorted, position: positions(sorted) };
 }
 
+// Assets by name and assumptions by statement, then by id (Phase 3 Milestone 5, contracts/file-format.md).
+export const sortAssets = <T extends { id: string; name: string }>(assets: readonly T[]): T[] => [...assets].sort((a, b) => compareText(a.name, b.name) || compareText(a.id, b.id));
+export const sortAssumptions = <T extends { id: string; statement: string }>(assumptions: readonly T[]): T[] =>
+  [...assumptions].sort((a, b) => compareText(a.statement, b.statement) || compareText(a.id, b.id));
+
 export function sortMitigations<T extends { id: string; threat_id: string; description: string }>(
   mitigations: readonly T[],
   threatPosition: ReadonlyMap<string, number>,

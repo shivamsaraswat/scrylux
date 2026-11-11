@@ -32,7 +32,7 @@ const scryluxFile = (name = 'Checkout') => ({
 });
 
 const summary = (overrides: Record<string, unknown> = {}, notes: unknown[] = []) => ({
-  models: [{ name: 'Checkout', name_issue: null, status: 'in_review', elements: 8, threats: 10, mitigations: 4, ...overrides }],
+  models: [{ name: 'Checkout', name_issue: null, status: 'in_review', elements: 8, threats: 10, mitigations: 4, assets: 2, assumptions: 1, ...overrides }],
   notes,
 });
 
@@ -124,7 +124,8 @@ describe('ImportThreatModel', () => {
       expect(screen.getByText(/Scrylux file/)).toBeTruthy();
       expect(screen.getByLabelText<HTMLInputElement>('Name of threat model 1').value).toBe('Checkout');
       expect(screen.getByText(/in review/)).toBeTruthy();
-      expect(screen.getByText(/8 elements, 10 threats, 4 mitigations/)).toBeTruthy();
+      // Phase 3 Milestone 5: the preview counts the assets and the assumptions of the file too.
+      expect(screen.getByText(/8 elements, 10 threats, 4 mitigations, 2 assets, 1 assumptions/)).toBeTruthy();
       expect(screen.getByText('Everything in this file will be imported.')).toBeTruthy();
       expect(checks(api)).toHaveLength(1);
       expect(checks(api)[0]?.body).toEqual({ format: 'scrylux', file: scryluxFile() });
@@ -185,8 +186,8 @@ describe('ImportThreatModel', () => {
     });
     const twoModels = (first: Record<string, unknown> = {}, second: Record<string, unknown> = {}) => ({
       models: [
-        { name: 'Shop – Web', name_issue: null, status: 'draft', elements: 5, threats: 2, mitigations: 1, ...first },
-        { name: 'Shop – Batch', name_issue: null, status: 'draft', elements: 3, threats: 0, mitigations: 0, ...second },
+        { name: 'Shop – Web', name_issue: null, status: 'draft', elements: 5, threats: 2, mitigations: 1, assets: 0, assumptions: 0, ...first },
+        { name: 'Shop – Batch', name_issue: null, status: 'draft', elements: 3, threats: 0, mitigations: 0, assets: 0, assumptions: 0, ...second },
       ],
       notes: [],
     });

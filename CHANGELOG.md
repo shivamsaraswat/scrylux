@@ -15,7 +15,7 @@ A threat model can now hold the design documents it was built from. Add `.md`, `
 - **Keep embeddings in step.** After you change the embedding model, a document says its embeddings are out of date and **Refresh embeddings** replaces them without changing a chunk. A document never holds the embeddings of two models.
 - **Limits you can see.** A file is at most 10 MB, a threat model holds 20 documents, an account may have 20 waiting or processing, and all documents together may take 2 GB of the database (text and embeddings counted), all settable.
 
-**System extraction: a draft of the system, with where each part came from.** On a threat model's **Draft** tab, **Start extraction** sends its documents to your generation model, which proposes the components, data stores, external entities, data flows, trust boundaries, assets and assumptions they describe. The result is a **draft**, shown as a read-only diagram and a list, and marked on every view as proposed by AI and not part of the threat model. Nothing in it enters the threat model; accepting items into it is the next release.
+**System extraction: a draft of the system, with where each part came from.** On a threat model's **Draft** tab, **Start extraction** sends its documents to your generation model, which proposes the components, data stores, external entities, data flows, trust boundaries, assets and assumptions they describe. The result is a **draft**, shown as a diagram and a list, and marked on every view as proposed by AI and not part of the threat model. Nothing in it enters the threat model until a person accepts it (below).
 
 - **Every item says why, and where from.** Each carries a rationale and the passages it came from, quoted exactly; so does each security flag it proposes. Scrylux checks that every quoted passage is really in the chunk it names, and asks the model again, up to three times, if one is not.
 - **The notice comes first.** The Draft tab says, beside the Start button and on every visit, that the text of your documents is sent to a hosted generation provider, naming it, or that it stays in your install.
@@ -26,6 +26,16 @@ A threat model can now hold the design documents it was built from. Add `.md`, `
 - **Fixed with it:** Gemini refused the draft's answer schema because its lists allowed more than about ten items; its limits are now given to the model in words and checked by Scrylux. A failed extraction's hint named the embedding settings for a generation failure; it now names `LLM_MODEL`.
 - **A fix in the provider layer.** When a model's answer had a field that was not allowed, the note asking it to answer again named the field. That note goes to the model outside the section marked as data, so a document could plant text in it. The note now names only the field's place and the rule.
 
+### Review the draft, and keep assets and assumptions
+
+A draft is no longer read-only. On the **Draft** tab each item shows how it stands against your threat model (new, the same as one record, or the same as several) and can be **accepted**, **edited and accepted**, or **rejected**, one at a time or all together. Nothing enters the threat model until a person accepts it.
+
+- **Assets and assumptions are now records of a threat model.** An accepted asset or assumption becomes a new record, and you can add, edit and delete them yourself on the new **Assets** tab, and through the API (`/threat-models/{id}/assets` and `/assumptions`). A name, and a statement, is unique in a threat model ignoring case and surrounding space; a holder is a process, a data store or an external entity; a threat model holds at most 200 of each.
+- **A match fills only what you have not assessed.** Accepting an element that matches one you already have keeps your record and its flags, and fills in only the security flags you have not set. A flag you set is never changed by an accept.
+- **Where it came from stays.** A record an accept creates carries a mark that a model proposed it, with its rationale and the passages it quoted, kept as positions in the chunks: they are readable after the draft is gone, a passage whose document was deleted says *source deleted*, and no text of a document outlives it. The mark stays through later edits. A flag an accept filled on a record you already had carries its own mark; changing that flag yourself removes it, since the value is then yours. A record you create, or import, carries none, and a client cannot set one.
+- **Safe to do together.** A decision names the draft the reviewer saw and what they saw of each item; if the draft or the threat model changed meanwhile, it is refused with a `409` that says what changed, and nothing is written. A decision carries no text, so a client cannot put content or provenance into a record, and it is bounded to 1,000 items.
+- **The Scrylux file and reports carry both.** A Scrylux file is now version 2 and holds assets and assumptions with their provenance; version 1 files still import. A report gains Assets and Assumptions sections. An OTM export is unchanged, because OTM has no place for them.
+
 ### Upgrading to this release
 
 Read [Upgrading to v0.2](docs/install.md#upgrading-to-v02) first. The short version:
@@ -35,6 +45,7 @@ Read [Upgrading to v0.2](docs/install.md#upgrading-to-v02) first. The short vers
 - A new `storage` volume holds the originals of documents that are still being read (or point `STORAGE_BACKEND=s3` at a bucket of its own; [Storage](docs/install.md#storage) has the IAM policy for each process). Give the worker memory for reading files: 1 GiB for each at the default.
 - Eighteen new environment variables, all optional, are in [Install and run](docs/install.md#environment-variables). The secrets-manager secret may also hold `STORAGE_S3_ACCESS_KEY_ID` and `STORAGE_S3_SECRET_ACCESS_KEY`; both the app and the worker hold them.
 - Exports, imports and reports carry no documents.
+- A database migration (`019_review.sql`) adds the tables of assets, assumptions, review decisions and provenance, and the first process to start applies it. A Scrylux file is now written as version 2; version 1 files still import, but a file written by this release is not read by an earlier one.
 
 ### AI providers and a worker, with no AI feature yet
 

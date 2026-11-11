@@ -153,6 +153,13 @@ export interface DiagramModel {
   viewBox: { x: number; y: number; width: number; height: number } | null;
 }
 
+// An asset as a report lists it (Phase 3 Milestone 5, FR-023): its name and description, and the elements that hold it, each by its reference and name.
+export interface ReportAsset {
+  name: string;
+  description: string;
+  holders: { ref: string; name: string }[];
+}
+
 export interface Report {
   header: ReportHeader;
   summary: ThreatSummary;
@@ -160,6 +167,9 @@ export interface Report {
   groups: BoundaryGroup[];
   outside: BoundaryGroup;
   unlinked: ReportThreat[];
+  // Assets by name and assumptions by statement, by code point. Empty when the threat model has none, and then a report has neither section.
+  assets: ReportAsset[];
+  assumptions: string[];
 }
 
 // ---- ordering ----
@@ -509,5 +519,18 @@ export function buildReport(snapshot: Snapshot, exportedAt: Date): Report {
     groups: topDrafts.map(group),
     outside: group(outsideDraft),
     unlinked: threatsFor(null),
+    assets: [...snapshot.assets]
+      .sort((a, b) => compareCodePoints(a.name, b.name) || compareCodePoints(a.id, b.id))
+      .map((asset) => ({
+        name: asset.name,
+        description: asset.description,
+        holders: asset.holder_ids
+          .flatMap((id) => {
+            const holder = elements.find((candidate) => candidate.id === id);
+            return holder === undefined ? [] : [{ ref: refOf(id), name: holder.name }];
+          })
+          .sort((a, b) => refNumber(a.ref) - refNumber(b.ref)),
+      })),
+    assumptions: snapshot.assumptions.map((assumption) => assumption.statement).sort(compareCodePoints),
   };
 }

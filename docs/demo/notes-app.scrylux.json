@@ -1,6 +1,6 @@
 {
   "format": "scrylux",
-  "format_version": 1,
+  "format_version": 2,
   "exported_at": "2026-10-12T07:08:40.396Z",
   "project": {
     "name": "Scrylux demo (fictional)"
@@ -3249,5 +3249,7 @@
       "status": "proposed",
       "external_ref": null
     }
-  ]
+  ],
+  "assets": [],
+  "assumptions": []
 }

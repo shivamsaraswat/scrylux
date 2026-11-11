@@ -246,7 +246,7 @@ export function ImportThreatModel({ projectId }: { projectId: string }) {
             const counts = result.summary.models[index];
             return (
               <p key={model.id}>
-                {model.name}: {counts?.elements ?? 0} elements, {counts?.threats ?? 0} threats, {counts?.mitigations ?? 0} mitigations.{' '}
+                {model.name}: {counts?.elements ?? 0} elements, {counts?.threats ?? 0} threats, {counts?.mitigations ?? 0} mitigations, {counts?.assets ?? 0} assets, {counts?.assumptions ?? 0} assumptions.{' '}
                 <Link to={`/threat-models/${model.id}`}>Open {model.name}</Link>
               </p>
             );
@@ -290,7 +290,7 @@ export function ImportThreatModel({ projectId }: { projectId: string }) {
                   )}
                 </FormField>
                 <p>
-                  Status {statusLabel(model.status)}: {model.elements} elements, {model.threats} threats, {model.mitigations} mitigations
+                  Status {statusLabel(model.status)}: {model.elements} elements, {model.threats} threats, {model.mitigations} mitigations, {model.assets} assets, {model.assumptions} assumptions
                 </p>
               </div>
             );

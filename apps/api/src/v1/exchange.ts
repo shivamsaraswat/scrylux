@@ -26,7 +26,7 @@ export const exchangeOperations: Operation<unknown>[] = [
     summary: 'Download a threat model as a file',
     description:
       'The whole threat model as one JSON file, lossless: its diagram, threats and mitigations, with every status, reason, origin and stale mark, in a fixed order. ' +
-      '`format` chooses the file: `scrylux` (described by the published schema `docs/formats/scrylux-file-v1.schema.json`) or `otm` (Open Threat Model 0.2.0, with Scrylux\'s own fields in `attributes.scrylux` so Scrylux reads it back without loss). ' +
+      '`format` chooses the file: `scrylux` (version 2, described by the published schema `docs/formats/scrylux-file-v2.schema.json`; a version 1 file, `docs/formats/scrylux-file-v1.schema.json`, is still read) or `otm` (Open Threat Model 0.2.0, with Scrylux\'s own fields in `attributes.scrylux` so Scrylux reads it back without loss). ' +
       'It is sent as an attachment, named after the threat model and the export date, and nothing may keep a copy of it (Cache-Control: no-store). ' +
       'The threat model is read in one snapshot. Two exports of an unchanged threat model differ only in the export time. The file holds no account name, account id or credential.',
     query: { name: 'ExportQuery', schema: ExportQuery },

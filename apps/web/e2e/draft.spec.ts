@@ -4,11 +4,13 @@ import { createServer, type Server } from 'node:https';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { apiToken, expect, seedModel, signInAsNewAccount, test } from './fixtures.js';
+import { apiRequest, apiToken, expect, seedModel, signInAsNewAccount, test } from './fixtures.js';
 
 // Proposing a system from documents, end to end in the built app (Phase 3 Milestone 4, SC-010): a document is added and becomes
 // ready; the notice that text leaves the install is on screen before the control that starts the extraction; the draft appears as a
 // diagram and a list; an item can be selected, its citation opened in its source at the right chunk; and the draft can be discarded.
+// The second test is the review of Phase 3 Milestone 5 (SC-007, SC-008): items are chosen and accepted into the threat model, one is rejected and brought back
+// and accepted with a change, and what was accepted is in the threat model, in its Scrylux file, and shown with where it came from.
 // It starts its own app, worker and stand-in provider on ports of their own, so that every other spec still runs with no provider
 // and no worker. The provider is declared hosted (an https address), so the notice has something to say; the worker trusts the
 // stand-in's own certificate and nothing else.
@@ -75,7 +77,16 @@ const ANSWER = {
       citations: [cite('The API stores threats')],
     },
   ],
-  assets: [],
+  assets: [
+    {
+      ref: 'threat_records',
+      name: 'Threat records',
+      description: 'The threats the application stores.',
+      held_by: ['db'],
+      rationale: 'The database holds them.',
+      citations: [cite('stores threats in a PostgreSQL database')],
+    },
+  ],
   assumptions: [
     {
       ref: 'private_db',
@@ -251,4 +262,65 @@ test('proposes a system from a document, shows it with its citations, and discar
   await page.getByRole('dialog').getByRole('button', { name: 'Discard' }).click();
   await expect(page.getByRole('region', { name: 'Draft items' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Start extraction' })).toBeVisible();
+});
+
+test('reviews the draft: accepts a selection into the threat model, rejects and edits, and shows where the records came from', async ({ page }) => {
+  await signInAsNewAccount(page, APP);
+  const token = await apiToken(APP);
+  const { modelId } = await seedModel(APP, token, 'review');
+
+  await page.goto(`/threat-models/${modelId}/sources`);
+  await page.getByLabel(/Files/).setInputFiles({ name: 'design.md', mimeType: 'text/markdown', buffer: Buffer.from(DOCUMENT) });
+  await page.getByRole('button', { name: 'Upload' }).click();
+  const row = page.getByRole('row').filter({ has: page.getByText('design.md', { exact: true }) });
+  await expect(row.getByText(/^Ready: 1 chunk/)).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('link', { name: 'Draft', exact: true }).click();
+  await page.getByRole('button', { name: 'Start extraction' }).click();
+  const list = page.getByRole('region', { name: 'Draft items' });
+  await expect(list).toBeVisible({ timeout: 60_000 });
+  const toolbar = page.getByRole('toolbar', { name: 'Review' });
+
+  // A flow cannot be accepted without its ends, and the page says what it needs; chosen with them, it can.
+  await list.getByRole('checkbox', { name: 'Select Data flow: Threat data' }).check();
+  await expect(toolbar.getByRole('button', { name: 'Accept' })).toBeDisabled();
+  await expect(toolbar).toContainText('Needs API in the model first');
+  for (const name of ['Process: API', 'Data store: Database', 'Trust boundary: Private network', 'Asset: Threat records']) await list.getByRole('checkbox', { name: `Select ${name}` }).check();
+  await toolbar.getByRole('button', { name: 'Accept' }).click();
+  await expect(page.getByRole('status', { name: 'Result of the last decision' })).toContainText('Created 5 records');
+
+  // What was accepted is in the threat model, as ordinary elements and an asset, and nothing else is.
+  const elements = (await apiRequest(APP, token, 'GET', `/api/v1/threat-models/${modelId}/elements`)).body as { name: string }[];
+  expect(elements.map((element) => element.name).sort()).toEqual(['API', 'Database', 'Private network', 'Threat data']);
+  const assets = (await apiRequest(APP, token, 'GET', `/api/v1/threat-models/${modelId}/assets`)).body as { name: string; holder_ids: string[] }[];
+  expect(assets).toMatchObject([{ name: 'Threat records' }]);
+  expect(assets[0]?.holder_ids).toHaveLength(1);
+
+  // The assumption is rejected, shown dimmed, brought back, and accepted with a change.
+  await list.getByRole('checkbox', { name: /^Select Assumption: / }).check();
+  await toolbar.getByRole('button', { name: 'Reject' }).click();
+  await expect(list.locator('li', { hasText: 'The database is reachable only from the API.' })).toContainText('Rejected');
+  await list.getByRole('checkbox', { name: /^Select Assumption: / }).check();
+  await toolbar.getByRole('button', { name: 'Return to undecided' }).click();
+  await list.getByRole('button', { name: /The database is reachable only from the API\./ }).click();
+  await page.getByRole('button', { name: 'Accept…' }).click();
+  const form = page.getByRole('form', { name: 'Accept with changes' });
+  await form.getByLabel('Statement').fill('The database is reachable only from the API, over the private network.');
+  await form.getByRole('button', { name: 'Accept' }).click();
+  await expect(form).toHaveCount(0);
+
+  // The Assets tab shows both records, each with where it came from; the draft is not needed for that.
+  await page.getByRole('link', { name: 'Assets and assumptions' }).click();
+  await expect(page.getByRole('region', { name: 'Assets' })).toContainText('Threat records');
+  await expect(page.getByRole('region', { name: 'Assumptions' })).toContainText('The database is reachable only from the API, over the private network.');
+  await expect(page.getByRole('region', { name: 'Where this came from' }).first()).toContainText('Proposed by AI, accepted by');
+  await apiRequest(APP, token, 'DELETE', `/api/v1/threat-models/${modelId}/draft`);
+  await page.reload();
+  await expect(page.getByRole('region', { name: 'Where this came from' }).first()).toContainText('Proposed by AI, accepted by');
+
+  // The Scrylux file holds the accepted records, and nothing of the draft or of where they came from.
+  const file = await (await fetch(`${APP}/api/v1/threat-models/${modelId}/export?format=scrylux`, { headers: { Authorization: `Bearer ${token}` } })).text();
+  expect(file).toContain('"format_version": 2');
+  expect(file).toContain('Threat records');
+  expect(file).toContain('over the private network');
+  for (const absent of ['rationale', 'provenance', 'accepted_by', 'The database holds them.']) expect(file).not.toContain(absent);
 });

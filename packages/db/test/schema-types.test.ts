@@ -165,16 +165,41 @@ const COLUMNS = {
     source_item_id: true,
     target_item_id: true,
     flags: true,
+    decision: true,
+    decided_by: true,
+    decided_at: true,
+    outcome: true,
+    element_id: true,
+    asset_id: true,
+    assumption_id: true,
   },
   draft_asset_holders: { asset_id: true, element_id: true },
   draft_citations: { id: true, item_id: true, flag: true, position: true, chunk_id: true, quote_start: true, quote_end: true },
+  assets: { id: true, threat_model_id: true, name: true, description: true, created_at: true, updated_at: true },
+  asset_holders: { threat_model_id: true, asset_id: true, element_id: true },
+  assumptions: { id: true, threat_model_id: true, statement: true, created_at: true, updated_at: true },
+  provenance: {
+    id: true,
+    threat_model_id: true,
+    element_id: true,
+    asset_id: true,
+    assumption_id: true,
+    flag: true,
+    rationale: true,
+    accepted_by: true,
+    accepted_at: true,
+  },
+  provenance_citations: { provenance_id: true, position: true, chunk_id: true, quote_start: true, quote_end: true },
 } satisfies { [T in keyof Database]: Record<keyof Database[T], true> };
 
 afterAll(closePool);
 
 describe('the Kysely table types match the database (research #1)', () => {
-  it('describes exactly the five domain tables, the three job tables, the two source tables and the six draft tables', () => {
+  it('describes exactly the five domain tables, the three job tables, the two source tables, the six draft tables and the five tables of Milestone 5', () => {
     expect(Object.keys(COLUMNS).sort()).toEqual([
+      'asset_holders',
+      'assets',
+      'assumptions',
       'chunks',
       'draft_asset_holders',
       'draft_citations',
@@ -187,6 +212,8 @@ describe('the Kysely table types match the database (research #1)', () => {
       'jobs',
       'mitigations',
       'projects',
+      'provenance',
+      'provenance_citations',
       'sources',
       'threat_models',
       'threats',

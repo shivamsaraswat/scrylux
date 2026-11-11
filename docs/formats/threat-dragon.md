@@ -112,3 +112,5 @@ These are ignored **without** a note, because they are presentation data or the 
 
 Every one of Threat Dragon's own demo models imports; the CIA and LINDDUN demos import their diagrams and list their
 threats.
+
+An import creates no asset, no assumption and no draft (Phase 3 Milestone 5): Threat Dragon has no such records, and a person adds them in Scrylux, or accepts them from a draft.

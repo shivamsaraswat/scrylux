@@ -7,8 +7,13 @@ import {
   MODEL_ID,
   SOURCE_ID,
   SOURCE_ID_2,
+  DRAFT_ASSET_ID,
+  DRAFT_ASSUMPTION_ID,
+  DRAFT_BOUNDARY_ID,
+  DRAFT_DB_ID,
   draftRecord,
   extractionStatus,
+  itemReview,
   installFakeApi,
   job,
   jobsStatus,
@@ -73,7 +78,7 @@ describe('the tab', () => {
     open();
     const nav = await screen.findByRole('navigation', { name: 'Threat model views' });
     const links = within(nav).getAllByRole('link').map((a) => a.textContent);
-    expect(links).toEqual(['Diagram', 'Threats', 'Sources', 'Draft']);
+    expect(links).toEqual(['Diagram', 'Assets and assumptions', 'Threats', 'Sources', 'Draft']);
     expect(within(nav).getByRole('link', { name: 'Draft' }).getAttribute('href')).toBe(TAB);
   });
 });
@@ -366,3 +371,316 @@ describe('discarding the draft (FR-055)', () => {
     expect(screen.getByRole('region', { name: 'Draft items' })).toBeTruthy();
   });
 });
+
+describe('the review of the draft (Phase 3 Milestone 5, US1; FR-001 to FR-004)', () => {
+  const decided = { decided_by: { id: 7, username: 'ada' }, decided_at: '2026-11-10T09:00:00.000Z' };
+  const reviewed = () =>
+    draftRecord({
+      review: {
+        ...draftRecord().review,
+        [DRAFT_API_ID]: itemReview({ comparison: 'matched', matched_id: 'dddddddd-0000-4000-8000-000000000001', differences: { flags: [{ flag: 'internet_facing', proposed: true, current: null }], boundary: true, endpoints: false, holders_missing: 0 } }),
+        [DRAFT_DB_ID]: itemReview({ state: 'rejected', ...decided, comparison: 'new', needs: [] }),
+        [DRAFT_BOUNDARY_ID]: itemReview({ comparison: 'several' }),
+        [DRAFT_ASSET_ID]: itemReview({ state: 'accepted', outcome: 'created', ...decided, comparison: null, needs: null }),
+        [DRAFT_ASSUMPTION_ID]: itemReview({ state: 'accepted', outcome: 'matched', ...decided, comparison: null, needs: null }),
+      },
+    });
+
+  it('shows each item’s state, or how it compares with the threat model, beside it in the list', async () => {
+    open({ draft: reviewed() });
+    const list = await screen.findByRole('region', { name: 'Draft items' });
+    // The flow and the asset are both called Threat data: the flow is listed first.
+    const row = (name: RegExp, at = 0) => within(list).getAllByRole('button', { name })[at]?.closest('li') as HTMLElement;
+    expect(row(/^API$/).textContent).toContain('Already in the model');
+    expect(row(/^Database$/).textContent).toContain('Rejected');
+    expect(row(/^Private network$/).textContent).toContain('Several in the model');
+    expect(row(/^Threat data$/, 1).textContent).toContain('Accepted');
+    expect(row(/The network keeps outsiders/).textContent).toContain('Accepted');
+    expect(row(/^Threat data$/, 1).textContent).not.toContain('New');
+    expect(row(/^Threat data$/, 0).textContent).toContain('New');
+  });
+
+  it('says in the panel who decided an item and when, and how an undecided item compares', async () => {
+    const user = userEvent.setup();
+    open({ draft: reviewed() });
+    const list = await screen.findByRole('region', { name: 'Draft items' });
+    await user.click(within(list).getByRole('button', { name: /^Database$/ }));
+    const panel = screen.getByRole('region', { name: 'Selected item' });
+    expect(panel.textContent).toMatch(/Rejected by ada on /);
+    await user.click(within(list).getByRole('button', { name: /^API$/ }));
+    expect(panel.textContent).toContain('Already in the model');
+  });
+
+  it('lists what differs from a matched element: a flag not yet assessed, and a boundary', async () => {
+    const user = userEvent.setup();
+    open({ draft: reviewed() });
+    await user.click(within(await screen.findByRole('region', { name: 'Draft items' })).getByRole('button', { name: /^API$/ }));
+    const differences = within(screen.getByRole('region', { name: 'Selected item' })).getByRole('list', { name: 'Differences' });
+    expect(differences.textContent).toContain('Internet facing: proposed Yes, not assessed');
+    expect(differences.textContent).toContain('Boundary differs');
+  });
+
+  it('says what a flow needs before it can be accepted, naming the draft items', async () => {
+    const user = userEvent.setup();
+    open({ draft: draftRecord() });
+    await user.click(within(await screen.findByRole('region', { name: 'Draft items' })).getAllByRole('button', { name: /^Threat data$/ })[0] as HTMLElement);
+    const panel = screen.getByRole('region', { name: 'Selected item' });
+    expect(panel.textContent).toContain('Needs API in the model first');
+    expect(panel.textContent).toContain('Needs Database in the model first');
+  });
+
+  it('keeps the warnings of Milestone 4 beside a draft whose sources changed', async () => {
+    open({ draft: draftRecord({ sources_changed: true, sources_deleted: 1 }) });
+    expect(await screen.findByText('The sources have changed since this draft was made.')).toBeTruthy();
+    expect(screen.getByText(/1 source that the draft read has been deleted\./)).toBeTruthy();
+  });
+
+  it('renders the name of an item as text, never as markup, in the list and the panel', async () => {
+    const user = userEvent.setup();
+    const draft = reviewed();
+    (draft.elements[0] as { name: string }).name = '<img src=x onerror=alert(1)>';
+    open({ draft });
+    const list = await screen.findByRole('region', { name: 'Draft items' });
+    await user.click(within(list).getByRole('button', { name: /<img src=x/ }));
+    expect(document.querySelector('img')).toBeNull();
+  });
+});
+
+describe('deciding the items of the draft (Phase 3 Milestone 5, US2; FR-007, FR-009, FR-016, FR-025)', () => {
+  const DECISIONS = `/api/v1/threat-models/${MODEL_ID}/draft/decisions`;
+  const decided = { decided_by: { id: 7, username: 'ada' }, decided_at: '2026-11-10T09:00:00.000Z' };
+
+  /** The draft as the API answers once the four elements are accepted. */
+  const afterAccept = (unlinked: unknown[] = []) => ({
+    draft: draftRecord({
+      review: {
+        ...draftRecord().review,
+        [DRAFT_API_ID]: itemReview({ state: 'accepted', outcome: 'created', ...decided, comparison: null, needs: null }),
+      },
+    }),
+    created: 4,
+    changed: 0,
+    unlinked_holders: unlinked,
+  });
+
+  const toolbar = () => screen.getByRole('toolbar', { name: 'Review' });
+  const pick = async (user: ReturnType<typeof userEvent.setup>, ...names: string[]) => {
+    const list = await screen.findByRole('region', { name: 'Draft items' });
+    for (const name of names) await user.click(within(list).getByRole('checkbox', { name: `Select ${name}` }));
+  };
+
+  it('enables Accept only when every selected item is open to it and what the elements need is selected too, saying what is missing', async () => {
+    const user = userEvent.setup();
+    open({ draft: draftRecord() });
+    await pick(user, 'Data flow: Threat data');
+    expect(within(toolbar()).getByRole('button', { name: 'Accept' }).hasAttribute('disabled')).toBe(true);
+    expect(toolbar().textContent).toContain('Needs API in the model first');
+    expect(toolbar().textContent).toContain('Needs Database in the model first');
+    await pick(user, 'Process: API', 'Data store: Database');
+    expect(toolbar().textContent).toContain('Needs Private network in the model first');
+    expect(within(toolbar()).getByRole('button', { name: 'Accept' }).hasAttribute('disabled')).toBe(true);
+    await pick(user, 'Trust boundary: Private network');
+    expect(within(toolbar()).getByRole('button', { name: 'Accept' }).hasAttribute('disabled')).toBe(false);
+    expect(toolbar().textContent).toContain('4 selected');
+  });
+
+  it('sends the draft’s id and, for each selected item, its id and the comparison the page showed, and nothing else', async () => {
+    const user = userEvent.setup();
+    const { api } = open({ draft: draftRecord(), extra: { [`POST ${DECISIONS}`]: () => json(200, afterAccept()) } });
+    await pick(user, 'Process: API', 'Trust boundary: Private network');
+    await user.click(within(toolbar()).getByRole('button', { name: 'Accept' }));
+    await waitFor(() => expect(api.callsTo('POST', DECISIONS)).toHaveLength(1));
+    expect(api.callsTo('POST', DECISIONS)[0]?.body).toEqual({
+      action: 'accept',
+      draft_id: draftRecord().id,
+      items: [
+        { id: DRAFT_API_ID, seen: 'new' },
+        { id: DRAFT_BOUNDARY_ID, seen: 'new' },
+      ],
+    });
+  });
+
+  it('says how many records were created and changed, and names the holders that were left unlinked', async () => {
+    const user = userEvent.setup();
+    open({ draft: draftRecord(), extra: { [`POST ${DECISIONS}`]: () => json(200, afterAccept([{ asset_item_id: DRAFT_ASSET_ID, element_item_id: DRAFT_DB_ID }])) } });
+    await pick(user, 'Process: API');
+    await user.click(within(toolbar()).getByRole('button', { name: 'Accept' }));
+    const status = await screen.findByRole('status', { name: 'Result of the last decision' });
+    expect(status.textContent).toContain('Created 4 records and changed 0.');
+    expect(status.textContent).toContain('Held by Database was not linked: it is not in the threat model.');
+  });
+
+  it('shows the refusal’s message and reads the draft again', async () => {
+    const user = userEvent.setup();
+    let reads = 0;
+    open({
+      draft: draftRecord(),
+      extra: {
+        'GET /api/v1/threat-models/:id/draft': () => {
+          reads += 1;
+          return json(200, draftRecord());
+        },
+        [`POST ${DECISIONS}`]: () => json(409, { error: 'This draft was replaced or discarded' }),
+      },
+    });
+    await pick(user, 'Process: API');
+    const before = reads;
+    await user.click(within(toolbar()).getByRole('button', { name: 'Accept' }));
+    expect((await screen.findByRole('alert', { name: 'Decision refused' })).textContent).toContain('This draft was replaced or discarded');
+    await waitFor(() => expect(reads).toBeGreaterThan(before));
+  });
+
+  it('does not offer Accept for an item that is already accepted, and says so', async () => {
+    const user = userEvent.setup();
+    open({ draft: afterAccept().draft });
+    await pick(user, 'Process: API');
+    expect(within(toolbar()).getByRole('button', { name: 'Accept' }).hasAttribute('disabled')).toBe(true);
+    expect(toolbar().textContent).toContain('Already accepted');
+  });
+
+  it('shows the warning of a draft whose sources changed and a deleted source’s citation, and still offers Accept (FR-005)', async () => {
+    const user = userEvent.setup();
+    const draft = draftRecord({ sources_changed: true, sources_deleted: 1 });
+    (draft.elements[0] as { citations: unknown[] }).citations = [{ chunk: null, quote: null }];
+    open({ draft });
+    expect(await screen.findByText('The sources have changed since this draft was made.')).toBeTruthy();
+    await pick(user, 'Process: API');
+    expect(within(toolbar()).getByRole('button', { name: 'Accept' }).hasAttribute('disabled')).toBe(false);
+  });
+
+  it('says, before a new extraction, that it replaces the draft and its decisions and that accepted records stay', async () => {
+    open({ draft: afterAccept().draft });
+    expect(await screen.findByText('A new extraction replaces this draft and the decisions on it. Records you accepted stay in the threat model.')).toBeTruthy();
+  });
+
+  it('keeps the earlier wording when no decision has been made', async () => {
+    open({ draft: draftRecord() });
+    expect(await screen.findByText('When it succeeds, the new draft replaces the draft below.')).toBeTruthy();
+  });
+
+  it('accepts one item with changes from its panel, sending only the edits', async () => {
+    const user = userEvent.setup();
+    const { api } = open({
+      draft: draftRecord(),
+      extra: { [`POST ${DECISIONS}`]: () => json(200, afterAccept()) },
+    });
+    const list = await screen.findByRole('region', { name: 'Draft items' });
+    await user.click(within(list).getByRole('button', { name: /^Database$/ }));
+    await user.click(screen.getByRole('button', { name: 'Accept…' }));
+    const form = screen.getByRole('form', { name: 'Accept with changes' });
+    await user.clear(within(form).getByLabelText('Name'));
+    await user.type(within(form).getByLabelText('Name'), 'Threat database');
+    await user.selectOptions(within(form).getByLabelText('Boundary'), '');
+    await user.click(within(form).getByRole('button', { name: 'Accept' }));
+    await waitFor(() => expect(api.callsTo('POST', DECISIONS)).toHaveLength(1));
+    expect(api.callsTo('POST', DECISIONS)[0]?.body).toEqual({
+      action: 'accept',
+      draft_id: draftRecord().id,
+      items: [{ id: DRAFT_DB_ID, seen: 'new', edits: { name: 'Threat database', boundary: null } }],
+    });
+    await waitFor(() => expect(screen.queryByRole('form', { name: 'Accept with changes' })).toBeNull());
+  });
+
+  it('does not offer to accept with changes an item that is already in the model or already accepted', async () => {
+    const user = userEvent.setup();
+    const matched = draftRecord({ review: { ...draftRecord().review, [DRAFT_API_ID]: itemReview({ comparison: 'matched', matched_id: 'dddddddd-0000-4000-8000-000000000001' }) } });
+    open({ draft: matched });
+    const list = await screen.findByRole('region', { name: 'Draft items' });
+    await user.click(within(list).getByRole('button', { name: /^API$/ }));
+    expect(screen.queryByRole('button', { name: 'Accept…' })).toBeNull();
+  });
+
+  it('rejects the chosen items and returns rejected ones to undecided, with the buttons enabled only where they apply', async () => {
+    const user = userEvent.setup();
+    const rejectedDraft = draftRecord({ review: { ...draftRecord().review, [DRAFT_DB_ID]: itemReview({ state: 'rejected', ...decided, comparison: 'new', needs: [] }) } });
+    const { api } = open({ draft: draftRecord(), extra: { [`POST ${DECISIONS}`]: () => json(200, { ...afterAccept(), created: 0, draft: rejectedDraft }) } });
+    await pick(user, 'Process: API');
+    expect(within(toolbar()).getByRole('button', { name: 'Reject' }).hasAttribute('disabled')).toBe(false);
+    expect(within(toolbar()).getByRole('button', { name: 'Return to undecided' }).hasAttribute('disabled')).toBe(true);
+    await user.click(within(toolbar()).getByRole('button', { name: 'Reject' }));
+    await waitFor(() => expect(api.callsTo('POST', DECISIONS)).toHaveLength(1));
+    expect(api.callsTo('POST', DECISIONS)[0]?.body).toEqual({ action: 'reject', draft_id: draftRecord().id, items: [{ id: DRAFT_API_ID }] });
+  });
+
+  it('shows a rejected item dimmed and still selectable, and offers to return it', async () => {
+    const user = userEvent.setup();
+    const rejectedDraft = draftRecord({ review: { ...draftRecord().review, [DRAFT_DB_ID]: itemReview({ state: 'rejected', ...decided, comparison: 'new', needs: [] }) } });
+    const { api } = open({ draft: rejectedDraft, extra: { [`POST ${DECISIONS}`]: () => json(200, { ...afterAccept(), created: 0 }) } });
+    const list = await screen.findByRole('region', { name: 'Draft items' });
+    const row = within(list).getByRole('button', { name: /^Database$/ }).closest('li') as HTMLElement;
+    expect(row.className).toContain('draft-row--rejected');
+    await user.click(within(list).getByRole('checkbox', { name: 'Select Data store: Database' }));
+    expect(within(toolbar()).getByRole('button', { name: 'Reject' }).hasAttribute('disabled')).toBe(true);
+    await user.click(within(toolbar()).getByRole('button', { name: 'Return to undecided' }));
+    await waitFor(() => expect(api.callsTo('POST', DECISIONS)).toHaveLength(1));
+    expect(api.callsTo('POST', DECISIONS)[0]?.body).toEqual({ action: 'undecide', draft_id: draftRecord().id, items: [{ id: DRAFT_DB_ID }] });
+  });
+
+  it('reads the draft again when a reject is refused', async () => {
+    const user = userEvent.setup();
+    let reads = 0;
+    open({
+      draft: draftRecord(),
+      extra: {
+        'GET /api/v1/threat-models/:id/draft': () => {
+          reads += 1;
+          return json(200, draftRecord());
+        },
+        [`POST ${DECISIONS}`]: () => json(409, { error: '1 of the items were already decided' }),
+      },
+    });
+    await pick(user, 'Process: API');
+    const before = reads;
+    await user.click(within(toolbar()).getByRole('button', { name: 'Reject' }));
+    expect((await screen.findByRole('alert', { name: 'Decision refused' })).textContent).toContain('already decided');
+    await waitFor(() => expect(reads).toBeGreaterThan(before));
+  });
+});
+
+// FR-025 and contracts/ui.md item 4 (T078): the whole review works from the keyboard. Every control is a native checkbox or button, so
+// each of these steps uses only the keyboard: no pointer event reaches the page after it opens.
+describe('reviewing the draft by keyboard (Phase 3 Milestone 5, FR-025)', () => {
+  const DECISIONS = `/api/v1/threat-models/${MODEL_ID}/draft/decisions`;
+  const toolbar = () => screen.getByRole('toolbar', { name: 'Review' });
+  const check = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+    const box = within(await screen.findByRole('region', { name: 'Draft items' })).getByRole('checkbox', { name: `Select ${name}` });
+    box.focus();
+    await user.keyboard(' ');
+    expect((box as HTMLInputElement).checked).toBe(true);
+  };
+
+  it('chooses items with the space bar and accepts them with Enter', async () => {
+    const user = userEvent.setup();
+    const { api } = open({ draft: draftRecord(), extra: { [`POST ${DECISIONS}`]: () => json(200, { draft: draftRecord(), created: 2, changed: 0, unlinked_holders: [] }) } });
+    await check(user, 'Process: API');
+    await check(user, 'Trust boundary: Private network');
+    expect(toolbar().textContent).toContain('2 selected');
+    within(toolbar()).getByRole('button', { name: 'Accept' }).focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(api.callsTo('POST', DECISIONS)).toHaveLength(1));
+    expect((api.callsTo('POST', DECISIONS)[0]?.body as { items: unknown[] }).items).toHaveLength(2);
+  });
+
+  it('rejects the chosen items with Enter', async () => {
+    const user = userEvent.setup();
+    const { api } = open({ draft: draftRecord(), extra: { [`POST ${DECISIONS}`]: () => json(200, { draft: draftRecord(), created: 0, changed: 0, unlinked_holders: [] }) } });
+    await check(user, 'Process: API');
+    within(toolbar()).getByRole('button', { name: 'Reject' }).focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(api.callsTo('POST', DECISIONS)).toHaveLength(1));
+    expect((api.callsTo('POST', DECISIONS)[0]?.body as { action: string }).action).toBe('reject');
+  });
+
+  it('selects an item with Enter on its name and opens Accept… with Enter', async () => {
+    const user = userEvent.setup();
+    open({ draft: draftRecord() });
+    const list = await screen.findByRole('region', { name: 'Draft items' });
+    within(list).getByRole('button', { name: 'API' }).focus();
+    await user.keyboard('{Enter}');
+    const panel = screen.getByRole('region', { name: 'Selected item' });
+    within(panel).getByRole('button', { name: 'Accept…' }).focus();
+    await user.keyboard('{Enter}');
+    expect(await screen.findByRole('form', { name: 'Accept with changes' })).toBeTruthy();
+  });
+});
+

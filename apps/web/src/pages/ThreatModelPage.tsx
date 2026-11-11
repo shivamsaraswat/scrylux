@@ -134,6 +134,7 @@ function ThreatModelView({ id }: { id: string }) {
       )}
       <nav aria-label="Threat model views" className="tabs">
         <NavLink to={`/threat-models/${id}/diagram`}>Diagram</NavLink>
+        <NavLink to={`/threat-models/${id}/assets`}>Assets and assumptions</NavLink>
         <NavLink to={`/threat-models/${id}`} end>
           Threats
         </NavLink>

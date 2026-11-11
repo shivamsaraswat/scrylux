@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { OtmFile, ScryluxFileV1 } from '@scrylux/core';
+import { OtmFile, ScryluxFileV2 } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { buildOtmFile } from '../../src/exchange/otm-export.js';
 import { parseFile } from '../../src/exchange/import/parse.js';
@@ -37,7 +37,7 @@ const stripPaths = (value: ImportPlan): unknown =>
 describe('an OTM file written by Scrylux (strict)', () => {
   it('plans exactly what the same model’s Scrylux file plans, with no notes', () => {
     const viaOtm = plan(scryluxOtm());
-    const viaScrylux = planScrylux(ScryluxFileV1.parse(buildScryluxFile(snapshotOf(us1Model()), at)));
+    const viaScrylux = planScrylux(ScryluxFileV2.parse(buildScryluxFile(snapshotOf(us1Model()), at)));
     expect(viaOtm.notes).toEqual([]);
     expect(stripPaths(viaOtm)).toEqual(stripPaths(viaScrylux));
   });

@@ -106,8 +106,9 @@ describe('rejecting invalid requests (FR-005, FR-006, FR-007, FR-009, FR-010, FR
   it('covers every resource operation', () => {
     // 32 operations on the five records, the 5 job operations of Phase 3 Milestone 2, which jobs.test.ts covers, and the 8 source
     // operations of Milestone 3, which sources.test.ts and its siblings cover, and the 4 extraction and draft operations of
-    // Milestone 4, which extraction.test.ts and draft.test.ts cover.
-    expect(resourceOperations).toHaveLength(49);
+    // Milestone 4, which extraction.test.ts and draft.test.ts cover, and the operations of Phase 3 Milestone 5, which review.test.ts and its
+    // siblings cover.
+    expect(resourceOperations).toHaveLength(59);
   });
 
   describe('path ids', () => {
@@ -139,7 +140,9 @@ describe('rejecting invalid requests (FR-005, FR-006, FR-007, FR-009, FR-010, FR
       // The source operations take a file or a body of their own: their 404s are checked in sources*.test.ts.
       const sourceOperations = ['listSources', 'uploadSource', 'pasteSource', 'getSource', 'listChunks', 'retrySource', 'refreshSource', 'deleteSource'];
       // The extraction and draft operations (Phase 3 Milestone 4) answer 404 for a threat model that does not exist; extraction.test.ts and draft.test.ts check it.
-      const extractionOperations = ['getExtraction', 'startExtraction', 'getDraft', 'discardDraft'];
+      // So does the decision route of Milestone 5, which needs a body of its own: review.test.ts checks it, and the eight operations on assets and assumptions
+      // (assets.test.ts and assumptions.test.ts).
+      const extractionOperations = ['getExtraction', 'startExtraction', 'getDraft', 'discardDraft', 'decideDraft', 'listAssets', 'createAsset', 'updateAsset', 'deleteAsset', 'listAssumptions', 'createAssumption', 'updateAssumption', 'deleteAssumption', 'listProvenance'];
       const records = resourceOperations.filter((o) => o.path.includes(':id') && o.operationId !== 'batchElements' && !sourceOperations.includes(o.operationId) && !extractionOperations.includes(o.operationId) && keys.includes(resourceOf(o.path)));
       // A job and a source are not one of the five records: their 404s are checked in jobs.test.ts and sources*.test.ts.
       expect(

@@ -62,6 +62,27 @@ describe('the report snapshot', () => {
     expect(after?.mitigations).toEqual([]);
   });
 
+  // Phase 3 Milestone 5 (FR-023): the assets, with the elements that hold them, and the assumptions are read in the same transaction.
+  it('reads the assets with their holders and the assumptions, only the threat model’s own, in the same snapshot', async () => {
+    const mine = await seedChain(c);
+    const asset = (await c.post<{ id: string }>(`/threat-models/${mine.model.id}/assets`, { name: 'Tokens', description: 'd', holder_ids: [mine.nodeA.id, mine.nodeB.id] })).body;
+    const assumption = (await c.post<{ id: string }>(`/threat-models/${mine.model.id}/assumptions`, { statement: 'Nothing is exposed.' })).body;
+    await c.post(`/threat-models/${other.model.id}/assets`, { name: `Elsewhere ${randomUUID()}`, description: 'd' });
+    const snapshot = await withSnapshot((trx) => readSnapshot(trx, mine.model.id));
+    expect(snapshot?.assets.map((a) => [a.id, [...a.holder_ids].sort()])).toEqual([[asset.id, [mine.nodeA.id, mine.nodeB.id].sort()]]);
+    expect(snapshot?.assumptions.map((a) => a.id)).toEqual([assumption.id]);
+
+    // One state of the database: records added or deleted after the first read are not seen by the snapshot.
+    const during = await withSnapshot(async (trx) => {
+      await sql`SELECT 1 FROM threat_models WHERE id = ${mine.model.id}`.execute(trx);
+      await db.query('DELETE FROM assets WHERE id = $1', [asset.id]);
+      await db.query('INSERT INTO assumptions (threat_model_id, statement) VALUES ($1, $2)', [mine.model.id, 'Added meanwhile.']);
+      return readSnapshot(trx, mine.model.id);
+    });
+    expect(during?.assets.map((a) => a.id)).toEqual([asset.id]);
+    expect(during?.assumptions.map((a) => a.id)).toEqual([assumption.id]);
+  });
+
   it('answers null for a threat model that does not exist, before reading anything else', async () => {
     expect(await withSnapshot((trx) => readSnapshot(trx, randomUUID()))).toBeNull();
   });

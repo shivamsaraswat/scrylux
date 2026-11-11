@@ -1,6 +1,6 @@
-import { SCRYLUX_FORMAT_VERSION, type ElementRecord, type JsonValue, type MitigationRecord, type StaleReason, type ThreatModelRecord, type ThreatRecord } from '@scrylux/core';
+import { SCRYLUX_FILE_VERSION, type ElementRecord, type JsonValue, type MitigationRecord, type StaleReason, type ThreatModelRecord, type ThreatRecord } from '@scrylux/core';
 import type { Snapshot } from '../snapshot.js';
-import { sortElements, sortMitigations, sortThreats } from './order.js';
+import { sortAssets, sortAssumptions, sortElements, sortMitigations, sortThreats } from './order.js';
 
 // The Scrylux file an export writes (contracts/scrylux-file.md). It is built from one snapshot of the threat model, in
 // content order, with every key present and in a fixed order, so exporting an unchanged model twice gives bytes that
@@ -43,15 +43,30 @@ export interface ExportedMitigation {
   external_ref: string | null;
 }
 
+export interface ExportedAsset {
+  id: string;
+  name: string;
+  description: string;
+  holder_ids: string[];
+}
+
+export interface ExportedAssumption {
+  id: string;
+  statement: string;
+}
+
 export interface ExportedFile {
   format: 'scrylux';
-  format_version: typeof SCRYLUX_FORMAT_VERSION;
+  format_version: typeof SCRYLUX_FILE_VERSION;
   exported_at: string;
   project: { name: string };
   threat_model: { name: string; methodology: ThreatModelRecord['methodology']; status: ThreatModelRecord['status'] };
   elements: ExportedElement[];
   threats: ExportedThreat[];
   mitigations: ExportedMitigation[];
+  // Format version 2 (Phase 3 Milestone 5): always present, empty when the model has none.
+  assets: ExportedAsset[];
+  assumptions: ExportedAssumption[];
 }
 
 const byCodePoint = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
@@ -82,7 +97,7 @@ export function buildScryluxFile(snapshot: Snapshot, exportedAt: Date): Exported
   const mitigations = sortMitigations(snapshot.mitigations, threats.position);
   return {
     format: 'scrylux',
-    format_version: SCRYLUX_FORMAT_VERSION,
+    format_version: SCRYLUX_FILE_VERSION,
     exported_at: exportedAt.toISOString(),
     project: { name: snapshot.project.name },
     threat_model: { name: snapshot.model.name, methodology: snapshot.model.methodology, status: snapshot.model.status },
@@ -117,6 +132,14 @@ export function buildScryluxFile(snapshot: Snapshot, exportedAt: Date): Exported
       status: mitigation.status,
       external_ref: mitigation.external_ref,
     })),
+    // A holder is named by the element's id, in the order of the file's elements. Nothing of provenance is exported (FR-023).
+    assets: sortAssets(snapshot.assets).map((asset) => ({
+      id: asset.id,
+      name: asset.name,
+      description: asset.description,
+      holder_ids: [...asset.holder_ids].sort((a, b) => (elements.position.get(a) ?? 0) - (elements.position.get(b) ?? 0)),
+    })),
+    assumptions: sortAssumptions(snapshot.assumptions).map((assumption) => ({ id: assumption.id, statement: assumption.statement })),
   };
 }
 

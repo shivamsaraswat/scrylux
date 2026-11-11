@@ -1,6 +1,8 @@
 import { ELEMENT_FLAGS, ElementInputBase, TYPE_LABELS, flagLabel, type ElementRecord, type ElementType } from '@scrylux/core';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useProvenance } from '../api/queries.js';
 import { ConfirmDialog } from '../components/ConfirmDialog.js';
+import { ProvenanceNotice } from '../components/ProvenanceNotice.js';
 import { FormField } from '../components/FormField.js';
 import { useDiagramEditor } from './DiagramEditorProvider.js';
 import { FlagRadioGroup } from './FlagRadioGroup.js';
@@ -36,6 +38,9 @@ function ElementProperties({ element }: { element: ElementRecord }) {
   const byId = new Map((editor.elements ?? []).map((e) => [e.id, e]));
   const [question, setQuestion] = useState<Question | null>(null);
   const current = splitProperties(element.type, element.properties);
+  // Where it came from, when an accept created it or set some of its flags (Phase 3 Milestone 5, FR-017).
+  const provenance = useProvenance(editor.threatModelId);
+  const marks = (provenance.data ?? []).filter((mark) => mark.target.kind === 'element' && mark.target.id === element.id);
 
   // Saves a change, or first asks when it would also remove what is stored outside the vocabulary: those
   // are removed by the first change to the properties, and the user is told before that happens.
@@ -125,6 +130,7 @@ function ElementProperties({ element }: { element: ElementRecord }) {
           ))}
         </div>
       )}
+      <ProvenanceNotice marks={marks} threatModelId={editor.threatModelId} flagValues={current.flags} />
       <TagsEditor
         type={element.type}
         tags={current.tags}

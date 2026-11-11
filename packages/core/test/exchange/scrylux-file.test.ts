@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { ScryluxFileV1 } from '../../src/index.js';
+import { ScryluxFileV1, ScryluxFileV2, formatVersionMessage } from '../../src/index.js';
 
 // The Scrylux file, format version 1 (contracts/scrylux-file.md, data-model.md): the field rules of the create
 // inputs, with ids that are opaque strings and no key left out.
 
 type Row = Record<string, unknown>;
 type Mutable = { [key: string]: unknown; threat_model: Row; elements: Row[]; threats: Row[]; mitigations: Row[] };
+type MutableV2 = Mutable & { assets: Row[]; assumptions: Row[] };
 
 const valid = (): Mutable => ({
   format: 'scrylux',
@@ -160,5 +161,77 @@ describe('ScryluxFileV1 refuses, naming the field', () => {
       file.elements[1]!.properties = { tags: [secret.repeat(10)] };
     });
     expect(messages.join('\n')).not.toContain(secret);
+  });
+});
+
+// Format version 2 (Phase 3 Milestone 5, FR-023): version 1 and two lists, always present. Nothing of provenance, a draft or a decision is in a file.
+const v2 = (): MutableV2 => ({
+  ...valid(),
+  format_version: 2,
+  assets: [{ id: 'a1', name: 'Session tokens', description: 'Bearer tokens.', holder_ids: ['p1'] }],
+  assumptions: [{ id: 's1', statement: 'The database is not exposed.' }],
+});
+
+describe('ScryluxFileV2 accepts', () => {
+  it('a complete file, unchanged, and a file with empty lists', () => {
+    expect(ScryluxFileV2.parse(v2())).toEqual(v2());
+    expect(ScryluxFileV2.safeParse({ ...v2(), assets: [], assumptions: [] }).success).toBe(true);
+  });
+
+  it('trims the names and text of the new records, as the create inputs do', () => {
+    const file = v2();
+    file.assets = [{ id: 'a1', name: '  Tokens ', description: ' d ', holder_ids: [] }];
+    file.assumptions = [{ id: 's1', statement: ' s ' }];
+    const parsed = ScryluxFileV2.parse(file);
+    expect(parsed.assets[0]).toMatchObject({ name: 'Tokens', description: 'd' });
+    expect(parsed.assumptions[0]).toMatchObject({ statement: 's' });
+  });
+});
+
+describe('ScryluxFileV2 refuses', () => {
+  const refused = (change: (file: MutableV2) => void): boolean => {
+    const file = v2();
+    change(file);
+    return ScryluxFileV2.safeParse(file).success;
+  };
+
+  it('a file without its lists: every key is always present', () => {
+    expect(refused((file) => Reflect.deleteProperty(file, 'assets'))).toBe(false);
+    expect(refused((file) => Reflect.deleteProperty(file, 'assumptions'))).toBe(false);
+  });
+
+  it('a file that says version 1, and a version 1 file that has the lists', () => {
+    expect(refused((file) => (file.format_version = 1))).toBe(false);
+    expect(ScryluxFileV1.safeParse(v2()).success).toBe(false);
+    expect(ScryluxFileV1.safeParse({ ...valid(), assets: [] }).success).toBe(false);
+  });
+
+  it('a key a record is not allowed to have: provenance, a rationale, an origin', () => {
+    for (const key of ['provenance', 'rationale', 'origin', 'citations']) {
+      expect(refused((file) => (file.assets[0]![key] = 'x')), key).toBe(false);
+      expect(refused((file) => (file.assumptions[0]![key] = 'x')), key).toBe(false);
+    }
+    expect(refused((file) => (file.draft = {}))).toBe(false);
+  });
+
+  it('an asset with a blank or over-long name or description, an assumption with a blank statement, and holders that are not strings', () => {
+    expect(refused((file) => (file.assets[0]!.name = ' '))).toBe(false);
+    expect(refused((file) => (file.assets[0]!.name = 'n'.repeat(201)))).toBe(false);
+    expect(refused((file) => (file.assets[0]!.description = ''))).toBe(false);
+    expect(refused((file) => (file.assumptions[0]!.statement = ' '))).toBe(false);
+    expect(refused((file) => (file.assets[0]!.holder_ids = [1]))).toBe(false);
+    expect(refused((file) => (file.assets[0]!.holder_ids = 'p1'))).toBe(false);
+  });
+});
+
+describe('formatVersionMessage', () => {
+  it('names the versions this install reads, and the file’s own when it is a whole number', () => {
+    expect(formatVersionMessage(3, [1, 2])).toBe('must be 1 or 2; this file is version 3');
+    expect(formatVersionMessage(0.5, [1, 2])).toBe('must be 1 or 2');
+    expect(formatVersionMessage('two', [1, 2])).toBe('must be 1 or 2');
+  });
+
+  it('keeps naming version 1 alone for what reads only version 1, such as the OTM mark', () => {
+    expect(formatVersionMessage(2)).toBe('must be 1; this file is version 2');
   });
 });

@@ -54,3 +54,31 @@
   border: 1px solid #cbd2d9;
   border-radius: 6px;
 }
+
+/* The review (Phase 3 Milestone 5, contracts/ui.md): where an item stands, beside it and on the diagram. The state is also in words
+   (the list, the panel and the nodes' labels), never only a colour. */
+.draft-state {
+  color: #52606d;
+  font-size: 0.85em;
+}
+.draft-row--rejected .draft-item {
+  opacity: 0.6;
+}
+.draft-row--accepted .draft-state {
+  color: #1c7c3b;
+}
+.draft-status {
+  font-weight: 600;
+}
+.draft-needs {
+  color: #8a4b08;
+}
+.draft-node--accepted {
+  box-shadow: 0 0 0 2px #1c7c3b;
+}
+.draft-node--rejected {
+  opacity: 0.45;
+}
+.draft-edge--rejected {
+  opacity: 0.45;
+}

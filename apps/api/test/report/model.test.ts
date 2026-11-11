@@ -16,6 +16,7 @@ import {
   threatId,
   typical,
   unplaced,
+  withRecords,
 } from './fixtures.js';
 
 // data-model.md §2-§4: the report model both renderers draw from.
@@ -483,3 +484,21 @@ describe('buildReport', () => {
     expect(report.summary.total).toBe(0);
   });
 });
+
+describe('buildReport, assets and assumptions (Phase 3 Milestone 5)', () => {
+  it('lists assets by name and assumptions by statement, with each holder by reference and name, as the elements are named', () => {
+    const report = buildReport(withRecords(), EXPORTED_AT);
+    expect(report.assets.map((a) => a.name)).toEqual(['Customer data', 'Session tokens']);
+    expect(report.assets[0]?.holders.map((h) => `${h.ref} ${h.name}`)).toEqual(['E2 API', 'E7 Orders DB']);
+    expect(report.assets[1]?.holders).toEqual([]);
+    expect(report.assumptions).toEqual(['Staff are trusted.', 'The database is not exposed.']);
+  });
+
+  it('leaves the header’s counts as they were, so a report of a model with none is what it was', () => {
+    const report = buildReport(withRecords(), EXPORTED_AT);
+    expect(report.header.counts).toEqual({ elements: 9, threats: report.header.counts.threats, mitigations: report.header.counts.mitigations });
+    expect(buildReport(typical(), EXPORTED_AT).assets).toEqual([]);
+    expect(buildReport(typical(), EXPORTED_AT).assumptions).toEqual([]);
+  });
+});
+

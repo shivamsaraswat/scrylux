@@ -238,7 +238,7 @@ export function planThreatDragon(file: ThreatDragonFile): ImportPlan {
       addThreats(cell, at, elementId(cell), false);
     });
 
-    return { threatModel: { id: `model-${index}`, name, methodology: 'STRIDE', status: 'draft' }, name_issue: null, elements, threats, mitigations };
+    return { threatModel: { id: `model-${index}`, name, methodology: 'STRIDE', status: 'draft' }, name_issue: null, elements, threats, mitigations, assets: [], assumptions: [] };
   });
 
   return { models, notes };

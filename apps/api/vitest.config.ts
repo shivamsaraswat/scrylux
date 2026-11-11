@@ -18,6 +18,12 @@ const JOBS = [
   'test/extract-system/*.test.ts',
   'test/contract/v1/extraction*.test.ts',
   'test/contract/v1/draft*.test.ts',
+  // Phase 3 Milestone 5: runs a draft's commit (which reads a job row) beside two decisions, so it must not run beside a file that
+  // truncates `jobs` or `drafts`. The other review tests seed their own rows and stay in the `api` group.
+  'test/review/concurrency.test.ts',
+  // Truncates `jobs` and `sources` (and with them every draft), so it must not run beside the review tests, which seed sources and
+  // drafts of their own in the `api` group: run beside them it deadlocked with them and deleted their sources.
+  'test/storage/sweep.test.ts',
 ];
 
 export default defineConfig({

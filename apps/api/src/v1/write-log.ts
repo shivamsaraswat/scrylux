@@ -1,4 +1,4 @@
-export type RecordType = 'project' | 'threat_model' | 'element' | 'threat' | 'mitigation';
+export type RecordType = 'project' | 'threat_model' | 'element' | 'threat' | 'mitigation' | 'asset' | 'assumption';
 export type WriteAction = 'create' | 'update' | 'delete';
 
 // One stdout line per successful write: who did what to which record (FR-014a). It takes ids only,
@@ -50,4 +50,10 @@ export function logImport(
       notes: counts.notes,
     }),
   );
+}
+
+// One stdout line per decision on a draft (Phase 3 Milestone 5, FR-022): who decided, what they did, on which threat model, and how many items and
+// records. It takes ids and numbers only, so a name, a statement or any text of the draft can never end up in the log.
+export function logDecision(accountId: number, action: 'accept' | 'reject' | 'undecide', threatModelId: string, counts: { items: number; created: number; changed: number }): void {
+  console.log(JSON.stringify({ event: 'decision', account_id: accountId, action, threat_model_id: threatModelId, items: counts.items, created: counts.created, changed: counts.changed }));
 }

@@ -254,6 +254,8 @@ describe('the records of the draft routes (data-model.md)', () => {
     assets: [{ id: randomUUID(), name: 'Tokens', description: 'd', held_by: [randomUUID()], rationale: 'r', citations: [] }],
     assumptions: [{ id: randomUUID(), statement: 's', rationale: 'r', citations: [] }],
     read_chunks: [{ source_id: randomUUID(), position: 0 }],
+    // Phase 3 Milestone 5: each item's review, by its id.
+    review: {},
   });
 
   it('DraftRecord parses a full draft and refuses a stray field', () => {

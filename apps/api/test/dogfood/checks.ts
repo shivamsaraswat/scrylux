@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
-import { ScryluxFileV1, STRIDE_CATEGORIES } from '@scrylux/core';
+import { ScryluxFileV2, STRIDE_CATEGORIES } from '@scrylux/core';
 import { buildScryluxFile, serializeExport, type ExportedFile } from '../../src/exchange/scrylux-export.js';
 import { ajv2020 } from '../exchange/ajv.js';
 import { markdownInline } from '../../src/report/escape.js';
@@ -54,7 +54,7 @@ export type SchemaValidator = (value: unknown) => string[];
 // The published JSON Schema of the Scrylux file (draft 2020-12, as schema-current.test.ts reads it), as a function
 // that returns where a value breaks it. The messages carry the place and the rule, never the value.
 export function publishedSchemaValidator(): SchemaValidator {
-  const path = fileURLToPath(new URL('../../../../docs/formats/scrylux-file-v1.schema.json', import.meta.url));
+  const path = fileURLToPath(new URL('../../../../docs/formats/scrylux-file-v2.schema.json', import.meta.url));
   const validate = ajv2020().compile(JSON.parse(readFileSync(path, 'utf8')) as object);
   return (value) => {
     if (validate(value)) return [];
@@ -73,7 +73,7 @@ export function checkForm(file: string, text: string, validate: SchemaValidator)
 
   const findings: Finding[] = [];
   for (const problem of validate(parsed)) findings.push(finding('form', file, `the file breaks the published schema at ${problem}`, fix));
-  if (findings.length === 0 && !ScryluxFileV1.safeParse(parsed).success) {
+  if (findings.length === 0 && !ScryluxFileV2.safeParse(parsed).success) {
     findings.push(finding('form', file, 'the file breaks the Scrylux file schema of @scrylux/core', fix));
   }
   if (findings.length > 0) return findings;
@@ -252,7 +252,7 @@ export function checkRoundTrip(file: string, summary: SummaryLike, data: Exporte
 
   const before = canonical(data as unknown as ExchangeFile) as Record<string, unknown>;
   const after = canonical(again as unknown as ExchangeFile) as Record<string, unknown>;
-  const differs = ['format', 'format_version', 'threat_model', 'elements', 'threats', 'mitigations'].filter((part) => !isDeepStrictEqual(before[part], after[part]));
+  const differs = ['format', 'format_version', 'threat_model', 'elements', 'threats', 'mitigations', 'assets', 'assumptions'].filter((part) => !isDeepStrictEqual(before[part], after[part]));
   if (differs.length > 0) add(`the model exported after the import differs from the committed file in: ${differs.join(', ')}`);
   return findings;
 }

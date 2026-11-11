@@ -312,6 +312,19 @@ export const citedChunk = (overrides: Record<string, unknown> = {}) => ({
 
 export const citation = (overrides: Record<string, unknown> = {}) => ({ chunk: citedChunk(), quote: 'The API is exposed to the internet', ...overrides });
 
+/** The review of one item (Phase 3 Milestone 5): undecided and new, unless it says otherwise. */
+export const itemReview = (overrides: Record<string, unknown> = {}) => ({
+  state: 'undecided',
+  decided_by: null,
+  decided_at: null,
+  outcome: null,
+  comparison: 'new',
+  matched_id: null,
+  differences: null,
+  needs: [],
+  ...overrides,
+});
+
 /** A small draft: a boundary holding a database, an API, a flow between them, an asset and an assumption. */
 export const draftRecord = (overrides: Record<string, unknown> = {}) => ({
   id: DRAFT_ID,
@@ -381,6 +394,20 @@ export const draftRecord = (overrides: Record<string, unknown> = {}) => ({
   assets: [{ id: DRAFT_ASSET_ID, name: 'Threat data', description: 'The threats the application stores.', held_by: [DRAFT_DB_ID], rationale: 'The database holds them.', citations: [citation()] }],
   assumptions: [{ id: DRAFT_ASSUMPTION_ID, statement: 'The network keeps outsiders away from the database.', rationale: 'The design relies on it.', citations: [citation()] }],
   read_chunks: [{ source_id: SOURCE_ID, position: 0 }],
+  // Every item undecided and new, as the API says of a threat model that holds nothing: the database needs its boundary and the flow its ends.
+  review: {
+    [DRAFT_API_ID]: itemReview(),
+    [DRAFT_DB_ID]: itemReview({ needs: [{ need: 'boundary', item_id: DRAFT_BOUNDARY_ID }] }),
+    [DRAFT_FLOW_ID]: itemReview({
+      needs: [
+        { need: 'source', item_id: DRAFT_API_ID },
+        { need: 'target', item_id: DRAFT_DB_ID },
+      ],
+    }),
+    [DRAFT_BOUNDARY_ID]: itemReview(),
+    [DRAFT_ASSET_ID]: itemReview({ needs: null }),
+    [DRAFT_ASSUMPTION_ID]: itemReview({ needs: null }),
+  },
   ...overrides,
 });
 

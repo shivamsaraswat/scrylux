@@ -1,4 +1,4 @@
-import { deriveRisk, ScryluxFileV1, type ElementRecord, type MitigationRecord, type ThreatRecord } from '@scrylux/core';
+import { deriveRisk, ScryluxFileV2, type ElementRecord, type MitigationRecord, type ThreatRecord } from '@scrylux/core';
 import { describe, expect, it } from 'vitest';
 import { buildScryluxFile } from '../../src/exchange/scrylux-export.js';
 import { parseFile } from '../../src/exchange/import/parse.js';
@@ -6,11 +6,11 @@ import { checkPlan, type ImportPlan } from '../../src/exchange/import/plan.js';
 import { planScrylux } from '../../src/exchange/import/scrylux.js';
 import type { Snapshot } from '../../src/snapshot.js';
 import { HttpError } from '../../src/v1/errors.js';
-import { canonical, snapshotOf, us1Model, type ExchangeFile } from './fixtures.js';
+import { canonical, snapshotOf, us1Model, us1ModelV2, type ExchangeFile, type ExchangeFileV2 } from './fixtures.js';
 
 // A Scrylux file becomes a plan with its records, statuses and origins as they are (FR-004, FR-008 to FR-010).
 
-const plan = (file: ExchangeFile): ImportPlan => planScrylux(ScryluxFileV1.parse(file));
+const plan = (file: ExchangeFile | ExchangeFileV2): ImportPlan => planScrylux(parseFile('scrylux', file));
 const checked = (file: ExchangeFile) => checkPlan(plan(file), { existingNames: [] });
 
 function refusal(run: () => unknown): HttpError {
@@ -110,11 +110,58 @@ function snapshotFromPlan(value: ImportPlan): Snapshot {
     risk: deriveRisk(row.likelihood, row.impact),
   }));
   const mitigations: MitigationRecord[] = model.mitigations.map(({ path: _path, ...row }) => ({ ...row, ...stamps }));
+  const assets = model.assets.map(({ path: _path, ...row }) => ({ ...row, ...stamps, threat_model_id: model.threatModel.id }));
+  const assumptions = model.assumptions.map(({ path: _path, ...row }) => ({ ...row, ...stamps, threat_model_id: model.threatModel.id }));
   return {
     model: { id: model.threatModel.id, project_id: 'project', name: model.threatModel.name, methodology: model.threatModel.methodology, status: model.threatModel.status, ...stamps },
     project: { name: 'Another' },
     elements,
     threats,
     mitigations,
+    assets,
+    assumptions,
   };
 }
+
+// Version 2 (Phase 3 Milestone 5, FR-023): the plan carries assets and assumptions, and a version 1 file still plans, with none.
+describe('planScrylux, version 2', () => {
+  const planV2 = (file: ExchangeFileV2): ImportPlan => planScrylux(ScryluxFileV2.parse(file));
+
+  it('plans the assets and assumptions with their places in the file, and the file’s ids until checked', () => {
+    const model = planV2(us1ModelV2()).models[0];
+    expect(model?.assets.map((item) => [item.path, item.name, item.holder_ids])).toEqual([
+      ['file.assets.0', 'Customer data', ['p-api', 'd-orders']],
+      ['file.assets.1', 'Session tokens', ['p-api']],
+    ]);
+    expect(model?.assumptions.map((item) => [item.path, item.statement])).toEqual([
+      ['file.assumptions.0', 'Staff are trusted.'],
+      ['file.assumptions.1', 'The database is not exposed.'],
+    ]);
+  });
+
+  it('plans a version 1 file with no assets and no assumptions', () => {
+    const model = plan(us1Model()).models[0];
+    expect(model?.assets).toEqual([]);
+    expect(model?.assumptions).toEqual([]);
+  });
+
+  it('parses a file by its version: 1 and 2 are read, anything else is refused with the versions this install reads', () => {
+    expect(parseFile('scrylux', us1Model()).format_version).toBe(1);
+    expect(parseFile('scrylux', us1ModelV2()).format_version).toBe(2);
+    expect(refusal(() => parseFile('scrylux', { ...us1ModelV2(), format_version: 3 })).message).toBe('file.format_version: must be 1 or 2; this file is version 3');
+    expect(refusal(() => parseFile('scrylux', { ...us1Model(), format_version: undefined })).message).toContain('file.format_version');
+    expect(refusal(() => parseFile('scrylux', { ...us1Model(), assets: [] })).message).toContain('file');
+  });
+
+  it('keeps every record when the model is exported and read again, and gives the new records no provenance', () => {
+    const exported = buildScryluxFile(snapshotOf(us1ModelV2()), new Date('2026-10-10T09:30:00.000Z'));
+    const again = checkPlan(planV2(ScryluxFileV2.parse(JSON.parse(JSON.stringify(exported)))), { existingNames: [] }).models[0];
+    expect(again?.assets.map((item) => item.name)).toEqual(['Customer data', 'Session tokens']);
+    expect(again?.assumptions).toHaveLength(2);
+    expect(JSON.stringify(again)).not.toContain('provenance');
+    // Exported again from what was read, the file is the file (FR-004).
+    const reExport = buildScryluxFile(snapshotFromPlan(checkPlan(planV2(ScryluxFileV2.parse(exported)), { existingNames: [] })), new Date('2030-01-01T00:00:00.000Z'));
+    expect(canonical(reExport as unknown as ExchangeFileV2)).toEqual(canonical(exported as unknown as ExchangeFileV2));
+  });
+});
+

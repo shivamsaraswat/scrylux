@@ -64,6 +64,17 @@ const OPERATION_IDS = [
   'startExtraction',
   'getDraft',
   'discardDraft',
+  // Phase 3 Milestone 5, contracts/http-api.md.
+  'decideDraft',
+  'listAssets',
+  'createAsset',
+  'updateAsset',
+  'deleteAsset',
+  'listAssumptions',
+  'createAssumption',
+  'updateAssumption',
+  'deleteAssumption',
+  'listProvenance',
   'getOpenApiDocument',
 ];
 const METHODS = ['get', 'post', 'patch', 'delete'] as const;
@@ -177,11 +188,13 @@ describe('the generated OpenAPI document (FR-020, FR-021, SC-006)', () => {
       expect(ids.sort()).toEqual([...OPERATION_IDS].sort());
     });
 
-    it('states the order of each of the 6 lists (FR-003)', () => {
+    it('states the order of each of the 8 lists (FR-003)', () => {
       // The jobs list states its own order (Phase 3 Milestone 2), and so do the source and chunk lists (Milestone 3).
-      const own = ['listJobs', 'listSources', 'listChunks'];
+      // The provenance list (Phase 3 Milestone 5) states its order and what a row is, in one description.
+      const own = ['listJobs', 'listSources', 'listChunks', 'listProvenance'];
       const lists = operationsOf(doc()).filter(({ op }) => op.operationId.startsWith('list') && !own.includes(op.operationId));
-      expect(lists).toHaveLength(6);
+      // Phase 3 Milestone 5 adds the list of assets and the list of assumptions of a threat model.
+      expect(lists).toHaveLength(8);
       for (const { op } of lists) expect(op.description, op.operationId).toBe(LIST_ORDER_DESCRIPTION);
     });
 

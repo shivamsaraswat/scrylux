@@ -4,6 +4,8 @@ import {
   requireUsableNames,
   summarize,
   type ImportPlan,
+  type PlanAsset,
+  type PlanAssumption,
   type PlanElement,
   type PlanMitigation,
   type PlanThreat,
@@ -55,7 +57,14 @@ const mitigation = (id: string, threat_id: string, extra: Partial<PlanMitigation
 });
 
 // Gives each row the path its index in the file would have, so a message names the right place.
-function plan(elements: PlanElement[], threats: PlanThreat[] = [], mitigations: PlanMitigation[] = [], name = 'Model'): ImportPlan {
+function plan(
+  elements: PlanElement[],
+  threats: PlanThreat[] = [],
+  mitigations: PlanMitigation[] = [],
+  name = 'Model',
+  assets: PlanAsset[] = [],
+  assumptions: PlanAssumption[] = [],
+): ImportPlan {
   return {
     models: [
       {
@@ -64,6 +73,8 @@ function plan(elements: PlanElement[], threats: PlanThreat[] = [], mitigations: 
         elements: elements.map((item, index) => ({ ...item, path: `file.elements.${index}` })),
         threats: threats.map((item, index) => ({ ...item, path: `file.threats.${index}` })),
         mitigations: mitigations.map((item, index) => ({ ...item, path: `file.mitigations.${index}` })),
+        assets: assets.map((item, index) => ({ ...item, path: `file.assets.${index}` })),
+        assumptions: assumptions.map((item, index) => ({ ...item, path: `file.assumptions.${index}` })),
       },
     ],
     notes: [],
@@ -332,8 +343,61 @@ describe('summarize', () => {
     const base = plan([element('a', 'process')], [threat('t', 'a')], [mitigation('m', 't')], 'Counted');
     const noted: ImportPlan = { ...base, notes: [{ path: 'file.x', kind: 'not_imported.asset', label: 'Asset' }] };
     expect(summarize(check(noted))).toEqual({
-      models: [{ name: 'Counted', name_issue: null, status: 'draft', elements: 1, threats: 1, mitigations: 1 }],
+      models: [{ name: 'Counted', name_issue: null, status: 'draft', elements: 1, threats: 1, mitigations: 1, assets: 0, assumptions: 0 }],
       notes: [{ path: 'file.x', kind: 'not_imported.asset', label: 'Asset' }],
     });
   });
 });
+
+// Assets and assumptions (Phase 3 Milestone 5, FR-021, FR-023): the rules the database enforces are refused here with the place in the file, so the writer
+// cannot fail on content.
+const asset = (id: string, name: string, holder_ids: string[] = [], extra: Partial<PlanAsset> = {}): PlanAsset => ({ id, path: 'file.assets.0', name, description: `About ${name}.`, holder_ids, ...extra });
+const assumption = (id: string, statement: string): PlanAssumption => ({ id, path: 'file.assumptions.0', statement });
+const nodes = () => [element('p1', 'process'), element('d1', 'data_store'), element('b1', 'trust_boundary'), element('f1', 'data_flow', { source_element_id: 'p1', target_element_id: 'd1' })];
+const withRecords = (assets: PlanAsset[], assumptions: PlanAssumption[] = [], elements: PlanElement[] = nodes()) => plan(elements, [], [], 'Model', assets, assumptions);
+
+describe('checkPlan, assets and assumptions', () => {
+  it('gives every asset and assumption a new id and remaps the holders to the new element ids', () => {
+    const source = withRecords([asset('a1', 'Tokens', ['p1', 'd1'])], [assumption('s1', 'Nothing is exposed.')]);
+    const checked = check(source).models[0];
+    const ids = new Map(checked?.elements.map((item, index) => [source.models[0]?.elements[index]?.id, item.id]));
+    expect(checked?.assets[0]?.id).not.toBe('a1');
+    expect(checked?.assets[0]?.holder_ids).toEqual([ids.get('p1'), ids.get('d1')]);
+    expect(checked?.assumptions[0]?.id).not.toBe('s1');
+    expect(checked?.assets[0]).toMatchObject({ name: 'Tokens', description: 'About Tokens.' });
+  });
+
+  it('refuses a holder that is not an element of the file, or is a data flow or a trust boundary, naming the place', () => {
+    const message = (holder: string) => refusal(() => check(withRecords([asset('a1', 'Tokens', [holder])]))).message;
+    for (const holder of ['nobody', 'f1', 'b1']) expect(message(holder)).toBe('file.assets.0.holder_ids.0: must refer to an external entity, process or data store in this file');
+  });
+
+  it('refuses a holder named twice', () => {
+    expect(refusal(() => check(withRecords([asset('a1', 'Tokens', ['p1', 'p1'])]))).message).toBe('file.assets.0.holder_ids: must not repeat an element');
+  });
+
+  it('refuses a name or a statement that repeats another’s, ignoring case and surrounding whitespace, at the second one', () => {
+    expect(refusal(() => check(withRecords([asset('a1', 'Tokens'), asset('a2', '  TOKENS ')]))).message).toBe('file.assets.1.name: must differ from the name of another asset, ignoring case');
+    expect(refusal(() => check(withRecords([], [assumption('s1', 'It is.'), assumption('s2', ' it IS. ')]))).message).toBe(
+      'file.assumptions.1.statement: must differ from the statement of another assumption, ignoring case',
+    );
+  });
+
+  it('refuses an id that another record of the file has', () => {
+    expect(refusal(() => check(withRecords([asset('p1', 'Tokens')]))).message).toBe('file.assets.0.id: must be different from every other id in the file');
+    expect(refusal(() => check(withRecords([], [assumption('p1', 'It is.')]))).message).toBe('file.assumptions.0.id: must be different from every other id in the file');
+  });
+
+  it('refuses more than 200 assets and more than 200 assumptions', () => {
+    const many = <T>(make: (n: number) => T): T[] => Array.from({ length: 201 }, (_, n) => make(n));
+    expect(refusal(() => check(withRecords(many((n) => asset(`a${n}`, `asset ${n}`))))).message).toBe('file: a threat model can hold at most 200 assets');
+    expect(refusal(() => check(withRecords([], many((n) => assumption(`s${n}`, `statement ${n}`))))).message).toBe('file: a threat model can hold at most 200 assumptions');
+    expect(check(withRecords(Array.from({ length: 200 }, (_, n) => asset(`a${n}`, `asset ${n}`)))).models[0]?.assets).toHaveLength(200);
+  });
+
+  it('counts assets and assumptions in the summary', () => {
+    const summary = summarize(check(withRecords([asset('a1', 'Tokens'), asset('a2', 'Notes')], [assumption('s1', 'It is.')])));
+    expect(summary.models[0]).toMatchObject({ assets: 2, assumptions: 1 });
+  });
+});
+

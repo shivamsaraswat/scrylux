@@ -31,6 +31,8 @@ export const ImportModelSummary = z.strictObject({
   elements: count,
   threats: count,
   mitigations: count,
+  assets: count,
+  assumptions: count,
 });
 export type ImportModelSummary = z.infer<typeof ImportModelSummary>;
 

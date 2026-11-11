@@ -102,7 +102,7 @@ export interface WriteLogLine {
   event: 'write';
   account_id: number;
   action: 'create' | 'update' | 'delete';
-  type: 'project' | 'threat_model' | 'element' | 'threat' | 'mitigation';
+  type: 'project' | 'threat_model' | 'element' | 'threat' | 'mitigation' | 'asset' | 'assumption';
   id: string;
 }
 

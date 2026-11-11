@@ -17,7 +17,7 @@ const notes = [
   { path: 'file.components.1', kind: 'mapped.component_type', label: 'Web Service', detail: 'process' },
 ];
 const importSummary = (list: unknown[] = notes) => ({
-  models: [{ name: 'Checkout v2', name_issue: null, status: 'draft', elements: 5, threats: 2, mitigations: 1 }],
+  models: [{ name: 'Checkout v2', name_issue: null, status: 'draft', elements: 5, threats: 2, mitigations: 1, assets: 0, assumptions: 0 }],
   notes: list,
 });
 

@@ -3,18 +3,18 @@
 - **Project:** Scrylux
 - **Methodology:** STRIDE
 - **Threat model status:** Approved
-- **Exported:** 2026-11-08 14:41 UTC
-- **Contents:** 63 elements, 399 threats, 361 mitigations
+- **Exported:** 2026-11-10 19:00 UTC
+- **Contents:** 63 elements, 403 threats, 367 mitigations
 
 ## Risk summary
 
 | Status | Threats |
 |---|---:|
 | Open | 56 |
-| Mitigated | 96 |
-| Accepted | 149 |
+| Mitigated | 97 |
+| Accepted | 152 |
 | Not applicable | 98 |
-| **Total** | **399** |
+| **Total** | **403** |
 
 | Risk (open threats) | Threats |
 |---|---:|
@@ -6204,6 +6204,22 @@ No mitigations.
 2. **Verified** — The pipeline never overwrites a version\: it refuses when the version\'s image was built from another commit and completes a half\-done release from the image already there \(scripts\/release\/gate\.test\.ts\, gate G6 and the resume cases\)\.
 3. **Implemented** — The release notes print the image\'s digest\, so that a user can pin it \(scripts\/release\/notes\.test\.ts\)\.
 
+##### A reviewer accepts an AI proposal without reading it — Medium
+
+- **Category:** Tampering
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > The review is the control\, and it relies on a person\: before Accept the page shows each item\'s rationale\, its quoted passages and how it compares with the threat model\, and nothing of a draft enters the threat model without that decision \(Principle VI\)\. How often proposals are unsupported is measured by the evals of Phase 3 Milestone 7\, and a reviewer role arrives with Phase 6\; until then the risk is accepted
+- **Origin:** Manual
+
+> The review is a person\'s decision\. A reviewer who accepts a proposal without reading its rationale and its quoted passages puts an element\, an asset or an assumption into the threat model that the documents may not support\.
+
+**Mitigations**
+
+1. **Implemented** — The Draft tab shows\, before Accept\, each item\'s rationale\, its quoted passages with their sources\, how it compares with the threat model and what it needs\, and Accept is offered only for items that are open to it \(apps\/web\/src\/draft\/\, apps\/web\/src\/pages\/DraftTab\.tsx\; tests\: apps\/web\/src\/pages\/DraftTab\.test\.tsx\)
+2. **Proposed** — The eval harness measures how often proposals are unsupported or invented \(plan\.md\, Phase 3 Milestone 7\)\, and roles add a reviewer \(plan\.md\, Phase 6\)
+
 ##### Tampering with third\-party actions and images in the pipeline — Medium
 
 - **Category:** Tampering
@@ -6378,6 +6394,21 @@ No mitigations.
 
 1. **Implemented** — The default GITHUB\_TOKEN permission is read\-only \(contents\: read\)\. The only jobs that hold a write permission are CodeQL\'s \(security\-events\: write\) and the release workflow\'s two publishing jobs \(see the release pipeline threats\)\, and scripts\/workflows\.test\.ts fails the build if any other does\. The ruleset on main has no bypass actors\, so no one\, repository admins included\, can merge or push around a failing or missing required check\; the ruleset is a repository setting\, held by review \(\.github\/workflows\/\, \.github\/rulesets\/main\.json\, scripts\/workflows\.test\.ts\, docs\/ci\.md\)\.
 
+##### Any signed\-in account can accept AI proposals into any threat model and manage its assets and assumptions — Medium
+
+- **Category:** Elevation of Privilege
+- **Risk:** Medium (likelihood Medium × impact Medium)
+- **Status:** Accepted
+- **Reason:**
+  > There are no roles before Phase 6 \(the open risk of the model as a whole\)\, and any signed\-in account can already create\, change and delete every element\, threat and mitigation\, so an accepted item is an ordinary record that account could have typed\. What is new is that the content comes from a model\, which is why every created record carries provenance that no client can set\, and a decision names who made it and when\. The widening was called out in Milestone 5\'s spec \(FR\-026\, FR\-027\) and is a justified widening in the constitution\'s Threat Model section
+- **Origin:** Manual
+
+> There are no roles\, so any signed\-in account can accept\, reject or return to undecided the items of any threat model\'s draft\, whoever started the extraction\, and can create\, edit and delete its assets and assumptions\. An accepted item is AI text derived from confidential documents\.
+
+**Mitigations**
+
+1. **Proposed** — Roles \(viewer\, contributor\, reviewer\, admin\) and OIDC or SAML single sign\-on \(plan\.md\, Phase 6\)
+
 ##### Any signed\-in account can read\, retry\, refresh and delete every document — Medium
 
 - **Category:** Elevation of Privilege
@@ -6422,6 +6453,20 @@ No mitigations.
 1. **Verified** — A write permission is held only by the two jobs that publish\; neither runs repository code or installs a dependency\; no secret but the per\-run token is referenced\; and the workflow\'s default permission is none \(scripts\/workflows\.test\.ts\)\.
 2. **Implemented** — The token ends with the job\, and the repository\'s default token permission stays read\-only \(docs\/ci\.md\)\.
 
+##### A client fakes AI provenance\, or puts AI\-proposed content into the threat model without a person accepting it — Low
+
+- **Category:** Tampering
+- **Risk:** Low (likelihood Low × impact Medium)
+- **Status:** Mitigated
+- **Origin:** Manual
+
+> An accepted record is marked as the model\'s and carries its rationale and citations\. A client that could set that mark\, or write a record of its own through the decision route\, could pass its own text off as the model\'s\, or put AI text into the threat model with no human decision\.
+
+**Mitigations**
+
+1. **Verified** — No other route accepts provenance\: every body is a strict schema\, and an update of an element that changes a flag removes the provenance of that flag and of no other \(apps\/api\/src\/v1\/element\-writes\.ts\; tests\: apps\/api\/test\/review\/provenance\-read\.test\.ts\, apps\/api\/test\/contract\/v1\/assets\.test\.ts\)
+2. **Verified** — The decision route is the only writer of AI\-proposed records and of their provenance\, and a request carries item ids\, the comparison the page showed and edits\, never content\: the server builds each record from the stored draft\, in one transaction under the threat model\'s lock \(apps\/api\/src\/review\/decide\.ts\; tests\: apps\/api\/test\/review\/decide\.test\.ts\, refusals\.test\.ts\, concurrency\.test\.ts\, edits\.test\.ts\)
+
 ##### The test job downloads browser binaries and system packages from outside the repository — Low
 
 - **Category:** Tampering
@@ -6451,6 +6496,21 @@ No mitigations.
 **Mitigations**
 
 No mitigations.
+
+##### Accepted AI text leaves with the threat model in files and reports — Low
+
+- **Category:** Information Disclosure
+- **Risk:** Low (likelihood Medium × impact Low)
+- **Status:** Accepted
+- **Reason:**
+  > Carrying what the threat model holds is the purpose of an export and of a report\, and a copy that has been downloaded can neither be protected nor taken back\, as the model already accepts for reports and exports \(Phase 2 Milestones 5 and 6\)\. What an export holds is bounded\: no rationale\, citation\, draft\, decision or provenance\, and the file is sent no\-store with a sandbox policy
+- **Origin:** Manual
+
+> An accepted record is an ordinary record of the threat model\, so the Scrylux file and the reports carry its name\, description or statement as they carry what a person typed\, and that text may paraphrase a confidential document\.
+
+**Mitigations**
+
+1. **Verified** — A Scrylux file and a report hold a record\'s own fields and no rationale\, citation\, draft\, decision or provenance \(apps\/api\/src\/exchange\/scrylux\-export\.ts\, apps\/api\/src\/report\/\; tests\: apps\/api\/test\/exchange\/scrylux\-export\.test\.ts\, apps\/api\/test\/report\/markdown\.test\.ts\, html\.test\.ts\)
 
 ##### The document reader can reach the worker\'s network — Low
 

@@ -117,6 +117,28 @@ function summaryTables(report: Report): string[] {
   ];
 }
 
+// The assets and the assumptions, after the elements (Phase 3 Milestone 5, FR-023): each section only when there is something to list, and every text escaped.
+function assetSections(report: Report): string[] {
+  if (report.assets.length === 0) return [];
+  return [
+    '<section aria-labelledby="assets">',
+    '<h2 id="assets">Assets</h2>',
+    ...report.assets.flatMap((asset) => [
+      '<article class="asset">',
+      `<h3>${htmlText(asset.name)}</h3>`,
+      `<p class="text">${htmlText(asset.description)}</p>`,
+      ...(asset.holders.length === 0 ? [] : [`<p>Held by ${asset.holders.map((holder) => `${holder.ref} ${htmlText(holder.name)}`).join(', ')}</p>`]),
+      '</article>',
+    ]),
+    '</section>',
+  ];
+}
+
+function assumptionSections(report: Report): string[] {
+  if (report.assumptions.length === 0) return [];
+  return ['<section aria-labelledby="assumptions">', '<h2 id="assumptions">Assumptions</h2>', '<ol>', ...report.assumptions.map((statement) => `<li><span class="text">${htmlText(statement)}</span></li>`), '</ol>', '</section>'];
+}
+
 export function renderHtml(report: Report): string {
   const { header } = report;
   const title = `Threat model report: ${htmlText(header.threatModelName)}`;
@@ -158,6 +180,8 @@ export function renderHtml(report: Report): string {
     ...report.groups.flatMap(groupSection),
     ...(report.outside.elements.length > 0 ? groupSection(report.outside) : []),
     '</section>',
+    ...assetSections(report),
+    ...assumptionSections(report),
     '<section aria-labelledby="unlinked">',
     '<h2 id="unlinked">Threats not linked to an element</h2>',
     ...threatsOrNone(report.unlinked, 'None.'),

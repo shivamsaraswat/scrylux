@@ -36,7 +36,7 @@ function mitigation(id: string, threatId: string, status: ExportedMitigation['st
 function valid(): ExportedFile {
   return {
     format: 'scrylux',
-    format_version: 1,
+    format_version: 2,
     exported_at: '2026-10-12T00:00:00.000Z',
     project: { name: 'Scrylux demo (fictional)' },
     threat_model: { name: 'Notes app (fictional demo)', methodology: 'STRIDE', status: 'in_review' },
@@ -56,6 +56,8 @@ function valid(): ExportedFile {
       threat('t6', ELEVATION, { origin: 'manual', library_ref: null, likelihood: 'High', impact: 'High' }),
     ],
     mitigations: [mitigation('m1', 't2', 'implemented'), mitigation('m2', 't5', 'proposed'), mitigation('m3', 't6', 'verified')],
+    assets: [],
+    assumptions: [],
   };
 }
 

@@ -123,6 +123,9 @@ async function insertDraft(trx: Trx, write: DraftWrite): Promise<string> {
   return id;
 }
 
+/** A draft as it is stored: the record without the review of its items, which is derived from the threat model when it is read (Milestone 5). */
+export type StoredDraft = Omit<DraftRecord, 'review'>;
+
 // ---- Reading ------------------------------------------------------------------------------------------------------------
 
 interface DraftRow {
@@ -153,7 +156,7 @@ interface ItemRow {
   flags: Record<string, boolean>;
 }
 
-interface CitationRow {
+export interface CitationRow {
   item_id: string;
   flag: string | null;
   chunk_id: string | null;
@@ -168,7 +171,7 @@ interface CitationRow {
   quote: string | null;
 }
 
-const citationOf = (row: CitationRow): CitationRecord =>
+export const citationOf = (row: CitationRow): CitationRecord =>
   row.chunk_id === null || row.source_id === null || row.source_name === null || row.chunk_position === null || row.quote === null
     ? { chunk: null, quote: null }
     : {
@@ -191,7 +194,7 @@ const citationOf = (row: CitationRow): CitationRecord =>
  * deleted source leaves no text: its citations are shown as such, never dropped (FR-054, research #4). Whether the sources have changed
  * is derived from what is there now, not from times (research #13).
  */
-export async function readDraft(db: Db, threatModelId: string): Promise<DraftRecord | undefined> {
+export async function readDraft(db: Db, threatModelId: string): Promise<StoredDraft | undefined> {
   const { rows: found } = await sql<DraftRow>`
     SELECT d.id, d.threat_model_id, d.job_id, d.started_by, u.username, d.made_at, d.generation_model, d.prompt_version, d.path,
            d.chunks_read, d.chunks_available, d.sources_total, d.nothing_found
